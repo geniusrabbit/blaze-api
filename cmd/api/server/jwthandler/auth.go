@@ -98,7 +98,7 @@ func accountForUser(ctx context.Context, accountRepo account.Repository, userID,
 
 func badRequest(wr http.ResponseWriter, req *http.Request) {
 	wr.WriteHeader(http.StatusBadRequest)
-	wr.Write([]byte(`{"error":"bad request"}`))
+	_, _ = wr.Write([]byte(`{"error":"bad request"}`))
 }
 
 func errorResponse(wr http.ResponseWriter, req *http.Request, err error) {

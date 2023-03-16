@@ -18,7 +18,7 @@ func NewProvider(config *fosite.Config, store *DatabaseStorage, strat *compose.C
 		compose.OAuth2AuthorizeImplicitFactory,
 		compose.OAuth2ClientCredentialsGrantFactory,
 		compose.OAuth2RefreshTokenGrantFactory,
-		compose.OAuth2ResourceOwnerPasswordCredentialsFactory,
+		// compose.OAuth2ResourceOwnerPasswordCredentialsFactory,
 
 		compose.OAuth2TokenRevocationFactory,
 		compose.OAuth2TokenIntrospectionFactory,
