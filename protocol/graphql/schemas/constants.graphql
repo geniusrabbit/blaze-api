@@ -1,0 +1,70 @@
+
+"""
+The list of statuses that shows is object approved or not
+"""
+enum ApproveStatus {
+  """
+  Pending status of the just inited objects
+  """
+  PENDING
+
+  """
+  Approved status of object could be obtained from the some authorized user who have permissions
+  """
+  APPROVED
+
+  """
+  Rejected status of object could be obtained from the some authorized user who have permissions
+  """
+  REJECTED
+}
+
+"""
+The list of statuses that shows is particular object active or paused
+"""
+enum ActiveStatus {
+  """
+  All object by default have to be paused
+  """
+  PAUSED
+
+  """
+  Status of the active object
+  """
+  ACTIVE
+}
+
+"""
+The list of statuses that shows is particular object is available
+"""
+enum AvailableStatus {
+  """
+  All object by default have to be undefined
+  """
+  UNDEFINED
+
+  """
+  Status of the available object
+  """
+  AVAILABLE
+
+  """
+  Status of the unavailable object
+  """
+  UNAVAILABLE
+}
+
+"""
+Constants of the order of data
+"""
+enum Ordering {
+  """
+  Ascending ordering of data
+  """
+  ASC
+
+  """
+  Descending ordering of data
+  """
+  DESC
+}

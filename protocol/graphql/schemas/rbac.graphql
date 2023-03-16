@@ -1,0 +1,126 @@
+"""
+Role type defines whether the role is a role or a permission.
+"""
+enum RoleType {
+  ROLE
+  PERMISSION
+}
+
+"""
+A role is a collection of permissions. A role can be a child of another role.
+"""
+type RBACRole {
+	ID:       Int!
+	parentID: Int
+	name:     String!
+	title:    String!
+	type:     RoleType!
+
+  """
+  Context is a JSON object that defines the context of the role.
+  The context is used to determine whether the role is applicable to the object.
+  The context is a JSON object with the following structure:
+
+	{"cover": "system", "object": "model:Role"}
+
+  where:
+	"cover" - is a name of the cover area of the object type
+	"object" - is a name of the object type <module>:<object-name>
+  """
+	context:  NullableJSON
+
+	childRolesAndPermissions: [RBACRole!]
+
+  createdAt: Time!
+  updatedAt: Time!
+	deletedAt: Time
+}
+
+"""
+RBACRoleEdge is a connection edge type for RBACRole.
+"""
+type RBACRoleEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: RBACRole
+}
+
+"""
+RBACRoleConnection implements collection accessor interface with pagination.
+"""
+type RBACRoleConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the RBACRoles's lists
+  """
+  edges: [RBACRoleEdge!]
+
+  """
+  A list of the RBACRoles, as a convenience when edges are not needed.
+  """
+  roles: [RBACRole!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+RBACRolePayload wrapper to access of RBACRole oprtation results
+"""
+type RBACRolePayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  Role ID operation result
+  """
+  roleID: Int!
+
+  """
+  Role object accessor
+  """
+  role: RBACRole
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input RBACRoleListFilter {
+  ID:   [Int!]
+  name: [String!]
+  type: [RoleType!]
+}
+
+input RBACRoleListOrder {
+  ID:    Ordering
+  name:  Ordering
+  title: Ordering
+  type:  Ordering
+}
+
+###############################################################################
+# Mutations
+###############################################################################
+
+input RBACRoleInput {
+  parentID: Int
+  name:     String!
+  title:    String!
+  type:     RoleType!
+  context:  NullableJSON
+}

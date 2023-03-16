@@ -1,0 +1,8 @@
+
+input Permission {
+  key:    String!
+  access: [String!]
+}
+
+"Prevents access to a field if the user doesnt have the matching permissions"
+directive @hasPermissions(permissions: [Permission!]!) on FIELD_DEFINITION | FIELD

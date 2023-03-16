@@ -1,0 +1,142 @@
+"""
+Account is a company account that can be used to login to the system.
+"""
+type Account {
+  """
+  The primary key of the Account
+  """
+  ID: Int!
+
+  """
+  Status of Account active
+  """
+  status: ApproveStatus!
+
+  title: String!
+  description: String!
+
+  """
+	logoURI is an URL string that references a logo for the client.
+  """
+	logoURI: String!
+
+  """
+	policyURI is a URL string that points to a human-readable privacy policy document
+	that describes how the deployment organization collects, uses,
+	retains, and discloses personal data.
+  """
+	policyURI: String!
+
+  """
+	termsOfServiceURI is a URL string that points to a human-readable terms of service
+	document for the client that describes a contractual relationship
+	between the end-user and the client that the end-user accepts when
+	authorizing the client.
+  """
+	termsOfServiceURI: String!
+
+  """
+	clientURI is an URL string of a web page providing information about the client.
+	If present, the server SHOULD display this URL to the end-user in
+	a clickable fashion.
+  """
+	clientURI: String!
+
+  """
+	contacts is a array of strings representing ways to contact people responsible
+	for this client, typically email addresses.
+  """
+	contacts: [String!]
+
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type AccountEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: Account
+}
+
+"""
+AccountConnection implements collection accessor interface with pagination.
+"""
+type AccountConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the account's lists
+  """
+  edges: [AccountEdge!]
+
+  """
+  A list of the accounts, as a convenience when edges are not needed.
+  """
+  accounts: [Account!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+AccountPayload wrapper to access of Account oprtation results
+"""
+type AccountPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  Account ID operation result
+  """
+  accountID: Int!
+
+  """
+  Account object accessor
+  """
+  account: Account
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input AccountListFilter {
+  ID: [Int!]
+  title: [String!]
+  status: [ApproveStatus!]
+}
+
+input AccountListOrder {
+  ID: Ordering
+  title: Ordering
+  status: Ordering
+}
+
+###############################################################################
+# Mutations
+###############################################################################
+
+input AccountInput {
+  ID: Int!
+  status: ApproveStatus!
+  title: String!
+  description: String!
+	logoURI: String!
+	policyURI: String!
+	termsOfServiceURI: String!
+	clientURI: String!
+	contacts: [String!]
+}

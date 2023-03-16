@@ -1,0 +1,134 @@
+
+type User {
+  """
+  The primary key of the user
+  """
+  ID:       Int!
+
+  """
+  Unical user name
+  """
+  username: String!
+
+  """
+  Status of user active
+  """
+  status: ApproveStatus!
+
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type UserEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: User
+}
+
+"""
+UserConnection implements collection accessor interface with pagination.
+"""
+type UserConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the users's lists
+  """
+  edges: [UserEdge!]
+
+  """
+  A list of the users, as a convenience when edges are not needed.
+  """
+  users: [User!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+UserPayload wrapper to access of user oprtation results
+"""
+type UserPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  User ID operation result
+  """
+  userID: Int!
+
+  """
+  User object accessor
+  """
+  user: User
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input UserListFilter {
+  ID: [Int!]
+  emails: [String!]
+  roles: [Int!]
+}
+
+input UserListOrder {
+  ID:                 Ordering
+  email:              Ordering
+  status:             Ordering
+  registrationDate:   Ordering
+  country:            Ordering
+  manager:            Ordering
+  lastUpdate:         Ordering
+}
+
+###############################################################################
+# Mutations
+###############################################################################
+
+input UserInput {
+  username: String
+}
+
+type Profile {
+  ID:           Int!
+  user:         User!
+  firstName:    String!
+  lastName:     String!
+  companyName:  String!
+  about:        String!
+  email:        String!
+  messgangers: [ProfileMessanger!]
+
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+enum MessangerType {
+  SKYPE
+  AIM
+  ICQ
+  WHATSAPP
+  TELEGRAM
+  VIBER
+  PHONE
+}
+
+type ProfileMessanger {
+  mtype: MessangerType!
+  address: String!
+}

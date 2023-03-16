@@ -1,0 +1,201 @@
+# https://github.com/prisma/graphql-import
+# Pagination https://graphql.org/learn/pagination/#pagination-and-edges
+
+scalar Time
+scalar TimeDuration
+scalar DateTime
+scalar Map
+scalar JSON
+scalar NullableJSON
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+
+  #############################################################################
+  ### User collection
+  #############################################################################
+
+  """
+  Current user from the session
+  """
+  currentUser: UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+
+  """
+  Get user object by ID or username
+  """
+  user(
+    id: Int! = 0,
+    username: String! = ""
+  ): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+
+  """
+  List of the user objects which can be filtered and ordered by some fields
+  """
+  listUsers(
+    filter: UserListFilter = null,
+    order: [UserListOrder!] = null,
+    page: Page = null
+  ): UserConnection @hasPermissions(permissions: [{key: "model:User", access: ["list"]}])
+
+  #############################################################################
+  ### Account collection
+  #############################################################################
+
+  """
+  Current account from the session
+  """
+  currentAccount: AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+
+  """
+  List of the account objects which can be filtered and ordered by some fields
+  """
+  listAccounts(
+    filter: AccountListFilter = null,
+    order: [AccountListOrder!] = null,
+    page: Page = null
+  ): AccountConnection @hasPermissions(permissions: [{key: "model:Account", access: ["list"]}])
+
+  #############################################################################
+  ### Auth client collection
+  #############################################################################
+
+  """
+  Get auth client object by ID
+  """
+  authClient(id: String!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["view"]}])
+
+  """
+  List of the auth client objects which can be filtered and ordered by some fields
+  """
+  listAuthClients(
+    filter: AuthClientListFilter = null,
+    order: [AuthClientListOrder!] = null,
+    page: Page = null
+  ): AuthClientConnection @hasPermissions(permissions: [{key: "model:AuthClient", access: ["list"]}])
+
+  #############################################################################
+  ### Role collection
+  #############################################################################
+
+  """
+  Get RBAC role object by ID
+  """
+  Role(id: Int!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
+
+  """
+  List of the RBAC role objects which can be filtered and ordered by some fields
+  """
+  listRoles(
+    filter: RBACRoleListFilter = null,
+    order: [RBACRoleListOrder!] = null,
+    page: Page = null
+  ): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Role", access: ["list"]}])
+}
+
+type Mutation {
+
+  """
+  Login to the system and get the token as JWT session
+  """
+  login(login: String!, password: String!): SessionToken!
+
+  """
+  Logout from the system
+  """
+  logout: Boolean!
+
+  #############################################################################
+  ### User collection
+  #############################################################################
+
+  """
+  Create the new user
+  """
+  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["create"]}])
+
+  """
+  Update user info
+  """
+  updateUser(id: Int!, input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["update"]}])
+
+  """
+  Approve user and leave the comment
+  """
+  approveUser(id: Int!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["approve"]}])
+
+  """
+  Reject user and leave the comment
+  """
+  rejectUser(id: Int!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reject"]}])
+
+  """
+  Reset password of the particular user
+  """
+  resetUserPassword(id: Int!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+
+  #############################################################################
+  ### Account collection
+  #############################################################################
+
+  """
+  Create the new account
+  """
+  createAccount(input: AccountInput!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["create"]}])
+
+  """
+  Update account info
+  """
+  updateAccount(id: Int!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["update"]}])
+
+  """
+  Approve account and leave the comment
+  """
+  approveAccount(id: Int!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["approve"]}])
+
+  """
+  Reject account and leave the comment
+  """
+  rejectAccount(id: Int!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["reject"]}])
+
+  #############################################################################
+  ### AuthClient collection
+  #############################################################################
+
+  """
+  Create the new auth client
+  """
+  createAuthClient(input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["create"]}])
+
+  """
+  Update auth client info
+  """
+  updateAuthClient(id: String!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["update"]}])
+
+  """
+  Delete auth client
+  """
+  deleteAuthClient(id: String!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["delete"]}])
+
+  #############################################################################
+  ### Role collection
+  #############################################################################
+
+  """
+  Create the new RBAC role
+  """
+  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["create"]}])
+
+  """
+  Update RBAC role info
+  """
+  updateRole(id: Int!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["update"]}])
+
+  """
+  Delete RBAC role
+  """
+  deleteRole(id: Int!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
+}
