@@ -24,7 +24,7 @@ func (t *TimeDuration) SetDuration(d time.Duration) {
 
 // MarshalGQL implements method of interface graphql.Marshaler
 func (t TimeDuration) MarshalGQL(w io.Writer) {
-	w.Write([]byte(
+	_, _ = w.Write([]byte(
 		strconv.Quote(t.Duration().String()),
 	))
 }
@@ -47,7 +47,7 @@ func (t *TimeDuration) UnmarshalGQL(v any) error {
 // MarshalDuration redecalre the marshalel of standart scalar type Duration
 func MarshalDuration(d time.Duration) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
-		io.WriteString(w, strconv.Quote(d.String()))
+		_, _ = io.WriteString(w, strconv.Quote(d.String()))
 	})
 }
 

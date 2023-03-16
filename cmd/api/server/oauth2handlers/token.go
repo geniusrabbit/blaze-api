@@ -46,7 +46,7 @@ func Token(oauth2provider fosite.OAuth2Provider) http.HandlerFunc {
 		}
 
 		// If this is a client_credentials grant, grant all scopes the client is allowed to perform.
-		if accessRequest.GetGrantTypes().Exact("client_credentials") {
+		if accessRequest.GetGrantTypes().ExactOne("client_credentials") {
 			for _, scope := range accessRequest.GetRequestedScopes() {
 				if fosite.HierarchicScopeStrategy(accessRequest.GetClient().GetScopes(), scope) {
 					accessRequest.GrantScope(scope)

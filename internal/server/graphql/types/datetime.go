@@ -26,7 +26,7 @@ func (t *DateTime) SetTime(tm time.Time) {
 
 // MarshalGQL implements method of interface graphql.Marshaler
 func (t DateTime) MarshalGQL(w io.Writer) {
-	w.Write([]byte(strconv.Quote(
+	_, _ = w.Write([]byte(strconv.Quote(
 		t.GetTime().Format(dateTimeFormat),
 	)))
 }
@@ -49,7 +49,7 @@ func (t *DateTime) UnmarshalGQL(v any) error {
 // MarshalTime redecalre the marshalel of standart scalar type Time
 func MarshalTime(t time.Time) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
-		io.WriteString(w, strconv.Quote(t.Format(dateTimeFormat)))
+		_, _ = io.WriteString(w, strconv.Quote(t.Format(dateTimeFormat)))
 	})
 }
 

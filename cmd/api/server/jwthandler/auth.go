@@ -108,8 +108,8 @@ func errorResponse(wr http.ResponseWriter, req *http.Request, err error) {
 		wr.WriteHeader(http.StatusInternalServerError)
 	}
 	if err == userrepo.ErrInvalidPassword {
-		json.NewEncoder(wr).Encode(map[string]any{`error`: `invalid login or password`})
+		_ = json.NewEncoder(wr).Encode(map[string]any{`error`: `invalid login or password`})
 	} else {
-		json.NewEncoder(wr).Encode(map[string]any{`error`: err.Error()})
+		_ = json.NewEncoder(wr).Encode(map[string]any{`error`: err.Error()})
 	}
 }

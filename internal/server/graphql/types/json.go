@@ -40,7 +40,7 @@ func (j *JSON) SetValue(v any) error {
 // MarshalGQL implements method of interface graphql.Marshaler
 func (j JSON) MarshalGQL(w io.Writer) {
 	data, _ := j.goJSON().MarshalJSON()
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // UnmarshalGQL implements method of interface graphql.Unmarshaler
