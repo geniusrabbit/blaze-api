@@ -76,6 +76,19 @@ func (s *testSuite) TestFetchList() {
 	s.Assert().Equal(2, len(users))
 }
 
+func (s *testSuite) TestCount() {
+	s.Mock.ExpectQuery("SELECT count").
+		WithArgs(1, 1, 2).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"count"}).
+				AddRow(2),
+		)
+	count, err := s.userRepo.Count(s.Ctx,
+		&user.ListFilter{AccountID: []uint64{1}, UserID: []uint64{1, 2}})
+	s.Assert().NoError(err)
+	s.Assert().Equal(int64(2), count)
+}
+
 func (s *testSuite) TestGetByPassword() {
 	s.Mock.ExpectQuery("SELECT *").
 		WithArgs("email1").

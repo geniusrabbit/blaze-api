@@ -63,8 +63,8 @@ type ComplexityRoot struct {
 	}
 
 	AccountConnection struct {
-		Accounts   func(childComplexity int) int
 		Edges      func(childComplexity int) int
+		List       func(childComplexity int) int
 		PageInfo   func(childComplexity int) int
 		TotalCount func(childComplexity int) int
 	}
@@ -101,10 +101,10 @@ type ComplexityRoot struct {
 	}
 
 	AuthClientConnection struct {
-		AuthClients func(childComplexity int) int
-		Edges       func(childComplexity int) int
-		PageInfo    func(childComplexity int) int
-		TotalCount  func(childComplexity int) int
+		Edges      func(childComplexity int) int
+		List       func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
 	}
 
 	AuthClientEdge struct {
@@ -191,8 +191,8 @@ type ComplexityRoot struct {
 
 	RBACRoleConnection struct {
 		Edges      func(childComplexity int) int
+		List       func(childComplexity int) int
 		PageInfo   func(childComplexity int) int
-		Roles      func(childComplexity int) int
 		TotalCount func(childComplexity int) int
 	}
 
@@ -222,9 +222,9 @@ type ComplexityRoot struct {
 
 	UserConnection struct {
 		Edges      func(childComplexity int) int
+		List       func(childComplexity int) int
 		PageInfo   func(childComplexity int) int
 		TotalCount func(childComplexity int) int
-		Users      func(childComplexity int) int
 	}
 
 	UserEdge struct {
@@ -362,19 +362,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Account.UpdatedAt(childComplexity), true
 
-	case "AccountConnection.accounts":
-		if e.complexity.AccountConnection.Accounts == nil {
-			break
-		}
-
-		return e.complexity.AccountConnection.Accounts(childComplexity), true
-
 	case "AccountConnection.edges":
 		if e.complexity.AccountConnection.Edges == nil {
 			break
 		}
 
 		return e.complexity.AccountConnection.Edges(childComplexity), true
+
+	case "AccountConnection.list":
+		if e.complexity.AccountConnection.List == nil {
+			break
+		}
+
+		return e.complexity.AccountConnection.List(childComplexity), true
 
 	case "AccountConnection.pageInfo":
 		if e.complexity.AccountConnection.PageInfo == nil {
@@ -544,19 +544,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AuthClient.UserID(childComplexity), true
 
-	case "AuthClientConnection.authClients":
-		if e.complexity.AuthClientConnection.AuthClients == nil {
-			break
-		}
-
-		return e.complexity.AuthClientConnection.AuthClients(childComplexity), true
-
 	case "AuthClientConnection.edges":
 		if e.complexity.AuthClientConnection.Edges == nil {
 			break
 		}
 
 		return e.complexity.AuthClientConnection.Edges(childComplexity), true
+
+	case "AuthClientConnection.list":
+		if e.complexity.AuthClientConnection.List == nil {
+			break
+		}
+
+		return e.complexity.AuthClientConnection.List(childComplexity), true
 
 	case "AuthClientConnection.pageInfo":
 		if e.complexity.AuthClientConnection.PageInfo == nil {
@@ -1100,19 +1100,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.RBACRoleConnection.Edges(childComplexity), true
 
+	case "RBACRoleConnection.list":
+		if e.complexity.RBACRoleConnection.List == nil {
+			break
+		}
+
+		return e.complexity.RBACRoleConnection.List(childComplexity), true
+
 	case "RBACRoleConnection.pageInfo":
 		if e.complexity.RBACRoleConnection.PageInfo == nil {
 			break
 		}
 
 		return e.complexity.RBACRoleConnection.PageInfo(childComplexity), true
-
-	case "RBACRoleConnection.roles":
-		if e.complexity.RBACRoleConnection.Roles == nil {
-			break
-		}
-
-		return e.complexity.RBACRoleConnection.Roles(childComplexity), true
 
 	case "RBACRoleConnection.totalCount":
 		if e.complexity.RBACRoleConnection.TotalCount == nil {
@@ -1212,6 +1212,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserConnection.Edges(childComplexity), true
 
+	case "UserConnection.list":
+		if e.complexity.UserConnection.List == nil {
+			break
+		}
+
+		return e.complexity.UserConnection.List(childComplexity), true
+
 	case "UserConnection.pageInfo":
 		if e.complexity.UserConnection.PageInfo == nil {
 			break
@@ -1225,13 +1232,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UserConnection.TotalCount(childComplexity), true
-
-	case "UserConnection.users":
-		if e.complexity.UserConnection.Users == nil {
-			break
-		}
-
-		return e.complexity.UserConnection.Users(childComplexity), true
 
 	case "UserEdge.cursor":
 		if e.complexity.UserEdge.Cursor == nil {
@@ -1433,7 +1433,7 @@ type AccountConnection {
   """
   A list of the accounts, as a convenience when edges are not needed.
   """
-  accounts: [Account!]
+  list: [Account!]
 
   """
   Information for paginating this connection
@@ -1543,7 +1543,7 @@ type UserConnection {
   """
   A list of the users, as a convenience when edges are not needed.
   """
-  users: [User!]
+  list: [User!]
 
   """
   Information for paginating this connection
@@ -1747,7 +1747,7 @@ type AuthClientConnection {
   """
   A list of the AuthClient's, as a convenience when edges are not needed.
   """
-  authClients: [AuthClient!]
+  list: [AuthClient!]
 
   """
   Information for paginating this connection
@@ -2025,7 +2025,7 @@ type RBACRoleConnection {
   """
   A list of the RBACRoles, as a convenience when edges are not needed.
   """
-  roles: [RBACRole!]
+  list: [RBACRole!]
 
   """
   Information for paginating this connection
@@ -3444,8 +3444,8 @@ func (ec *executionContext) fieldContext_AccountConnection_edges(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _AccountConnection_accounts(ctx context.Context, field graphql.CollectedField, obj *connectors.AccountConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AccountConnection_accounts(ctx, field)
+func (ec *executionContext) _AccountConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.AccountConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AccountConnection_list(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3458,7 +3458,7 @@ func (ec *executionContext) _AccountConnection_accounts(ctx context.Context, fie
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Accounts(), nil
+		return obj.List(), nil
 	})
 
 	if resTmp == nil {
@@ -3469,7 +3469,7 @@ func (ec *executionContext) _AccountConnection_accounts(ctx context.Context, fie
 	return ec.marshalOAccount2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋapiᚑtemplateᚑbaseᚋinternalᚋserverᚋgraphqlᚋmodelsᚐAccountᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountConnection_accounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountConnection",
 		Field:      field,
@@ -4570,8 +4570,8 @@ func (ec *executionContext) fieldContext_AuthClientConnection_edges(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _AuthClientConnection_authClients(ctx context.Context, field graphql.CollectedField, obj *connectors.AuthClientConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AuthClientConnection_authClients(ctx, field)
+func (ec *executionContext) _AuthClientConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.AuthClientConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AuthClientConnection_list(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4584,7 +4584,7 @@ func (ec *executionContext) _AuthClientConnection_authClients(ctx context.Contex
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AuthClients(), nil
+		return obj.List(), nil
 	})
 
 	if resTmp == nil {
@@ -4595,7 +4595,7 @@ func (ec *executionContext) _AuthClientConnection_authClients(ctx context.Contex
 	return ec.marshalOAuthClient2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋapiᚑtemplateᚑbaseᚋinternalᚋserverᚋgraphqlᚋmodelsᚐAuthClientᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientConnection_authClients(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientConnection",
 		Field:      field,
@@ -7257,8 +7257,8 @@ func (ec *executionContext) fieldContext_Query_listUsers(ctx context.Context, fi
 				return ec.fieldContext_UserConnection_totalCount(ctx, field)
 			case "edges":
 				return ec.fieldContext_UserConnection_edges(ctx, field)
-			case "users":
-				return ec.fieldContext_UserConnection_users(ctx, field)
+			case "list":
+				return ec.fieldContext_UserConnection_list(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_UserConnection_pageInfo(ctx, field)
 			}
@@ -7413,8 +7413,8 @@ func (ec *executionContext) fieldContext_Query_listAccounts(ctx context.Context,
 				return ec.fieldContext_AccountConnection_totalCount(ctx, field)
 			case "edges":
 				return ec.fieldContext_AccountConnection_edges(ctx, field)
-			case "accounts":
-				return ec.fieldContext_AccountConnection_accounts(ctx, field)
+			case "list":
+				return ec.fieldContext_AccountConnection_list(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_AccountConnection_pageInfo(ctx, field)
 			}
@@ -7580,8 +7580,8 @@ func (ec *executionContext) fieldContext_Query_listAuthClients(ctx context.Conte
 				return ec.fieldContext_AuthClientConnection_totalCount(ctx, field)
 			case "edges":
 				return ec.fieldContext_AuthClientConnection_edges(ctx, field)
-			case "authClients":
-				return ec.fieldContext_AuthClientConnection_authClients(ctx, field)
+			case "list":
+				return ec.fieldContext_AuthClientConnection_list(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_AuthClientConnection_pageInfo(ctx, field)
 			}
@@ -7747,8 +7747,8 @@ func (ec *executionContext) fieldContext_Query_listRoles(ctx context.Context, fi
 				return ec.fieldContext_RBACRoleConnection_totalCount(ctx, field)
 			case "edges":
 				return ec.fieldContext_RBACRoleConnection_edges(ctx, field)
-			case "roles":
-				return ec.fieldContext_RBACRoleConnection_roles(ctx, field)
+			case "list":
+				return ec.fieldContext_RBACRoleConnection_list(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_RBACRoleConnection_pageInfo(ctx, field)
 			}
@@ -8397,8 +8397,8 @@ func (ec *executionContext) fieldContext_RBACRoleConnection_edges(ctx context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _RBACRoleConnection_roles(ctx context.Context, field graphql.CollectedField, obj *connectors.RBACRoleConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_RBACRoleConnection_roles(ctx, field)
+func (ec *executionContext) _RBACRoleConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.RBACRoleConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACRoleConnection_list(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8411,7 +8411,7 @@ func (ec *executionContext) _RBACRoleConnection_roles(ctx context.Context, field
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Roles(), nil
+		return obj.List(), nil
 	})
 
 	if resTmp == nil {
@@ -8422,7 +8422,7 @@ func (ec *executionContext) _RBACRoleConnection_roles(ctx context.Context, field
 	return ec.marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋapiᚑtemplateᚑbaseᚋinternalᚋserverᚋgraphqlᚋmodelsᚐRBACRoleᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleConnection_roles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleConnection",
 		Field:      field,
@@ -9125,8 +9125,8 @@ func (ec *executionContext) fieldContext_UserConnection_edges(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _UserConnection_users(ctx context.Context, field graphql.CollectedField, obj *connectors.UserConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UserConnection_users(ctx, field)
+func (ec *executionContext) _UserConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.UserConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserConnection_list(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -9139,7 +9139,7 @@ func (ec *executionContext) _UserConnection_users(ctx context.Context, field gra
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Users(), nil
+		return obj.List(), nil
 	})
 
 	if resTmp == nil {
@@ -9150,7 +9150,7 @@ func (ec *executionContext) _UserConnection_users(ctx context.Context, field gra
 	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋapiᚑtemplateᚑbaseᚋinternalᚋserverᚋgraphqlᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserConnection_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserConnection",
 		Field:      field,
@@ -12051,9 +12051,9 @@ func (ec *executionContext) _AccountConnection(ctx context.Context, sel ast.Sele
 
 			out.Values[i] = ec._AccountConnection_edges(ctx, field, obj)
 
-		case "accounts":
+		case "list":
 
-			out.Values[i] = ec._AccountConnection_accounts(ctx, field, obj)
+			out.Values[i] = ec._AccountConnection_list(ctx, field, obj)
 
 		case "pageInfo":
 
@@ -12287,9 +12287,9 @@ func (ec *executionContext) _AuthClientConnection(ctx context.Context, sel ast.S
 
 			out.Values[i] = ec._AuthClientConnection_edges(ctx, field, obj)
 
-		case "authClients":
+		case "list":
 
-			out.Values[i] = ec._AuthClientConnection_authClients(ctx, field, obj)
+			out.Values[i] = ec._AuthClientConnection_list(ctx, field, obj)
 
 		case "pageInfo":
 
@@ -13079,9 +13079,9 @@ func (ec *executionContext) _RBACRoleConnection(ctx context.Context, sel ast.Sel
 
 			out.Values[i] = ec._RBACRoleConnection_edges(ctx, field, obj)
 
-		case "roles":
+		case "list":
 
-			out.Values[i] = ec._RBACRoleConnection_roles(ctx, field, obj)
+			out.Values[i] = ec._RBACRoleConnection_list(ctx, field, obj)
 
 		case "pageInfo":
 
@@ -13284,9 +13284,9 @@ func (ec *executionContext) _UserConnection(ctx context.Context, sel ast.Selecti
 
 			out.Values[i] = ec._UserConnection_edges(ctx, field, obj)
 
-		case "users":
+		case "list":
 
-			out.Values[i] = ec._UserConnection_users(ctx, field, obj)
+			out.Values[i] = ec._UserConnection_list(ctx, field, obj)
 
 		case "pageInfo":
 

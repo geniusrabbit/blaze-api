@@ -132,6 +132,26 @@ func (r *Repository) FetchList(ctx context.Context, filter *user.ListFilter, pag
 	return list, err
 }
 
+// Count of users by filter
+func (r *Repository) Count(ctx context.Context, filter *user.ListFilter) (int64, error) {
+	var (
+		count int64
+		query = r.Slave(ctx).Model((*model.User)(nil))
+	)
+	if filter != nil && len(filter.AccountID) > 0 {
+		query = query.Where(`id IN (SELECT user_id FROM `+
+			(*model.AccountMember)(nil).TableName()+` WHERE account_id IN (?))`, filter.AccountID)
+	}
+	if filter != nil && len(filter.UserID) > 0 {
+		query = query.Where(`id IN (?)`, filter.UserID)
+	}
+	err := query.Count(&count).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+	return count, err
+}
+
 // SetPassword to the user
 func (r *Repository) SetPassword(ctx context.Context, userObj *model.User, password string) error {
 	userObj.Password = r.hashAndSalt([]byte(password))

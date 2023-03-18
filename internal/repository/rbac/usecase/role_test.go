@@ -71,6 +71,17 @@ func (s *testSuite) TestFetchList() {
 	s.Equal(2, len(roles))
 }
 
+func (s *testSuite) TestCount() {
+	s.roleRepo.EXPECT().
+		Count(s.ctx, gomock.AssignableToTypeOf(&rbac.Filter{})).
+		Return(int64(2), nil)
+
+	count, err := s.roleUsecase.Count(s.ctx, &rbac.Filter{
+		ID: []uint64{1, 2}, PageSize: 100})
+	s.NoError(err)
+	s.Equal(int64(2), count)
+}
+
 func (s *testSuite) TestCreate() {
 	s.roleRepo.EXPECT().
 		Create(s.ctx, gomock.AssignableToTypeOf(&model.Role{})).

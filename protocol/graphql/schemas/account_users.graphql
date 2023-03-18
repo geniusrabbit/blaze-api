@@ -48,7 +48,7 @@ type UserConnection {
   """
   A list of the users, as a convenience when edges are not needed.
   """
-  users: [User!]
+  list: [User!]
 
   """
   Information for paginating this connection

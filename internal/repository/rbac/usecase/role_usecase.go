@@ -46,7 +46,7 @@ func (a *RoleUsecase) GetByName(ctx context.Context, name string) (*model.Role, 
 	return roleObj, nil
 }
 
-// FetchList of accounts by filter
+// FetchList of roles by filter
 func (a *RoleUsecase) FetchList(ctx context.Context, filter *rbac.Filter) ([]*model.Role, error) {
 	if filter == nil {
 		filter = &rbac.Filter{}
@@ -64,6 +64,17 @@ func (a *RoleUsecase) FetchList(ctx context.Context, filter *rbac.Filter) ([]*mo
 		}
 	}
 	return list, err
+}
+
+// Count of roles by filter
+func (a *RoleUsecase) Count(ctx context.Context, filter *rbac.Filter) (int64, error) {
+	if filter == nil {
+		filter = &rbac.Filter{}
+	}
+	if !acl.HaveAccessCount(ctx, &model.Role{}) {
+		return 0, errors.Wrap(acl.ErrNoPermissions, "count role/permission")
+	}
+	return a.roleRepo.Count(ctx, filter)
 }
 
 // Create new object in database

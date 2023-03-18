@@ -117,7 +117,7 @@ type AuthClientConnection {
   """
   A list of the AuthClient's, as a convenience when edges are not needed.
   """
-  authClients: [AuthClient!]
+  list: [AuthClient!]
 
   """
   Information for paginating this connection

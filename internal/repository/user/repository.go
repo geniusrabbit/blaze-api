@@ -22,6 +22,7 @@ type Repository interface {
 	GetByPassword(ctx context.Context, email, password string) (*model.User, error)
 	GetByToken(ctx context.Context, token string) (*model.User, *model.Account, error)
 	FetchList(ctx context.Context, filter *ListFilter, page, num int) ([]*model.User, error)
+	Count(ctx context.Context, filter *ListFilter) (int64, error)
 	SetPassword(ctx context.Context, user *model.User, password string) error
 	Create(ctx context.Context, user *model.User, password string) (uint64, error)
 	Update(ctx context.Context, user *model.User) error

@@ -83,6 +83,18 @@ func (a *UserUsecase) FetchList(ctx context.Context, accountID uint64, page, num
 	return a.userRepo.FetchList(ctx, &user.ListFilter{AccountID: []uint64{accountID}}, page, num)
 }
 
+// Count of users by filter
+func (a *UserUsecase) Count(ctx context.Context, accountID uint64) (int64, error) {
+	if accountID < 1 {
+		account := session.Account(ctx)
+		accountID = account.ID
+	}
+	if !acl.HaveAccessCount(ctx, &model.User{}) {
+		return 0, acl.ErrNoPermissions
+	}
+	return a.userRepo.Count(ctx, &user.ListFilter{AccountID: []uint64{accountID}})
+}
+
 // SetPassword for the exists user
 func (a *UserUsecase) SetPassword(ctx context.Context, userObj *model.User, password string) error {
 	if !acl.HaveAccessUpdate(ctx, userObj) || !acl.HavePermissions(ctx, passwordUpdatePermission) {

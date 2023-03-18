@@ -64,6 +64,14 @@ func (s *testSuite) TestFetchList() {
 	s.Equal(2, len(roles))
 }
 
+func (s *testSuite) TestCount() {
+	s.Mock.ExpectQuery("SELECT count").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
+	count, err := s.roleRepo.Count(s.Ctx, &rbac.Filter{})
+	s.NoError(err)
+	s.Equal(int64(2), count)
+}
+
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectQuery("INSERT INTO").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))

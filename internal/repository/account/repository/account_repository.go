@@ -97,6 +97,21 @@ func (r *Repository) FetchList(ctx context.Context, filter *account.Filter) ([]*
 	return list, err
 }
 
+// Count returns count of accounts by filter
+func (r *Repository) Count(ctx context.Context, filter *account.Filter) (int64, error) {
+	query := r.Slave(ctx).Model((*model.Account)(nil))
+	if filter != nil && len(filter.UserID) > 0 {
+		query = query.Where(`id IN (SELECT account_id FROM `+
+			(*model.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, filter.UserID)
+	}
+	if filter != nil && len(filter.ID) > 0 {
+		query = query.Where(`id IN (?)`, filter.ID)
+	}
+	var count int64
+	err := query.Count(&count).Error
+	return count, err
+}
+
 // Create new object into database
 func (r *Repository) Create(ctx context.Context, accountObj *model.Account) (uint64, error) {
 	accountObj.CreatedAt = time.Now()

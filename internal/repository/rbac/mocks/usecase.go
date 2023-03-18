@@ -80,6 +80,21 @@ func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter)
 }
 
+// Count mocks base method
+func (m *MockUsecase) Count(ctx context.Context, filter *rbac.Filter) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Count indicates an expected call of Count
+func (mr *MockUsecaseMockRecorder) Count(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), ctx, filter)
+}
+
 // Create mocks base method
 func (m *MockUsecase) Create(ctx context.Context, role *model.Role) (uint64, error) {
 	m.ctrl.T.Helper()

@@ -99,6 +99,16 @@ func (s *userTestSuite) TestFetchList() {
 	s.Assert().Equal(2, len(users))
 }
 
+func (s *userTestSuite) TestCount() {
+	s.userRepo.EXPECT().
+		Count(s.ctx, &user.ListFilter{AccountID: []uint64{1}}).
+		Return(int64(2), nil)
+
+	count, err := s.userUsecase.Count(s.ctx, 1)
+	s.Assert().NoError(err)
+	s.Assert().Equal(int64(2), count)
+}
+
 func (s *userTestSuite) TestFetchList_CurrentUser() {
 	s.userRepo.EXPECT().
 		FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}},

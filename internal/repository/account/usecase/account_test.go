@@ -80,6 +80,17 @@ func (s *testSuite) TestFetchList() {
 	s.Equal(2, len(accounts))
 }
 
+func (s *testSuite) TestCount() {
+	s.accountRepo.EXPECT().
+		Count(s.ctx, gomock.AssignableToTypeOf(&account.Filter{})).
+		Return(int64(2), nil)
+
+	count, err := s.accountUsecase.Count(s.ctx, &account.Filter{
+		UserID: []uint64{1}, ID: []uint64{1, 2}, PageSize: 100})
+	s.NoError(err)
+	s.Equal(int64(2), count)
+}
+
 func (s *testSuite) TestStore() {
 	s.accountRepo.EXPECT().
 		Create(s.ctx, gomock.AssignableToTypeOf(&model.Account{})).

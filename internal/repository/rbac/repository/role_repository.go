@@ -66,6 +66,25 @@ func (r *Repository) FetchList(ctx context.Context, filter *rbac.Filter) ([]*mod
 	return list, err
 }
 
+// Count returns count of RBAC roles by filter
+func (r *Repository) Count(ctx context.Context, filter *rbac.Filter) (int64, error) {
+	var (
+		count int64
+		query = r.Slave(ctx).Model((*model.Role)(nil))
+	)
+	if filter != nil && len(filter.Types) > 0 {
+		query = query.Where(`type IN (?)`, filter.Types)
+	}
+	if filter != nil && len(filter.Names) > 0 {
+		query = query.Where(`name IN (?)`, filter.Names)
+	}
+	if filter != nil && len(filter.ID) > 0 {
+		query = query.Where(`id IN (?)`, filter.ID)
+	}
+	err := query.Count(&count).Error
+	return count, err
+}
+
 // Create new object into database
 func (r *Repository) Create(ctx context.Context, roleObj *model.Role) (uint64, error) {
 	roleObj.CreatedAt = time.Now()

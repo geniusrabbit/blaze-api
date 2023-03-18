@@ -81,6 +81,19 @@ func (s *testSuite) TestFetchList() {
 	s.Equal(2, len(accounts))
 }
 
+func (s *testSuite) TestCount() {
+	s.Mock.ExpectQuery("SELECT count").
+		WithArgs(1, 1, 2).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"count"}).
+				AddRow(2),
+		)
+	count, err := s.accountRepo.Count(s.Ctx, &account.Filter{
+		UserID: []uint64{1}, ID: []uint64{1, 2}, PageSize: 100})
+	s.NoError(err)
+	s.Equal(int64(2), count)
+}
+
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectQuery("INSERT INTO").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))

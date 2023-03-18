@@ -80,6 +80,17 @@ func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter) 
 	return list, err
 }
 
+// Count of accounts by filter
+func (a *AccountUsecase) Count(ctx context.Context, filter *account.Filter) (int64, error) {
+	if filter == nil {
+		filter = &account.Filter{}
+	}
+	if !acl.HaveAccessList(ctx, &model.Account{}) {
+		return 0, errors.Wrap(acl.ErrNoPermissions, "list account")
+	}
+	return a.accountRepo.Count(ctx, filter)
+}
+
 // Store new object into database
 func (a *AccountUsecase) Store(ctx context.Context, accountObj *model.Account) (uint64, error) {
 	var err error

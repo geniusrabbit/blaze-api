@@ -54,6 +54,17 @@ func (a *AuthclientUsecase) FetchList(ctx context.Context, filter *authclient.Fi
 	return list, err
 }
 
+// Count of accounts by filter
+func (a *AuthclientUsecase) Count(ctx context.Context, filter *authclient.Filter) (int64, error) {
+	if filter == nil {
+		filter = &authclient.Filter{}
+	}
+	if !acl.HaveAccessCount(ctx, &model.AuthClient{}) {
+		return 0, errors.Wrap(acl.ErrNoPermissions, "count authclient")
+	}
+	return a.authclientRepo.Count(ctx, filter)
+}
+
 // Create new object in database
 func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *model.AuthClient) (string, error) {
 	var err error

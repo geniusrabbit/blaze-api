@@ -50,6 +50,19 @@ func (s *testSuite) TestFetchList() {
 	s.Equal(2, len(clients))
 }
 
+func (s *testSuite) TestCount() {
+	s.Mock.ExpectQuery("SELECT count").
+		WithArgs("1", "2").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"count"}).
+				AddRow(2),
+		)
+	count, err := s.authclientRepo.Count(s.Ctx, &authclient.Filter{
+		ID: []string{"1", "2"}, PageSize: 100})
+	s.NoError(err)
+	s.Equal(int64(2), count)
+}
+
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectExec("INSERT INTO").
 		WillReturnResult(sqlmock.NewResult(0, 1))

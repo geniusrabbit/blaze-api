@@ -68,7 +68,7 @@ type RBACRoleConnection {
   """
   A list of the RBACRoles, as a convenience when edges are not needed.
   """
-  roles: [RBACRole!]
+  list: [RBACRole!]
 
   """
   Information for paginating this connection

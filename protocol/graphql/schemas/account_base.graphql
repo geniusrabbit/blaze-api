@@ -81,7 +81,7 @@ type AccountConnection {
   """
   A list of the accounts, as a convenience when edges are not needed.
   """
-  accounts: [Account!]
+  list: [Account!]
 
   """
   Information for paginating this connection

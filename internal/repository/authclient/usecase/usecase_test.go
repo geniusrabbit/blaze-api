@@ -60,6 +60,16 @@ func (s *testSuite) TestFetchList() {
 	s.Equal(2, len(roles))
 }
 
+func (s *testSuite) TestCount() {
+	s.authclientRepo.EXPECT().
+		Count(s.ctx, gomock.AssignableToTypeOf(&authclient.Filter{})).
+		Return(int64(2), nil)
+
+	count, err := s.authclientUsecase.Count(s.ctx, &authclient.Filter{ID: []string{"1", "2"}})
+	s.NoError(err)
+	s.Equal(int64(2), count)
+}
+
 func (s *testSuite) TestCreate() {
 	s.authclientRepo.EXPECT().
 		Create(s.ctx, gomock.AssignableToTypeOf(&model.AuthClient{})).

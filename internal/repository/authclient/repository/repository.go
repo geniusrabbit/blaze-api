@@ -52,6 +52,22 @@ func (r *Repository) FetchList(ctx context.Context, filter *authclient.Filter) (
 	return list, err
 }
 
+// Count returns count of records by filter
+func (r *Repository) Count(ctx context.Context, filter *authclient.Filter) (int64, error) {
+	var (
+		count int64
+		query = r.Slave(ctx).Model((*model.AuthClient)(nil))
+	)
+	if filter != nil && len(filter.ID) > 0 {
+		query = query.Where(`id IN (?)`, filter.ID)
+	}
+	err := query.Count(&count).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
+		err = nil
+	}
+	return count, err
+}
+
 // Create new object into database
 func (r *Repository) Create(ctx context.Context, roleObj *model.AuthClient) (string, error) {
 	if roleObj.ID == "" {

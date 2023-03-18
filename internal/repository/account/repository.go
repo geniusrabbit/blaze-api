@@ -23,6 +23,7 @@ type Repository interface {
 	GetByTitle(ctx context.Context, title string) (*model.Account, error)
 	LoadPermissions(ctx context.Context, account *model.Account, user *model.User) error
 	FetchList(ctx context.Context, filter *Filter) ([]*model.Account, error)
+	Count(ctx context.Context, filter *Filter) (int64, error)
 	Create(ctx context.Context, account *model.Account) (uint64, error)
 	Update(ctx context.Context, id uint64, account *model.Account) error
 	Delete(ctx context.Context, id uint64) error

@@ -13,6 +13,7 @@ type Usecase interface {
 	Get(ctx context.Context, id uint64) (*model.Account, error)
 	GetByTitle(ctx context.Context, title string) (*model.Account, error)
 	FetchList(ctx context.Context, filter *Filter) ([]*model.Account, error)
+	Count(ctx context.Context, filter *Filter) (int64, error)
 	Store(ctx context.Context, account *model.Account) (uint64, error)
 	Delete(ctx context.Context, id uint64) error
 	FetchMembers(ctx context.Context, account *model.Account) ([]*model.AccountMember, error)
