@@ -35,7 +35,7 @@ INSERT INTO rbac_role
             'model:Account',
             'model:AccountMember',
             'model:Role',
-            'model:AuthClient',
+            'model:AuthClient'
           ]) AS object,
           LATERAL unnest(array[
             'none',
