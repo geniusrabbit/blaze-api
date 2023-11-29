@@ -83,7 +83,7 @@ func AuthHandler(provider *jwt.Provider) http.HandlerFunc {
 }
 
 func accountForUser(ctx context.Context, accountRepo account.Repository, userID, accountID uint64) (*model.Account, error) {
-	accounts, err := accountRepo.FetchList(ctx, &account.Filter{UserID: []uint64{userID}})
+	accounts, err := accountRepo.FetchList(ctx, &account.Filter{UserID: []uint64{userID}}, nil)
 	if err != nil {
 		return nil, err
 	}

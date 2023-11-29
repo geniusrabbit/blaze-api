@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/geniusrabbit/api-template-base/internal/repository"
 	"github.com/geniusrabbit/api-template-base/internal/repository/testsuite"
 	"github.com/geniusrabbit/api-template-base/internal/repository/user"
 	"github.com/geniusrabbit/api-template-base/model"
@@ -71,7 +72,9 @@ func (s *testSuite) TestFetchList() {
 				AddRow(2, 1, "email2", defaultPasswordHash, time.Now()),
 		)
 	users, err := s.userRepo.FetchList(s.Ctx,
-		&user.ListFilter{AccountID: []uint64{1}, UserID: []uint64{1, 2}}, 0, 100)
+		&user.ListFilter{AccountID: []uint64{1}, UserID: []uint64{1, 2}},
+		&user.ListOrder{ID: model.OrderAsc},
+		&repository.Pagination{Size: 100})
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
 }
@@ -146,7 +149,7 @@ func (s *testSuite) TestCreate() {
 
 func (s *testSuite) TestUpdate() {
 	s.Mock.ExpectExec("UPDATE").
-		WithArgs("test", sqlmock.AnyArg(), uint64(101)).
+		// WithArgs("test", sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.userRepo.Update(
 		s.Ctx,

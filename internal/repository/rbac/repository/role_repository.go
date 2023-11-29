@@ -42,23 +42,13 @@ func (r *Repository) GetByName(ctx context.Context, title string) (*model.Role, 
 }
 
 // FetchList returns list of RBAC roles by filter
-func (r *Repository) FetchList(ctx context.Context, filter *rbac.Filter) ([]*model.Role, error) {
+func (r *Repository) FetchList(ctx context.Context, filter *rbac.Filter, pagination *repository.Pagination) ([]*model.Role, error) {
 	var (
 		list  []*model.Role
 		query = r.Slave(ctx).Model((*model.Role)(nil))
 	)
-	if filter != nil && len(filter.Types) > 0 {
-		query = query.Where(`type IN (?)`, filter.Types)
-	}
-	if filter != nil && len(filter.Names) > 0 {
-		query = query.Where(`name IN (?)`, filter.Names)
-	}
-	if filter != nil && len(filter.ID) > 0 {
-		query = query.Where(`id IN (?)`, filter.ID)
-	}
-	if filter.PageSize > 0 {
-		query = query.Limit(filter.PageSize).Offset(filter.PageSize * filter.Page)
-	}
+	query = filter.PrepareQuery(query)
+	query = pagination.PrepareQuery(query)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil
@@ -72,15 +62,7 @@ func (r *Repository) Count(ctx context.Context, filter *rbac.Filter) (int64, err
 		count int64
 		query = r.Slave(ctx).Model((*model.Role)(nil))
 	)
-	if filter != nil && len(filter.Types) > 0 {
-		query = query.Where(`type IN (?)`, filter.Types)
-	}
-	if filter != nil && len(filter.Names) > 0 {
-		query = query.Where(`name IN (?)`, filter.Names)
-	}
-	if filter != nil && len(filter.ID) > 0 {
-		query = query.Where(`id IN (?)`, filter.ID)
-	}
+	query = filter.PrepareQuery(query)
 	err := query.Count(&count).Error
 	return count, err
 }

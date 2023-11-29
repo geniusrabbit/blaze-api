@@ -5,7 +5,7 @@ type Account {
   """
   The primary key of the Account
   """
-  ID: Int!
+  ID: ID64!
 
   """
   Status of Account active
@@ -101,7 +101,7 @@ type AccountPayload {
   """
   Account ID operation result
   """
-  accountID: Int!
+  accountID: ID64!
 
   """
   Account object accessor
@@ -114,7 +114,8 @@ type AccountPayload {
 ###############################################################################
 
 input AccountListFilter {
-  ID: [Int!]
+  ID: [ID64!]
+  UserID: [ID64!]
   title: [String!]
   status: [ApproveStatus!]
 }
@@ -130,7 +131,7 @@ input AccountListOrder {
 ###############################################################################
 
 input AccountInput {
-  ID: Int!
+  ID: ID64!
   status: ApproveStatus!
   title: String!
   description: String!

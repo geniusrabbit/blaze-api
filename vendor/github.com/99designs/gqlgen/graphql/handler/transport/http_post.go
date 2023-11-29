@@ -3,7 +3,6 @@ package transport
 import (
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"strings"
@@ -15,7 +14,11 @@ import (
 
 // POST implements the POST side of the default HTTP transport
 // defined in https://github.com/APIs-guru/graphql-over-http#post
-type POST struct{}
+type POST struct {
+	// Map of all headers that are added to graphql response. If not
+	// set, only one header: Content-Type: application/json will be set.
+	ResponseHeaders map[string][]string
+}
 
 var _ graphql.Transport = POST{}
 
@@ -45,7 +48,7 @@ func getRequestBody(r *http.Request) (string, error) {
 
 func (h POST) Do(w http.ResponseWriter, r *http.Request, exec graphql.GraphExecutor) {
 	ctx := r.Context()
-	w.Header().Set("Content-Type", "application/json")
+	writeHeaders(w, h.ResponseHeaders)
 	params := &graphql.RawParams{}
 	start := graphql.Now()
 	params.Headers = r.Header
@@ -58,8 +61,8 @@ func (h POST) Do(w http.ResponseWriter, r *http.Request, exec graphql.GraphExecu
 	if err != nil {
 		gqlErr := gqlerror.Errorf("could not get json request body: %+v", err)
 		resp := exec.DispatchError(ctx, gqlerror.List{gqlErr})
-		log.Printf("could not get json request body: %+v", err.Error())
 		writeJson(w, resp)
+		return
 	}
 
 	bodyReader := io.NopCloser(strings.NewReader(bodyString))
@@ -71,7 +74,6 @@ func (h POST) Do(w http.ResponseWriter, r *http.Request, exec graphql.GraphExecu
 			bodyString,
 		)
 		resp := exec.DispatchError(ctx, gqlerror.List{gqlErr})
-		log.Printf("decoding error: %+v body:%s", err.Error(), bodyString)
 		writeJson(w, resp)
 		return
 	}

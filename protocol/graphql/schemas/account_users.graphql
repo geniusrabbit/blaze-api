@@ -1,9 +1,12 @@
 
+"""
+User represents a user object of the system
+"""
 type User {
   """
   The primary key of the user
   """
-  ID:       Int!
+  ID:       ID64!
 
   """
   Unical user name
@@ -68,7 +71,7 @@ type UserPayload {
   """
   User ID operation result
   """
-  userID: Int!
+  userID: ID64!
 
   """
   User object accessor
@@ -80,20 +83,29 @@ type UserPayload {
 # Query
 ###############################################################################
 
+"""
+UserListFilter implements filter for user list query
+"""
 input UserListFilter {
-  ID: [Int!]
+  ID: [ID64!]
+  accountID: [ID64!]
   emails: [String!]
-  roles: [Int!]
+  roles: [ID64!]
 }
 
+"""
+UserListOrder implements order for user list query
+"""
 input UserListOrder {
   ID:                 Ordering
   email:              Ordering
+  username:           Ordering
   status:             Ordering
   registrationDate:   Ordering
   country:            Ordering
   manager:            Ordering
-  lastUpdate:         Ordering
+  createdAt:          Ordering
+  updatedAt:          Ordering
 }
 
 ###############################################################################
@@ -102,10 +114,11 @@ input UserListOrder {
 
 input UserInput {
   username: String
+  status: ApproveStatus
 }
 
 type Profile {
-  ID:           Int!
+  ID:           ID64!
   user:         User!
   firstName:    String!
   lastName:     String!

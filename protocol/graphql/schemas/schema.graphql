@@ -7,6 +7,9 @@ scalar DateTime
 scalar Map
 scalar JSON
 scalar NullableJSON
+scalar UUID
+scalar ID64
+scalar Int64
 
 schema {
   query: Query
@@ -28,7 +31,7 @@ type Query {
   Get user object by ID or username
   """
   user(
-    id: Int! = 0,
+    id: ID64! = 0,
     username: String! = ""
   ): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
 
@@ -37,7 +40,7 @@ type Query {
   """
   listUsers(
     filter: UserListFilter = null,
-    order: [UserListOrder!] = null,
+    order: UserListOrder = null,
     page: Page = null
   ): UserConnection @hasPermissions(permissions: [{key: "model:User", access: ["list"]}])
 
@@ -55,7 +58,7 @@ type Query {
   """
   listAccounts(
     filter: AccountListFilter = null,
-    order: [AccountListOrder!] = null,
+    order: AccountListOrder = null,
     page: Page = null
   ): AccountConnection @hasPermissions(permissions: [{key: "model:Account", access: ["list"]}])
 
@@ -73,7 +76,7 @@ type Query {
   """
   listAuthClients(
     filter: AuthClientListFilter = null,
-    order: [AuthClientListOrder!] = null,
+    order: AuthClientListOrder = null,
     page: Page = null
   ): AuthClientConnection @hasPermissions(permissions: [{key: "model:AuthClient", access: ["list"]}])
 
@@ -84,14 +87,14 @@ type Query {
   """
   Get RBAC role object by ID
   """
-  Role(id: Int!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
+  Role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
   """
   listRoles(
     filter: RBACRoleListFilter = null,
-    order: [RBACRoleListOrder!] = null,
+    order: RBACRoleListOrder = null,
     page: Page = null
   ): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Role", access: ["list"]}])
 }
@@ -120,22 +123,22 @@ type Mutation {
   """
   Update user info
   """
-  updateUser(id: Int!, input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["update"]}])
+  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["update"]}])
 
   """
   Approve user and leave the comment
   """
-  approveUser(id: Int!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["approve"]}])
+  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["approve"]}])
 
   """
   Reject user and leave the comment
   """
-  rejectUser(id: Int!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reject"]}])
+  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reject"]}])
 
   """
   Reset password of the particular user
   """
-  resetUserPassword(id: Int!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+  resetUserPassword(id: ID64!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
 
   #############################################################################
   ### Account collection
@@ -149,17 +152,17 @@ type Mutation {
   """
   Update account info
   """
-  updateAccount(id: Int!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["update"]}])
+  updateAccount(id: ID64!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["update"]}])
 
   """
   Approve account and leave the comment
   """
-  approveAccount(id: Int!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["approve"]}])
+  approveAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["approve"]}])
 
   """
   Reject account and leave the comment
   """
-  rejectAccount(id: Int!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["reject"]}])
+  rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["reject"]}])
 
   #############################################################################
   ### AuthClient collection
@@ -192,10 +195,10 @@ type Mutation {
   """
   Update RBAC role info
   """
-  updateRole(id: Int!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["update"]}])
+  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["update"]}])
 
   """
   Delete RBAC role
   """
-  deleteRole(id: Int!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
+  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
 }

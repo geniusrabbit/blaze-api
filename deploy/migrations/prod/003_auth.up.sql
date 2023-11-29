@@ -59,8 +59,8 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON auth_client FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 CREATE TRIGGER notify_update_event_trigger
-AFTER INSERT OR UPDATE OR DELETE ON auth_client
-    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+    AFTER INSERT OR UPDATE OR DELETE ON auth_client
+        FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
 
 -- NOTE: for specific user permissions need to implement additional table like connect between user and gateway
 
@@ -103,5 +103,5 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON auth_session FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 CREATE TRIGGER notify_update_event_trigger
-AFTER INSERT OR UPDATE OR DELETE ON auth_session
-    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+    AFTER INSERT OR UPDATE OR DELETE ON auth_session
+        FOR EACH ROW EXECUTE PROCEDURE notify_update_event();

@@ -7,6 +7,7 @@ import (
 
 	"github.com/geniusrabbit/api-template-base/internal/acl"
 	"github.com/geniusrabbit/api-template-base/internal/context/session"
+	"github.com/geniusrabbit/api-template-base/internal/repository"
 	"github.com/geniusrabbit/api-template-base/internal/repository/account"
 	"github.com/geniusrabbit/api-template-base/model"
 	"github.com/pkg/errors"
@@ -57,21 +58,18 @@ func (a *AccountUsecase) GetByTitle(ctx context.Context, title string) (*model.A
 }
 
 // FetchList of accounts by filter
-func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter) ([]*model.Account, error) {
-	if filter == nil {
-		filter = &account.Filter{}
-	}
-	if filter.PageSize <= 0 {
-		filter.PageSize = 10
-	}
+func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
 	if !acl.HaveAccessList(ctx, &model.Account{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
+	if filter == nil {
+		filter = &account.Filter{}
+	}
 	if filter.UserID == nil && len(filter.ID) == 0 {
 		filter.UserID = []uint64{session.User(ctx).ID}
-		return a.accountRepo.FetchList(ctx, filter)
+		return a.accountRepo.FetchList(ctx, filter, pagination)
 	}
-	list, err := a.accountRepo.FetchList(ctx, filter)
+	list, err := a.accountRepo.FetchList(ctx, filter, pagination)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list account")

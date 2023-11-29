@@ -28,6 +28,16 @@ type PageInfo {
   """
   Total number of pages available
   """
+  total: Int!
+
+  """
+  Current page number
+  """
+  page: Int!
+
+  """
+  Number of pages
+  """
   count: Int!
 }
 

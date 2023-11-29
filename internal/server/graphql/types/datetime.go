@@ -35,7 +35,7 @@ func (t DateTime) MarshalGQL(w io.Writer) {
 func (t *DateTime) UnmarshalGQL(v any) error {
 	switch v := v.(type) {
 	case string:
-		tm, err := time.Parse(dateTimeFormat, v)
+		tm, err := parseDate(v)
 		if err != nil {
 			return err
 		}
@@ -57,8 +57,33 @@ func MarshalTime(t time.Time) graphql.Marshaler {
 func UnmarshalTime(v any) (time.Time, error) {
 	switch v := v.(type) {
 	case string:
-		return time.Parse(dateTimeFormat, v)
+		return parseDate(v)
 	default:
 		return time.Time{}, fmt.Errorf("%T is not a supported as a date", v)
 	}
+}
+
+var timeFormats = []string{
+	time.RFC1123Z,
+	time.RFC3339Nano,
+	time.UnixDate,
+	time.RubyDate,
+	time.RFC1123,
+	time.RFC3339,
+	time.RFC822,
+	time.RFC850,
+	time.RFC822Z,
+	"2006-01-02",
+	"2006-01-02 15:04:05",
+	"2006/01/02",
+	"2006/01/02 15:04:05",
+}
+
+func parseDate(tm string) (t time.Time, err error) {
+	for _, f := range timeFormats {
+		if t, err = time.Parse(f, tm); err == nil {
+			break
+		}
+	}
+	return t, err
 }

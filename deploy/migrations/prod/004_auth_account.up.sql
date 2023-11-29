@@ -1,8 +1,5 @@
-
--- test = $2a$12$zWkJddFO5msFXsOg45B4iO31i4sj2m46jpWVg1NUk3iQfKuyNFSoi
--- test = $2a$10$1Eh45WHxlcO4Tb90mVc62Og.T8Q81QJTpGyF9pT1EwSkQUPA8XyAS
 INSERT INTO account_base (approve_status, title, description) VALUES(1, 'system', 'System account');
-INSERT INTO account_user (approve_status, email, password)    VALUES(1, 'super@project.com', '$2a$12$zWkJddFO5msFXsOg45B4iO31i4sj2m46jpWVg1NUk3iQfKuyNFSoi');
+INSERT INTO account_user (approve_status, email, password)    VALUES(1, 'super@project.com', '$2a$10$1Eh45WHxlcO4Tb90mVc62Og.T8Q81QJTpGyF9pT1EwSkQUPA8XyAS');
 
 INSERT INTO account_member (user_id, account_id, status, is_admin)
   SELECT MAX(user_id) AS user_id, MAX(account_id) AS account_id, 1, 't' AS status FROM (

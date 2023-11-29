@@ -33,7 +33,7 @@ func NewQueryResolver() *QueryResolver {
 func (r *QueryResolver) CurrentAccount(ctx context.Context) (*gqlmodels.AccountPayload, error) {
 	account := session.Account(ctx)
 	return &gqlmodels.AccountPayload{
-		AccountID: int(account.ID),
+		AccountID: account.ID,
 		Account:   gqlmodels.FromAccountModel(account),
 	}, nil
 }
@@ -71,7 +71,7 @@ func (r *QueryResolver) createUpdateAccount(ctx context.Context, id uint64, inpu
 		return nil, err
 	}
 	return &gqlmodels.AccountPayload{
-		AccountID: int(id),
+		AccountID: id,
 		Account:   gqlmodels.FromAccountModel(acc),
 	}, nil
 }
@@ -97,7 +97,7 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		return nil, err
 	}
 	return &gqlmodels.AccountPayload{
-		AccountID: int(id),
+		AccountID: id,
 		Account:   gqlmodels.FromAccountModel(acc),
 	}, nil
 }
@@ -105,8 +105,8 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 // ListAccounts list by filter
 func (r *QueryResolver) ListAccounts(ctx context.Context,
 	filter *gqlmodels.AccountListFilter,
-	order []*gqlmodels.AccountListOrder,
+	order *gqlmodels.AccountListOrder,
 	page *gqlmodels.Page,
 ) (*connectors.AccountConnection, error) {
-	return connectors.NewAccountConnection(ctx, r.accounts), nil
+	return connectors.NewAccountConnection(ctx, r.accounts, filter, order, page), nil
 }

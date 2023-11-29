@@ -7,6 +7,7 @@ import (
 
 	"github.com/geniusrabbit/api-template-base/internal/acl"
 	"github.com/geniusrabbit/api-template-base/internal/context/session"
+	"github.com/geniusrabbit/api-template-base/internal/repository"
 	"github.com/geniusrabbit/api-template-base/internal/repository/user"
 	"github.com/geniusrabbit/api-template-base/model"
 )
@@ -72,27 +73,22 @@ func (a *UserUsecase) GetByToken(ctx context.Context, token string) (*model.User
 }
 
 // FetchList of users by filter
-func (a *UserUsecase) FetchList(ctx context.Context, accountID uint64, page, num int) ([]*model.User, error) {
-	if accountID < 1 {
-		account := session.Account(ctx)
-		accountID = account.ID
-	}
+func (a *UserUsecase) FetchList(ctx context.Context, filter *user.ListFilter, order *user.ListOrder, page *repository.Pagination) ([]*model.User, error) {
 	if !acl.HaveAccessList(ctx, &model.User{}) {
 		return nil, acl.ErrNoPermissions
 	}
-	return a.userRepo.FetchList(ctx, &user.ListFilter{AccountID: []uint64{accountID}}, page, num)
+	return a.userRepo.FetchList(ctx, filter, order, page)
 }
 
 // Count of users by filter
-func (a *UserUsecase) Count(ctx context.Context, accountID uint64) (int64, error) {
-	if accountID < 1 {
-		account := session.Account(ctx)
-		accountID = account.ID
+func (a *UserUsecase) Count(ctx context.Context, filter *user.ListFilter) (int64, error) {
+	if !acl.HaveAccessList(ctx, &model.User{}) {
+		if !acl.HaveAccessList(ctx, &model.User{ID: session.User(ctx).ID}) {
+			return 0, acl.ErrNoPermissions
+		}
+		filter.AccountID = []uint64{session.Account(ctx).ID}
 	}
-	if !acl.HaveAccessCount(ctx, &model.User{}) {
-		return 0, acl.ErrNoPermissions
-	}
-	return a.userRepo.Count(ctx, &user.ListFilter{AccountID: []uint64{accountID}})
+	return a.userRepo.Count(ctx, filter)
 }
 
 // SetPassword for the exists user

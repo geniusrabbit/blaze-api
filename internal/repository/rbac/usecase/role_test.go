@@ -62,11 +62,10 @@ func (s *testSuite) TestGetGetError() {
 
 func (s *testSuite) TestFetchList() {
 	s.roleRepo.EXPECT().
-		FetchList(s.ctx, gomock.AssignableToTypeOf(&rbac.Filter{})).
+		FetchList(s.ctx, gomock.AssignableToTypeOf(&rbac.Filter{}), nil).
 		Return([]*model.Role{{ID: 1}, {ID: 2}}, nil)
 
-	roles, err := s.roleUsecase.FetchList(s.ctx, &rbac.Filter{
-		ID: []uint64{1, 2}, PageSize: 100})
+	roles, err := s.roleUsecase.FetchList(s.ctx, &rbac.Filter{ID: []uint64{1, 2}}, nil)
 	s.NoError(err)
 	s.Equal(2, len(roles))
 }
@@ -76,8 +75,7 @@ func (s *testSuite) TestCount() {
 		Count(s.ctx, gomock.AssignableToTypeOf(&rbac.Filter{})).
 		Return(int64(2), nil)
 
-	count, err := s.roleUsecase.Count(s.ctx, &rbac.Filter{
-		ID: []uint64{1, 2}, PageSize: 100})
+	count, err := s.roleUsecase.Count(s.ctx, &rbac.Filter{ID: []uint64{1, 2}})
 	s.NoError(err)
 	s.Equal(int64(2), count)
 }

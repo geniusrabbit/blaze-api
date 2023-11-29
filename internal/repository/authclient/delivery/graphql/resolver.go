@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"context"
+	"time"
 
 	"github.com/geniusrabbit/api-template-base/internal/repository/authclient"
 	"github.com/geniusrabbit/api-template-base/internal/repository/authclient/repository"
@@ -38,9 +39,9 @@ func (r *QueryResolver) AuthClient(ctx context.Context, id string) (*models.Auth
 // ListAuthClients is the resolver for the listAuthClients field.
 func (r *QueryResolver) ListAuthClients(ctx context.Context,
 	filter *models.AuthClientListFilter,
-	order []*models.AuthClientListOrder,
+	order *models.AuthClientListOrder,
 	page *models.Page) (*connectors.AuthClientConnection, error) {
-	return connectors.NewAuthClientConnection(ctx, r.authClients), nil
+	return connectors.NewAuthClientConnection(ctx, r.authClients, page), nil
 }
 
 // CreateAuthClient is the resolver for the createAuthClient field.
@@ -48,17 +49,17 @@ func (r *QueryResolver) CreateAuthClient(ctx context.Context, input *models.Auth
 	id, err := r.authClients.Create(ctx, &model.AuthClient{
 		UserID:             idFromPtr(input.UserID, 0),
 		AccountID:          idFromPtr(input.AccountID, 0),
-		Title:              input.Title,
-		Secret:             input.Secret,
+		Title:              valOrDef(input.Title, ""),
+		Secret:             valOrDef(input.Secret, ""),
 		RedirectURIs:       input.RedirectURIs,
 		GrantTypes:         input.GrantTypes,
 		ResponseTypes:      input.ResponseTypes,
-		Scope:              input.Scope,
+		Scope:              valOrDef(input.Scope, ""),
 		Audience:           input.Audience,
 		SubjectType:        input.SubjectType,
 		AllowedCORSOrigins: input.AllowedCORSOrigins,
-		Public:             input.Public,
-		ExpiresAt:          input.ExpiresAt,
+		Public:             valOrDef(input.Public, false),
+		ExpiresAt:          valOrDef(input.ExpiresAt, time.Time{}),
 	})
 	if err != nil {
 		return nil, err
@@ -82,17 +83,17 @@ func (r *QueryResolver) UpdateAuthClient(ctx context.Context, id string, input *
 	// Update client fields
 	client.UserID = idFromPtr(input.UserID, client.UserID)
 	client.AccountID = idFromPtr(input.AccountID, client.AccountID)
-	client.Title = input.Title
-	client.Secret = input.Secret
+	client.Title = valOrDef(input.Title, client.Title)
+	client.Secret = valOrDef(input.Secret, client.Secret)
 	client.RedirectURIs = input.RedirectURIs
 	client.GrantTypes = input.GrantTypes
 	client.ResponseTypes = input.ResponseTypes
-	client.Scope = input.Scope
+	client.Scope = valOrDef(input.Scope, client.Scope)
 	client.Audience = input.Audience
 	client.SubjectType = input.SubjectType
 	client.AllowedCORSOrigins = input.AllowedCORSOrigins
-	client.Public = input.Public
-	client.ExpiresAt = input.ExpiresAt
+	client.Public = valOrDef(input.Public, client.Public)
+	client.ExpiresAt = valOrDef(input.ExpiresAt, client.ExpiresAt)
 
 	if err = r.authClients.Update(ctx, id, client); err != nil {
 		return nil, err
@@ -113,7 +114,14 @@ func (r *QueryResolver) DeleteAuthClient(ctx context.Context, id string, msg *st
 	}, nil
 }
 
-func idFromPtr(id *int, def uint64) uint64 {
+func valOrDef[T any](v *T, def T) T {
+	if v == nil {
+		return def
+	}
+	return *v
+}
+
+func idFromPtr(id *uint64, def uint64) uint64 {
 	if id == nil {
 		return def
 	}

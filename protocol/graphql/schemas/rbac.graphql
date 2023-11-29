@@ -10,8 +10,8 @@ enum RoleType {
 A role is a collection of permissions. A role can be a child of another role.
 """
 type RBACRole {
-	ID:       Int!
-	parentID: Int
+	ID:       ID64!
+	parentID: ID64
 	name:     String!
 	title:    String!
 	type:     RoleType!
@@ -88,7 +88,7 @@ type RBACRolePayload {
   """
   Role ID operation result
   """
-  roleID: Int!
+  roleID: ID64!
 
   """
   Role object accessor
@@ -101,7 +101,7 @@ type RBACRolePayload {
 ###############################################################################
 
 input RBACRoleListFilter {
-  ID:   [Int!]
+  ID:   [ID64!]
   name: [String!]
   type: [RoleType!]
 }
@@ -118,9 +118,9 @@ input RBACRoleListOrder {
 ###############################################################################
 
 input RBACRoleInput {
-  parentID: Int
-  name:     String!
-  title:    String!
+  parentID: ID64
+  name:     String
+  title:    String
   type:     RoleType!
   context:  NullableJSON
 }

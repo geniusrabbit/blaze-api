@@ -59,8 +59,8 @@ func (a *AuthclientUsecase) Count(ctx context.Context, filter *authclient.Filter
 	if filter == nil {
 		filter = &authclient.Filter{}
 	}
-	if !acl.HaveAccessCount(ctx, &model.AuthClient{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "count authclient")
+	if !acl.HaveAccessList(ctx, &model.AuthClient{}) {
+		return 0, errors.Wrap(acl.ErrNoPermissions, "list authclient")
 	}
 	return a.authclientRepo.Count(ctx, filter)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/api-template-base/internal/acl"
+	"github.com/geniusrabbit/api-template-base/internal/repository"
 	"github.com/geniusrabbit/api-template-base/internal/repository/rbac"
 	"github.com/geniusrabbit/api-template-base/model"
 	"github.com/pkg/errors"
@@ -47,17 +48,11 @@ func (a *RoleUsecase) GetByName(ctx context.Context, name string) (*model.Role, 
 }
 
 // FetchList of roles by filter
-func (a *RoleUsecase) FetchList(ctx context.Context, filter *rbac.Filter) ([]*model.Role, error) {
-	if filter == nil {
-		filter = &rbac.Filter{}
-	}
-	if filter.PageSize <= 0 {
-		filter.PageSize = 10
-	}
+func (a *RoleUsecase) FetchList(ctx context.Context, filter *rbac.Filter, pagination *repository.Pagination) ([]*model.Role, error) {
 	if !acl.HaveAccessList(ctx, &model.Role{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
 	}
-	list, err := a.roleRepo.FetchList(ctx, filter)
+	list, err := a.roleRepo.FetchList(ctx, filter, pagination)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
@@ -68,11 +63,8 @@ func (a *RoleUsecase) FetchList(ctx context.Context, filter *rbac.Filter) ([]*mo
 
 // Count of roles by filter
 func (a *RoleUsecase) Count(ctx context.Context, filter *rbac.Filter) (int64, error) {
-	if filter == nil {
-		filter = &rbac.Filter{}
-	}
-	if !acl.HaveAccessCount(ctx, &model.Role{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "count role/permission")
+	if !acl.HaveAccessList(ctx, &model.Role{}) {
+		return 0, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
 	}
 	return a.roleRepo.Count(ctx, filter)
 }

@@ -11,6 +11,13 @@ import (
 type NullableJSON gosql.NullableJSON[any]
 
 func NullableJSONFrom(v any) (*NullableJSON, error) {
+	switch v := v.(type) {
+	case nil:
+	case *NullableJSON:
+		return v, nil
+	case *gosql.NullableJSON[any]:
+		return (*NullableJSON)(v), nil
+	}
 	jobj, err := gosql.NewNullableJSON[any](v)
 	return (*NullableJSON)(jobj), err
 }

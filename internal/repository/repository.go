@@ -29,12 +29,12 @@ func (r *Repository) Logger(ctx context.Context) *zap.Logger {
 
 // Slave returns readonly database connection
 func (r *Repository) Slave(ctx context.Context) *gorm.DB {
-	return database.Readonly(ctx)
+	return database.Readonly(ctx).WithContext(ctx)
 }
 
 // Master returns master database executor
 func (r *Repository) Master(ctx context.Context) *gorm.DB {
-	return database.ContextExecutor(ctx)
+	return database.ContextExecutor(ctx).WithContext(ctx)
 }
 
 // Transaction returns new or exists transaction executor

@@ -6,81 +6,38 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	repository "github.com/geniusrabbit/api-template-base/internal/repository"
 	account "github.com/geniusrabbit/api-template-base/internal/repository/account"
 	model "github.com/geniusrabbit/api-template-base/model"
-	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockUsecase is a mock of Usecase interface
+// MockUsecase is a mock of Usecase interface.
 type MockUsecase struct {
 	ctrl     *gomock.Controller
 	recorder *MockUsecaseMockRecorder
 }
 
-// MockUsecaseMockRecorder is the mock recorder for MockUsecase
+// MockUsecaseMockRecorder is the mock recorder for MockUsecase.
 type MockUsecaseMockRecorder struct {
 	mock *MockUsecase
 }
 
-// NewMockUsecase creates a new mock instance
+// NewMockUsecase creates a new mock instance.
 func NewMockUsecase(ctrl *gomock.Controller) *MockUsecase {
 	mock := &MockUsecase{ctrl: ctrl}
 	mock.recorder = &MockUsecaseMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method
-func (m *MockUsecase) Get(ctx context.Context, id uint64) (*model.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*model.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get
-func (mr *MockUsecaseMockRecorder) Get(ctx, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUsecase)(nil).Get), ctx, id)
-}
-
-// GetByTitle mocks base method
-func (m *MockUsecase) GetByTitle(ctx context.Context, title string) (*model.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByTitle", ctx, title)
-	ret0, _ := ret[0].(*model.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByTitle indicates an expected call of GetByTitle
-func (mr *MockUsecaseMockRecorder) GetByTitle(ctx, title interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTitle", reflect.TypeOf((*MockUsecase)(nil).GetByTitle), ctx, title)
-}
-
-// FetchList mocks base method
-func (m *MockUsecase) FetchList(ctx context.Context, filter *account.Filter) ([]*model.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchList", ctx, filter)
-	ret0, _ := ret[0].([]*model.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FetchList indicates an expected call of FetchList
-func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter)
-}
-
-// Count mocks base method
+// Count mocks base method.
 func (m *MockUsecase) Count(ctx context.Context, filter *account.Filter) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Count", ctx, filter)
@@ -89,28 +46,13 @@ func (m *MockUsecase) Count(ctx context.Context, filter *account.Filter) (int64,
 	return ret0, ret1
 }
 
-// Count indicates an expected call of Count
+// Count indicates an expected call of Count.
 func (mr *MockUsecaseMockRecorder) Count(ctx, filter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), ctx, filter)
 }
 
-// Store mocks base method
-func (m *MockUsecase) Store(ctx context.Context, account *model.Account) (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Store", ctx, account)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Store indicates an expected call of Store
-func (mr *MockUsecaseMockRecorder) Store(ctx, account interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockUsecase)(nil).Store), ctx, account)
-}
-
-// Delete mocks base method
+// Delete mocks base method.
 func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
@@ -118,13 +60,28 @@ func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
 	return ret0
 }
 
-// Delete indicates an expected call of Delete
+// Delete indicates an expected call of Delete.
 func (mr *MockUsecaseMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase)(nil).Delete), ctx, id)
 }
 
-// FetchMembers mocks base method
+// FetchList mocks base method.
+func (m *MockUsecase) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchList", ctx, filter, pagination)
+	ret0, _ := ret[0].([]*model.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchList indicates an expected call of FetchList.
+func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter, pagination interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter, pagination)
+}
+
+// FetchMembers mocks base method.
 func (m *MockUsecase) FetchMembers(ctx context.Context, account *model.Account) ([]*model.AccountMember, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchMembers", ctx, account)
@@ -133,13 +90,43 @@ func (m *MockUsecase) FetchMembers(ctx context.Context, account *model.Account) 
 	return ret0, ret1
 }
 
-// FetchMembers indicates an expected call of FetchMembers
+// FetchMembers indicates an expected call of FetchMembers.
 func (mr *MockUsecaseMockRecorder) FetchMembers(ctx, account interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchMembers", reflect.TypeOf((*MockUsecase)(nil).FetchMembers), ctx, account)
 }
 
-// LinkMember mocks base method
+// Get mocks base method.
+func (m *MockUsecase) Get(ctx context.Context, id uint64) (*model.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(*model.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockUsecaseMockRecorder) Get(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUsecase)(nil).Get), ctx, id)
+}
+
+// GetByTitle mocks base method.
+func (m *MockUsecase) GetByTitle(ctx context.Context, title string) (*model.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByTitle", ctx, title)
+	ret0, _ := ret[0].(*model.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByTitle indicates an expected call of GetByTitle.
+func (mr *MockUsecaseMockRecorder) GetByTitle(ctx, title interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTitle", reflect.TypeOf((*MockUsecase)(nil).GetByTitle), ctx, title)
+}
+
+// LinkMember mocks base method.
 func (m *MockUsecase) LinkMember(ctx context.Context, account *model.Account, isAdmin bool, members ...*model.User) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, account, isAdmin}
@@ -151,14 +138,29 @@ func (m *MockUsecase) LinkMember(ctx context.Context, account *model.Account, is
 	return ret0
 }
 
-// LinkMember indicates an expected call of LinkMember
+// LinkMember indicates an expected call of LinkMember.
 func (mr *MockUsecaseMockRecorder) LinkMember(ctx, account, isAdmin interface{}, members ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, account, isAdmin}, members...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkMember", reflect.TypeOf((*MockUsecase)(nil).LinkMember), varargs...)
 }
 
-// UnlinkMember mocks base method
+// Store mocks base method.
+func (m *MockUsecase) Store(ctx context.Context, account *model.Account) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Store", ctx, account)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Store indicates an expected call of Store.
+func (mr *MockUsecaseMockRecorder) Store(ctx, account interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockUsecase)(nil).Store), ctx, account)
+}
+
+// UnlinkMember mocks base method.
 func (m *MockUsecase) UnlinkMember(ctx context.Context, account *model.Account, members ...*model.User) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, account}
@@ -170,7 +172,7 @@ func (m *MockUsecase) UnlinkMember(ctx context.Context, account *model.Account, 
 	return ret0
 }
 
-// UnlinkMember indicates an expected call of UnlinkMember
+// UnlinkMember indicates an expected call of UnlinkMember.
 func (mr *MockUsecaseMockRecorder) UnlinkMember(ctx, account interface{}, members ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, account}, members...)

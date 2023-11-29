@@ -14,7 +14,7 @@ import (
 // Account is a company account that can be used to login to the system.
 type Account struct {
 	// The primary key of the Account
-	ID int `json:"ID"`
+	ID uint64 `json:"ID"`
 	// Status of Account active
 	Status      ApproveStatus `json:"status"`
 	Title       string        `json:"title"`
@@ -36,7 +36,7 @@ type Account struct {
 	ClientURI string `json:"clientURI"`
 	// contacts is a array of strings representing ways to contact people responsible
 	// for this client, typically email addresses.
-	Contacts  []string  `json:"contacts"`
+	Contacts  []string  `json:"contacts,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -45,11 +45,11 @@ type AccountEdge struct {
 	// A cursor for use in pagination.
 	Cursor string `json:"cursor"`
 	// The item at the end of the edge.
-	Node *Account `json:"node"`
+	Node *Account `json:"node,omitempty"`
 }
 
 type AccountInput struct {
-	ID                int           `json:"ID"`
+	ID                uint64        `json:"ID"`
 	Status            ApproveStatus `json:"status"`
 	Title             string        `json:"title"`
 	Description       string        `json:"description"`
@@ -57,19 +57,20 @@ type AccountInput struct {
 	PolicyURI         string        `json:"policyURI"`
 	TermsOfServiceURI string        `json:"termsOfServiceURI"`
 	ClientURI         string        `json:"clientURI"`
-	Contacts          []string      `json:"contacts"`
+	Contacts          []string      `json:"contacts,omitempty"`
 }
 
 type AccountListFilter struct {
-	ID     []int           `json:"ID"`
-	Title  []string        `json:"title"`
-	Status []ApproveStatus `json:"status"`
+	ID     []uint64        `json:"ID,omitempty"`
+	UserID []uint64        `json:"UserID,omitempty"`
+	Title  []string        `json:"title,omitempty"`
+	Status []ApproveStatus `json:"status,omitempty"`
 }
 
 type AccountListOrder struct {
-	ID     *Ordering `json:"ID"`
-	Title  *Ordering `json:"title"`
-	Status *Ordering `json:"status"`
+	ID     *Ordering `json:"ID,omitempty"`
+	Title  *Ordering `json:"title,omitempty"`
+	Status *Ordering `json:"status,omitempty"`
 }
 
 // AccountPayload wrapper to access of Account oprtation results
@@ -77,17 +78,17 @@ type AccountPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID string `json:"clientMutationID"`
 	// Account ID operation result
-	AccountID int `json:"accountID"`
+	AccountID uint64 `json:"accountID"`
 	// Account object accessor
-	Account *Account `json:"account"`
+	Account *Account `json:"account,omitempty"`
 }
 
 // AuthClient object represents an OAuth 2.0 client
 type AuthClient struct {
 	// ClientID is the client ID which represents unique connection indentificator
 	ID        string `json:"ID"`
-	AccountID int    `json:"accountID"`
-	UserID    int    `json:"userID"`
+	AccountID uint64 `json:"accountID"`
+	UserID    uint64 `json:"userID"`
 	// Title of the AuthClient as himan readable name
 	Title string `json:"title"`
 	// Secret is the client's secret. The secret will be included in the create request as cleartext, and then
@@ -95,16 +96,16 @@ type AuthClient struct {
 	// that they need to write the secret down as it will not be made available again.
 	Secret string `json:"secret"`
 	// RedirectURIs is an array of allowed redirect urls for the client, for example http://mydomain/oauth/callback .
-	RedirectURIs []string `json:"redirectURIs"`
+	RedirectURIs []string `json:"redirectURIs,omitempty"`
 	// GrantTypes is an array of grant types the client is allowed to use.
 	//
 	// Pattern: client_credentials|authorization_code|implicit|refresh_token
-	GrantTypes []string `json:"grantTypes"`
+	GrantTypes []string `json:"grantTypes,omitempty"`
 	// ResponseTypes is an array of the OAuth 2.0 response type strings that the client can
 	// use at the authorization endpoint.
 	//
 	// Pattern: id_token|code|token
-	ResponseTypes []string `json:"responseTypes"`
+	ResponseTypes []string `json:"responseTypes,omitempty"`
 	// Scope is a string containing a space-separated list of scope values (as
 	// described in Section 3.3 of OAuth 2.0 [RFC6749]) that the client
 	// can use when requesting access tokens.
@@ -114,7 +115,7 @@ type AuthClient struct {
 	// Audience is a whitelist defining the audiences this client is allowed to request tokens for. An audience limits
 	// the applicability of an OAuth 2.0 Access Token to, for example, certain API endpoints. The value is a list
 	// of URLs. URLs MUST NOT contain whitespaces.
-	Audience []string `json:"audience"`
+	Audience []string `json:"audience,omitempty"`
 	// SubjectType requested for responses to this Client. The subject_types_supported Discovery parameter contains a
 	// list of the supported subject_type values for this server. Valid types include `pairwise` and `public`.
 	SubjectType string `json:"subjectType"`
@@ -122,53 +123,53 @@ type AuthClient struct {
 	// to the /oauth/token endpoint. If this array is empty, the sever's CORS origin configuration (`CORS_ALLOWED_ORIGINS`)
 	// will be used instead. If this array is set, the allowed origins are appended to the server's CORS origin configuration.
 	// Be aware that environment variable `CORS_ENABLED` MUST be set to `true` for this to work.
-	AllowedCORSOrigins []string `json:"allowedCORSOrigins"`
+	AllowedCORSOrigins []string `json:"allowedCORSOrigins,omitempty"`
 	// Public flag tells that the client is public
 	Public bool `json:"public"`
 	// ExpiresAt contins the time of expiration of the client
 	ExpiresAt time.Time  `json:"expiresAt"`
 	CreatedAt time.Time  `json:"createdAt"`
 	UpdatedAt time.Time  `json:"updatedAt"`
-	DeletedAt *time.Time `json:"deletedAt"`
+	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
 
 type AuthClientEdge struct {
 	// A cursor for use in pagination.
 	Cursor string `json:"cursor"`
 	// The item at the end of the edge.
-	Node *AuthClient `json:"node"`
+	Node *AuthClient `json:"node,omitempty"`
 }
 
 type AuthClientInput struct {
-	AccountID          *int      `json:"accountID"`
-	UserID             *int      `json:"userID"`
-	Title              string    `json:"title"`
-	Secret             string    `json:"secret"`
-	RedirectURIs       []string  `json:"redirectURIs"`
-	GrantTypes         []string  `json:"grantTypes"`
-	ResponseTypes      []string  `json:"responseTypes"`
-	Scope              string    `json:"scope"`
-	Audience           []string  `json:"audience"`
-	SubjectType        string    `json:"subjectType"`
-	AllowedCORSOrigins []string  `json:"allowedCORSOrigins"`
-	Public             bool      `json:"public"`
-	ExpiresAt          time.Time `json:"expiresAt"`
+	AccountID          *uint64    `json:"accountID,omitempty"`
+	UserID             *uint64    `json:"userID,omitempty"`
+	Title              *string    `json:"title,omitempty"`
+	Secret             *string    `json:"secret,omitempty"`
+	RedirectURIs       []string   `json:"redirectURIs,omitempty"`
+	GrantTypes         []string   `json:"grantTypes,omitempty"`
+	ResponseTypes      []string   `json:"responseTypes,omitempty"`
+	Scope              *string    `json:"scope,omitempty"`
+	Audience           []string   `json:"audience,omitempty"`
+	SubjectType        string     `json:"subjectType"`
+	AllowedCORSOrigins []string   `json:"allowedCORSOrigins,omitempty"`
+	Public             *bool      `json:"public,omitempty"`
+	ExpiresAt          *time.Time `json:"expiresAt,omitempty"`
 }
 
 type AuthClientListFilter struct {
-	ID        []string `json:"ID"`
-	UserID    []int    `json:"userID"`
-	AccountID []int    `json:"accountID"`
-	Public    *bool    `json:"public"`
+	ID        []string `json:"ID,omitempty"`
+	UserID    []uint64 `json:"userID,omitempty"`
+	AccountID []uint64 `json:"accountID,omitempty"`
+	Public    *bool    `json:"public,omitempty"`
 }
 
 type AuthClientListOrder struct {
-	ID         *Ordering `json:"ID"`
-	UserID     *Ordering `json:"userID"`
-	AccountID  *Ordering `json:"accountID"`
-	Title      *Ordering `json:"title"`
-	Public     *Ordering `json:"public"`
-	LastUpdate *Ordering `json:"lastUpdate"`
+	ID         *Ordering `json:"ID,omitempty"`
+	UserID     *Ordering `json:"userID,omitempty"`
+	AccountID  *Ordering `json:"accountID,omitempty"`
+	Title      *Ordering `json:"title,omitempty"`
+	Public     *Ordering `json:"public,omitempty"`
+	LastUpdate *Ordering `json:"lastUpdate,omitempty"`
 }
 
 // AuthClientPayload wrapper to access of AuthClient oprtation results
@@ -178,17 +179,17 @@ type AuthClientPayload struct {
 	// AuthClient ID operation result
 	AuthClientID string `json:"authClientID"`
 	// AuthClient object accessor
-	AuthClient *AuthClient `json:"authClient"`
+	AuthClient *AuthClient `json:"authClient,omitempty"`
 }
 
 // Information for paginating
 type Page struct {
 	// Start after the cursor ID
-	After *string `json:"after"`
+	After *string `json:"after,omitempty"`
 	// Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
-	StartPage *int `json:"startPage"`
+	StartPage *int `json:"startPage,omitempty"`
 	// Maximum number of items to return
-	Size *int `json:"size"`
+	Size *int `json:"size,omitempty"`
 }
 
 // Information for paginating
@@ -202,23 +203,27 @@ type PageInfo struct {
 	// When paginating forwards, are there more items?
 	HasNextPage bool `json:"hasNextPage"`
 	// Total number of pages available
+	Total int `json:"total"`
+	// Current page number
+	Page int `json:"page"`
+	// Number of pages
 	Count int `json:"count"`
 }
 
 type Permission struct {
 	Key    string   `json:"key"`
-	Access []string `json:"access"`
+	Access []string `json:"access,omitempty"`
 }
 
 type Profile struct {
-	ID          int                 `json:"ID"`
+	ID          uint64              `json:"ID"`
 	User        *User               `json:"user"`
 	FirstName   string              `json:"firstName"`
 	LastName    string              `json:"lastName"`
 	CompanyName string              `json:"companyName"`
 	About       string              `json:"about"`
 	Email       string              `json:"email"`
-	Messgangers []*ProfileMessanger `json:"messgangers"`
+	Messgangers []*ProfileMessanger `json:"messgangers,omitempty"`
 	CreatedAt   time.Time           `json:"createdAt"`
 	UpdatedAt   time.Time           `json:"updatedAt"`
 }
@@ -230,8 +235,8 @@ type ProfileMessanger struct {
 
 // A role is a collection of permissions. A role can be a child of another role.
 type RBACRole struct {
-	ID       int      `json:"ID"`
-	ParentID *int     `json:"parentID"`
+	ID       uint64   `json:"ID"`
+	ParentID *uint64  `json:"parentID,omitempty"`
 	Name     string   `json:"name"`
 	Title    string   `json:"title"`
 	Type     RoleType `json:"type"`
@@ -244,11 +249,11 @@ type RBACRole struct {
 	//  where:
 	// "cover" - is a name of the cover area of the object type
 	// "object" - is a name of the object type <module>:<object-name>
-	Context                  *types.NullableJSON `json:"context"`
-	ChildRolesAndPermissions []*RBACRole         `json:"childRolesAndPermissions"`
+	Context                  *types.NullableJSON `json:"context,omitempty"`
+	ChildRolesAndPermissions []*RBACRole         `json:"childRolesAndPermissions,omitempty"`
 	CreatedAt                time.Time           `json:"createdAt"`
 	UpdatedAt                time.Time           `json:"updatedAt"`
-	DeletedAt                *time.Time          `json:"deletedAt"`
+	DeletedAt                *time.Time          `json:"deletedAt,omitempty"`
 }
 
 // RBACRoleEdge is a connection edge type for RBACRole.
@@ -256,28 +261,28 @@ type RBACRoleEdge struct {
 	// A cursor for use in pagination.
 	Cursor string `json:"cursor"`
 	// The item at the end of the edge.
-	Node *RBACRole `json:"node"`
+	Node *RBACRole `json:"node,omitempty"`
 }
 
 type RBACRoleInput struct {
-	ParentID *int                `json:"parentID"`
-	Name     string              `json:"name"`
-	Title    string              `json:"title"`
+	ParentID *uint64             `json:"parentID,omitempty"`
+	Name     *string             `json:"name,omitempty"`
+	Title    *string             `json:"title,omitempty"`
 	Type     RoleType            `json:"type"`
-	Context  *types.NullableJSON `json:"context"`
+	Context  *types.NullableJSON `json:"context,omitempty"`
 }
 
 type RBACRoleListFilter struct {
-	ID   []int      `json:"ID"`
-	Name []string   `json:"name"`
-	Type []RoleType `json:"type"`
+	ID   []uint64   `json:"ID,omitempty"`
+	Name []string   `json:"name,omitempty"`
+	Type []RoleType `json:"type,omitempty"`
 }
 
 type RBACRoleListOrder struct {
-	ID    *Ordering `json:"ID"`
-	Name  *Ordering `json:"name"`
-	Title *Ordering `json:"title"`
-	Type  *Ordering `json:"type"`
+	ID    *Ordering `json:"ID,omitempty"`
+	Name  *Ordering `json:"name,omitempty"`
+	Title *Ordering `json:"title,omitempty"`
+	Type  *Ordering `json:"type,omitempty"`
 }
 
 // RBACRolePayload wrapper to access of RBACRole oprtation results
@@ -285,9 +290,9 @@ type RBACRolePayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID string `json:"clientMutationID"`
 	// Role ID operation result
-	RoleID int `json:"roleID"`
+	RoleID uint64 `json:"roleID"`
 	// Role object accessor
-	Role *RBACRole `json:"role"`
+	Role *RBACRole `json:"role,omitempty"`
 }
 
 // SessionToken object represents an OAuth 2.0 / JWT session token
@@ -296,9 +301,10 @@ type SessionToken struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
+// User represents a user object of the system
 type User struct {
 	// The primary key of the user
-	ID int `json:"ID"`
+	ID uint64 `json:"ID"`
 	// Unical user name
 	Username string `json:"username"`
 	// Status of user active
@@ -311,27 +317,33 @@ type UserEdge struct {
 	// A cursor for use in pagination.
 	Cursor string `json:"cursor"`
 	// The item at the end of the edge.
-	Node *User `json:"node"`
+	Node *User `json:"node,omitempty"`
 }
 
 type UserInput struct {
-	Username *string `json:"username"`
+	Username *string        `json:"username,omitempty"`
+	Status   *ApproveStatus `json:"status,omitempty"`
 }
 
+// UserListFilter implements filter for user list query
 type UserListFilter struct {
-	ID     []int    `json:"ID"`
-	Emails []string `json:"emails"`
-	Roles  []int    `json:"roles"`
+	ID        []uint64 `json:"ID,omitempty"`
+	AccountID []uint64 `json:"accountID,omitempty"`
+	Emails    []string `json:"emails,omitempty"`
+	Roles     []uint64 `json:"roles,omitempty"`
 }
 
+// UserListOrder implements order for user list query
 type UserListOrder struct {
-	ID               *Ordering `json:"ID"`
-	Email            *Ordering `json:"email"`
-	Status           *Ordering `json:"status"`
-	RegistrationDate *Ordering `json:"registrationDate"`
-	Country          *Ordering `json:"country"`
-	Manager          *Ordering `json:"manager"`
-	LastUpdate       *Ordering `json:"lastUpdate"`
+	ID               *Ordering `json:"ID,omitempty"`
+	Email            *Ordering `json:"email,omitempty"`
+	Username         *Ordering `json:"username,omitempty"`
+	Status           *Ordering `json:"status,omitempty"`
+	RegistrationDate *Ordering `json:"registrationDate,omitempty"`
+	Country          *Ordering `json:"country,omitempty"`
+	Manager          *Ordering `json:"manager,omitempty"`
+	CreatedAt        *Ordering `json:"createdAt,omitempty"`
+	UpdatedAt        *Ordering `json:"updatedAt,omitempty"`
 }
 
 // UserPayload wrapper to access of user oprtation results
@@ -339,9 +351,9 @@ type UserPayload struct {
 	// A unique identifier for the client performing the mutation.
 	ClientMutationID string `json:"clientMutationID"`
 	// User ID operation result
-	UserID int `json:"userID"`
+	UserID uint64 `json:"userID"`
 	// User object accessor
-	User *User `json:"user"`
+	User *User `json:"user,omitempty"`
 }
 
 // The list of statuses that shows is particular object active or paused

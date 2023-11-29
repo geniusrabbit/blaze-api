@@ -5,11 +5,11 @@ type AuthClient {
   """
   ClientID is the client ID which represents unique connection indentificator
   """
-	ID: String!
+	ID: ID!
 
 	# Owner and creator of the auth client
-	accountID: Int!
-	userID: Int!
+	accountID: ID64!
+	userID: ID64!
 
   """
 	Title of the AuthClient as himan readable name
@@ -137,7 +137,7 @@ type AuthClientPayload {
   """
   AuthClient ID operation result
   """
-  authClientID: String!
+  authClientID: ID!
 
   """
   AuthClient object accessor
@@ -159,8 +159,8 @@ type SessionToken {
 
 input AuthClientListFilter {
   ID: [String!]
-  userID: [Int!]
-  accountID: [Int!]
+  userID: [ID64!]
+  accountID: [ID64!]
   public: Boolean
 }
 
@@ -178,17 +178,17 @@ input AuthClientListOrder {
 ###############################################################################
 
 input AuthClientInput {
-	accountID: Int
-	userID: Int
-	title: String!
-	secret: String!
+	accountID: ID64
+	userID: ID64
+	title: String
+	secret: String
 	redirectURIs: [String!]
 	grantTypes: [String!]
 	responseTypes: [String!]
-	scope: String!
+	scope: String
 	audience: [String!]
 	subjectType: String!
 	allowedCORSOrigins: [String!]
-	public: Boolean!
-	expiresAt: Time!
+	public: Boolean
+	expiresAt: Time
 }

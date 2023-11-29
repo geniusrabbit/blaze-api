@@ -32,33 +32,22 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
-		RoleID: int(role.ID),
+		RoleID: role.ID,
 		Role:   gqlmodels.FromRBACRoleModel(role),
 	}, nil
 }
 
 // ListRoles is the resolver for the listRoles field.
-func (r *QueryResolver) ListRoles(ctx context.Context,
-	filter *gqlmodels.RBACRoleListFilter,
-	order []*gqlmodels.RBACRoleListOrder,
-	page *gqlmodels.Page) (*connectors.RBACRoleConnection, error) {
-	// roles, err := r.roles.FetchList(ctx, &rbac.Filter{
-	// 	ID:    gocast.Slice[uint64](filter.ID),
-	// 	Names: filter.Name,
-	// 	Types: gocast.Slice[model.RoleType](filter.Type),
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
-	return connectors.NewRBACRoleConnection(ctx, r.roles), nil
+func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRoleListFilter, order *gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) (*connectors.RBACRoleConnection, error) {
+	return connectors.NewRBACRoleConnection(ctx, r.roles, filter, order, page), nil
 }
 
 // CreateRole is the resolver for the createRole field.
 func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRoleInput) (*gqlmodels.RBACRolePayload, error) {
 	roleObj := &model.Role{
 		ParentID: null.IntFromPtr(int64Ptr(input.ParentID)),
-		Name:     input.Name,
-		Title:    input.Title,
+		Name:     valOrDef(input.Name, ""),
+		Title:    valOrDef(input.Title, ""),
 		Type:     model.RoleType(input.Type),
 	}
 	if input.Context != nil {
@@ -75,7 +64,7 @@ func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRol
 	// 	return nil, err
 	// }
 	return &gqlmodels.RBACRolePayload{
-		RoleID: int(id),
+		RoleID: id,
 		Role:   gqlmodels.FromRBACRoleModel(roleObj),
 	}, nil
 }
@@ -87,9 +76,9 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 		return nil, err
 	}
 	// Update object fields
-	role.ParentID = null.IntFromPtr(int64Ptr(input.ParentID))
-	role.Name = input.Name
-	role.Title = input.Title
+	role.ParentID = null.IntFrom(valOrDef(int64Ptr(input.ParentID), role.ParentID.Int64))
+	role.Name = valOrDef(input.Name, role.Name)
+	role.Title = valOrDef(input.Title, role.Title)
 	role.Type = model.RoleType(input.Type)
 	if input.Context != nil {
 		if err := role.Context.SetValue(input.Context.Data); err != nil {
@@ -100,7 +89,7 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
-		RoleID: int(id),
+		RoleID: id,
 		Role:   gqlmodels.FromRBACRoleModel(role),
 	}, nil
 }
@@ -116,12 +105,19 @@ func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) 
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
-		RoleID: int(id),
+		RoleID: id,
 		Role:   gqlmodels.FromRBACRoleModel(role),
 	}, nil
 }
 
-func int64Ptr(v *int) *int64 {
+func valOrDef[T any](v *T, def T) T {
+	if v == nil {
+		return def
+	}
+	return *v
+}
+
+func int64Ptr(v *uint64) *int64 {
 	if v == nil {
 		return nil
 	}

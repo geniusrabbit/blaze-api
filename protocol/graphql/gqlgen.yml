@@ -57,6 +57,9 @@ models:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
+  Int64:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int64
   Time:
     model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.Time
   TimeDuration:
@@ -67,6 +70,10 @@ models:
     model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.JSON
   NullableJSON:
     model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.NullableJSON
+  UUID:
+    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.UUID
+  ID64:
+    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.ID64
   # Connectors
   UserConnection:
     model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.UserConnection

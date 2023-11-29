@@ -75,21 +75,13 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Acco
 }
 
 // FetchList returns list of accounts by filter
-func (r *Repository) FetchList(ctx context.Context, filter *account.Filter) ([]*model.Account, error) {
+func (r *Repository) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
 	var (
 		list  []*model.Account
 		query = r.Slave(ctx).Model((*model.Account)(nil))
 	)
-	if filter != nil && len(filter.UserID) > 0 {
-		query = query.Where(`id IN (SELECT account_id FROM `+
-			(*model.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, filter.UserID)
-	}
-	if filter != nil && len(filter.ID) > 0 {
-		query = query.Where(`id IN (?)`, filter.ID)
-	}
-	if filter.PageSize > 0 {
-		query = query.Limit(filter.PageSize).Offset(filter.PageSize * filter.Page)
-	}
+	query = filter.PrepareQuery(query)
+	query = pagination.PrepareQuery(query)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil

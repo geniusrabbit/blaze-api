@@ -2,7 +2,11 @@ package connectors
 
 import (
 	"context"
+	"errors"
 
+	"github.com/demdxx/gocast/v2"
+
+	"github.com/geniusrabbit/api-template-base/internal/acl"
 	gqlmodels "github.com/geniusrabbit/api-template-base/internal/server/graphql/models"
 )
 
@@ -38,6 +42,7 @@ type CollectionConnection[GQLM any, EdgeT any] struct {
 	dataAccessor DataAccessor[GQLM, EdgeT]
 
 	totalCount int64
+	page       *gqlmodels.Page
 	list       []*GQLM
 
 	// The edges for each of the accounts's lists
@@ -48,11 +53,12 @@ type CollectionConnection[GQLM any, EdgeT any] struct {
 }
 
 // NewCollectionConnection based on query object
-func NewCollectionConnection[GQLM any, EdgeT any](ctx context.Context, dataAccessor DataAccessor[GQLM, EdgeT]) *CollectionConnection[GQLM, EdgeT] {
+func NewCollectionConnection[GQLM any, EdgeT any](ctx context.Context, dataAccessor DataAccessor[GQLM, EdgeT], page *gqlmodels.Page) *CollectionConnection[GQLM, EdgeT] {
 	return &CollectionConnection[GQLM, EdgeT]{
 		ctx:          ctx,
 		dataAccessor: dataAccessor,
 		totalCount:   -1,
+		page:         page,
 		list:         nil,
 		edges:        nil,
 		pageInfo:     nil,
@@ -64,7 +70,11 @@ func (c *CollectionConnection[GQLM, EdgeT]) TotalCount() int {
 	if c.totalCount < 0 {
 		var err error
 		c.totalCount, err = c.dataAccessor.CountData(c.ctx)
-		panicError(err)
+		if errors.Is(err, acl.ErrNoPermissions) {
+			c.totalCount = -1
+		} else {
+			panicError(err)
+		}
 	}
 	return int(c.totalCount)
 }
@@ -87,7 +97,21 @@ func (c *CollectionConnection[GQLM, EdgeT]) PageInfo() *gqlmodels.PageInfo {
 			EndCursor:       "",
 			HasNextPage:     false,
 			HasPreviousPage: false,
-			Count:           c.TotalCount(),
+			Total:           c.TotalCount(),
+			Page:            0,
+			Count:           0,
+		}
+		if edges := c.Edges(); len(edges) > 0 {
+			cur1, _ := gocast.StructFieldValue(edges[0], "Cursor")
+			cur2, _ := gocast.StructFieldValue(edges[len(edges)-1], "Cursor")
+			c.pageInfo.StartCursor = gocast.Str(cur1)
+			c.pageInfo.EndCursor = gocast.Str(cur2)
+		}
+		if c.page != nil && c.page.Size != nil && c.page.StartPage != nil {
+			c.pageInfo.Page = *c.page.StartPage
+			c.pageInfo.Count = c.pageInfo.Count/(*c.page.Size) + gocast.Int(c.pageInfo.Count%(*c.page.Size) > 0)
+			c.pageInfo.HasNextPage = c.pageInfo.Count > c.pageInfo.Page
+			c.pageInfo.HasPreviousPage = c.pageInfo.Page > 1
 		}
 	}
 	return c.pageInfo

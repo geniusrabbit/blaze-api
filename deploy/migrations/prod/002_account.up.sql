@@ -24,8 +24,8 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON account_user FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 CREATE TRIGGER notify_update_event_trigger
-AFTER INSERT OR UPDATE OR DELETE ON account_user
-    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+    AFTER INSERT OR UPDATE OR DELETE ON account_user
+        FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
 
 -- Account this is the general entity which links all objects with one account
 -- Account can be linked with planty of accounts with different access permissions
@@ -52,8 +52,8 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON account_base FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 CREATE TRIGGER notify_update_event_trigger
-AFTER INSERT OR UPDATE OR DELETE ON account_base
-    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+    AFTER INSERT OR UPDATE OR DELETE ON account_base
+        FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
 
 -- ----------------------------------------------------------------------------
 -- Roles and permissions

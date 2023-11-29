@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/geniusrabbit/api-template-base/internal/context/session"
+	"github.com/geniusrabbit/api-template-base/internal/repository"
 	"github.com/geniusrabbit/api-template-base/internal/repository/user"
 	"github.com/geniusrabbit/api-template-base/internal/repository/user/mocks"
 	"github.com/geniusrabbit/api-template-base/model"
@@ -91,10 +92,11 @@ func (s *userTestSuite) TestGetByToken() {
 func (s *userTestSuite) TestFetchList() {
 	s.userRepo.EXPECT().
 		FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}},
-			gomock.AssignableToTypeOf(int(0)), gomock.AssignableToTypeOf(int(1))).
+			gomock.AssignableToTypeOf(&user.ListOrder{}),
+			gomock.AssignableToTypeOf(&repository.Pagination{})).
 		Return([]*model.User{{ID: 1}, {ID: 2}}, nil)
 
-	users, err := s.userUsecase.FetchList(s.ctx, 1, 0, 0)
+	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}}, nil, nil)
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
 }
@@ -104,7 +106,7 @@ func (s *userTestSuite) TestCount() {
 		Count(s.ctx, &user.ListFilter{AccountID: []uint64{1}}).
 		Return(int64(2), nil)
 
-	count, err := s.userUsecase.Count(s.ctx, 1)
+	count, err := s.userUsecase.Count(s.ctx, &user.ListFilter{AccountID: []uint64{1}})
 	s.Assert().NoError(err)
 	s.Assert().Equal(int64(2), count)
 }
@@ -112,10 +114,11 @@ func (s *userTestSuite) TestCount() {
 func (s *userTestSuite) TestFetchList_CurrentUser() {
 	s.userRepo.EXPECT().
 		FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}},
-			gomock.AssignableToTypeOf(int(0)), gomock.AssignableToTypeOf(int(1))).
+			gomock.AssignableToTypeOf(&user.ListOrder{}),
+			gomock.AssignableToTypeOf(&repository.Pagination{})).
 		Return([]*model.User{{ID: 1}, {ID: 2}}, nil)
 
-	users, err := s.userUsecase.FetchList(s.ctx, 0, 0, 0)
+	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}}, nil, nil)
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
 }

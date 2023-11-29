@@ -59,7 +59,7 @@ func (s *testSuite) TestFetchList() {
 				AddRow(2, "role", "title2", "test2", time.Now()),
 		)
 	roles, err := s.roleRepo.FetchList(s.Ctx, &rbac.Filter{
-		ID: []uint64{1, 2}, PageSize: 100})
+		ID: []uint64{1, 2}}, nil)
 	s.NoError(err)
 	s.Equal(2, len(roles))
 }
