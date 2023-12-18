@@ -74,6 +74,7 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestSet() {
 	s.Mock.ExpectExec("INSERT INTO").
+		WithArgs(model.UserOptionType, uint64(1), "opt.name", `{"val":1}`, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	err := s.testRepo.Set(s.Ctx, &testOption)
 	s.NoError(err)

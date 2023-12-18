@@ -26,6 +26,7 @@ func (s *testSuite) SetupSuite() {
 
 func (s *testSuite) TestCount() {
 	s.Mock.ExpectQuery("SELECT count").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 	count, err := s.testRepo.Count(s.Ctx, &historylog.Filter{
 		ID:          []uuid.UUID{uuid.New(), uuid.New()},

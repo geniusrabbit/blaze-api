@@ -96,7 +96,7 @@ func (s *testSuite) TestCreate() {
 func (s *testSuite) TestDelete() {
 	s.baseRepo.EXPECT().
 		Get(s.ctx, testOption.Name, testOption.Type, testOption.TargetID).
-		Return(&model.Option{Name: "opt.name"}, nil)
+		Return(&testOption, nil)
 	s.baseRepo.EXPECT().
 		Delete(s.ctx, testOption.Name, testOption.Type, testOption.TargetID).
 		Return(nil)

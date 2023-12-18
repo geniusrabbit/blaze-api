@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-
 	"github.com/stretchr/testify/suite"
 
 	"github.com/geniusrabbit/api-template-base/internal/repository/authclient"
@@ -65,6 +64,7 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectExec("INSERT INTO").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	id, err := s.authclientRepo.Create(
 		s.Ctx,
@@ -88,6 +88,7 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.Mock.ExpectExec("UPDATE").
+		WithArgs(sqlmock.AnyArg(), "101").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	err := s.authclientRepo.Delete(s.Ctx, "101")
 	s.NoError(err)

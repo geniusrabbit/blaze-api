@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-
 	"github.com/stretchr/testify/suite"
 
 	"github.com/geniusrabbit/api-template-base/internal/repository/rbac"
@@ -74,6 +73,7 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectQuery("INSERT INTO").
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	id, err := s.roleRepo.Create(
 		s.Ctx,
@@ -96,6 +96,7 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.Mock.ExpectExec("UPDATE").
+		WithArgs(sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.roleRepo.Delete(s.Ctx, 101)
 	s.NoError(err)
