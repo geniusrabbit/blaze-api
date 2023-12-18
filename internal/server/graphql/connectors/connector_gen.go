@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/demdxx/gocast/v2"
-
 	"github.com/geniusrabbit/api-template-base/internal/acl"
 	gqlmodels "github.com/geniusrabbit/api-template-base/internal/server/graphql/models"
 )

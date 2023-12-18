@@ -138,6 +138,7 @@ func (s *testSuite) TestGetByToken() {
 
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectQuery("INSERT INTO").
+		WithArgs("test", sqlmock.AnyArg(), model.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint(101)).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	id, err := s.userRepo.Create(
 		s.Ctx,
@@ -149,7 +150,7 @@ func (s *testSuite) TestCreate() {
 
 func (s *testSuite) TestUpdate() {
 	s.Mock.ExpectExec("UPDATE").
-		// WithArgs("test", sqlmock.AnyArg(), uint64(101)).
+		WithArgs("test", sqlmock.AnyArg(), model.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.userRepo.Update(
 		s.Ctx,
@@ -162,6 +163,7 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDeleteByID() {
 	s.Mock.ExpectExec("UPDATE").
+		WithArgs(sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.userRepo.Delete(s.Ctx, 101)
 	s.Assert().NoError(err)

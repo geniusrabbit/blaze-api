@@ -6,6 +6,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors"
@@ -105,6 +106,11 @@ func (r *mutationResolver) DeleteRole(ctx context.Context, id uint64, msg *strin
 	return r.roles.DeleteRole(ctx, uint64(id), msg)
 }
 
+// SetOption is the resolver for the setOption field.
+func (r *mutationResolver) SetOption(ctx context.Context, name string, input models.OptionInput) (*models.OptionPayload, error) {
+	panic(fmt.Errorf("not implemented: SetOption - setOption"))
+}
+
 // CurrentUser is the resolver for the currentUser field.
 func (r *queryResolver) CurrentUser(ctx context.Context) (*models.UserPayload, error) {
 	return r.users.CurrentUser(ctx)
@@ -148,6 +154,21 @@ func (r *queryResolver) Role(ctx context.Context, id uint64) (*models.RBACRolePa
 // ListRoles is the resolver for the listRoles field.
 func (r *queryResolver) ListRoles(ctx context.Context, filter *models.RBACRoleListFilter, order *models.RBACRoleListOrder, page *models.Page) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error) {
 	return r.roles.ListRoles(ctx, filter, order, page)
+}
+
+// Option is the resolver for the option field.
+func (r *queryResolver) Option(ctx context.Context, name string, optionType models.OptionType, targetID uint64) (*models.OptionPayload, error) {
+	panic(fmt.Errorf("not implemented: Option - option"))
+}
+
+// ListOptions is the resolver for the listOptions field.
+func (r *queryResolver) ListOptions(ctx context.Context, filter *models.OptionListFilter, order *models.OptionListOrder, page *models.Page) (*connectors.CollectionConnection[models.Option, models.OptionEdge], error) {
+	panic(fmt.Errorf("not implemented: ListOptions - listOptions"))
+}
+
+// ListHistory is the resolver for the listHistory field.
+func (r *queryResolver) ListHistory(ctx context.Context, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) (*connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge], error) {
+	panic(fmt.Errorf("not implemented: ListHistory - listHistory"))
 }
 
 // Mutation returns generated.MutationResolver implementation.

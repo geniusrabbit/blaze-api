@@ -1,0 +1,131 @@
+"""
+HistoryAction is the model for history actions.
+"""
+type HistoryAction {
+  ID:         UUID!
+
+  name:       String!
+  message:    String!
+
+  userID:     ID64!
+  accountID:  ID64!
+
+  objectType: String!
+  objectID:   ID64!
+  objectIDs:  String!
+  data:       NullableJSON!
+
+  actionAt:   Time!
+}
+
+"""
+Edge of action history object.
+"""
+type HistoryActionEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: HistoryAction!
+
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+}
+
+"""
+A connection to a list of items.
+"""
+type HistoryActionConnection {
+  """
+  The total number of nodes in this connection, ignoring pagination.
+  """
+  totalCount: Int!
+
+  """
+  Edges for the HistoryActionConnection connection.
+  """
+  edges: [HistoryActionEdge!]
+
+  """
+  A list of nodes in the connection (without going through the `edges` field).
+  """
+  list: [HistoryAction!]
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+HistoryActionPayload contains the information about a history action.
+"""
+type HistoryActionPayload {
+  """
+  The client mutation id
+  """
+  clientMutationId: String
+
+  """
+  The history action object ID
+  """
+  actionID: UUID!
+
+  """
+  The action object
+  """
+  action: HistoryAction!
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input HistoryActionListFilter {
+  ID: [UUID!]
+
+  """
+  The name of the action
+  """
+  name: [String!]
+
+  """
+  List of users who made the action
+  """
+  userID: [ID64!]
+
+  """
+  List of accounts that the user belongs to
+  """
+  accountID: [ID64!]
+
+  """
+  Type of the object that the action is performed on
+  """
+  objectType: [String!]
+
+  """
+  Object ID of the model that the action is performed on
+  """
+  objectID: [ID64!]
+
+  """
+  Object ID string version of the model that the action is performed on
+  """
+  objectIDs: [String!]
+}
+
+"""
+HistoryActionListOptions contains the options for listing history actions ordering.
+"""
+input HistoryActionListOrder {
+  ID: Ordering
+  name: Ordering
+  userID: Ordering
+  accountID: Ordering
+  objectType: Ordering
+  objectID: Ordering
+  objectIDs: Ordering
+  actionAt: Ordering
+}

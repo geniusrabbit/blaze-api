@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/geniusrabbit/api-template-base/internal/server/graphql/types"
+	"github.com/google/uuid"
 )
 
 // Account is a company account that can be used to login to the system.
@@ -180,6 +181,110 @@ type AuthClientPayload struct {
 	AuthClientID string `json:"authClientID"`
 	// AuthClient object accessor
 	AuthClient *AuthClient `json:"authClient,omitempty"`
+}
+
+// HistoryAction is the model for history actions.
+type HistoryAction struct {
+	ID         uuid.UUID          `json:"ID"`
+	Name       string             `json:"name"`
+	Message    string             `json:"message"`
+	UserID     uint64             `json:"userID"`
+	AccountID  uint64             `json:"accountID"`
+	ObjectType string             `json:"objectType"`
+	ObjectID   uint64             `json:"objectID"`
+	ObjectIDs  string             `json:"objectIDs"`
+	Data       types.NullableJSON `json:"data"`
+	ActionAt   time.Time          `json:"actionAt"`
+}
+
+// Edge of action history object.
+type HistoryActionEdge struct {
+	// The item at the end of the edge.
+	Node *HistoryAction `json:"node"`
+	// A cursor for use in pagination.
+	Cursor string `json:"cursor"`
+}
+
+type HistoryActionListFilter struct {
+	ID []uuid.UUID `json:"ID,omitempty"`
+	// The name of the action
+	Name []string `json:"name,omitempty"`
+	// List of users who made the action
+	UserID []uint64 `json:"userID,omitempty"`
+	// List of accounts that the user belongs to
+	AccountID []uint64 `json:"accountID,omitempty"`
+	// Type of the object that the action is performed on
+	ObjectType []string `json:"objectType,omitempty"`
+	// Object ID of the model that the action is performed on
+	ObjectID []uint64 `json:"objectID,omitempty"`
+	// Object ID string version of the model that the action is performed on
+	ObjectIDs []string `json:"objectIDs,omitempty"`
+}
+
+// HistoryActionListOptions contains the options for listing history actions ordering.
+type HistoryActionListOrder struct {
+	ID         *Ordering `json:"ID,omitempty"`
+	Name       *Ordering `json:"name,omitempty"`
+	UserID     *Ordering `json:"userID,omitempty"`
+	AccountID  *Ordering `json:"accountID,omitempty"`
+	ObjectType *Ordering `json:"objectType,omitempty"`
+	ObjectID   *Ordering `json:"objectID,omitempty"`
+	ObjectIDs  *Ordering `json:"objectIDs,omitempty"`
+	ActionAt   *Ordering `json:"actionAt,omitempty"`
+}
+
+// HistoryActionPayload contains the information about a history action.
+type HistoryActionPayload struct {
+	// The client mutation id
+	ClientMutationID *string `json:"clientMutationId,omitempty"`
+	// The history action object ID
+	ActionID uuid.UUID `json:"actionID"`
+	// The action object
+	Action *HistoryAction `json:"action"`
+}
+
+// Option type definition represents a single option of the user or the system.
+type Option struct {
+	OptionType OptionType          `json:"optionType"`
+	TargetID   uint64              `json:"targetID"`
+	Name       string              `json:"name"`
+	Value      *types.NullableJSON `json:"value,omitempty"`
+}
+
+// The edge type for Option.
+type OptionEdge struct {
+	Cursor string  `json:"cursor"`
+	Node   *Option `json:"node"`
+}
+
+type OptionInput struct {
+	// The type of the option.
+	OptionType OptionType `json:"optionType"`
+	// The target ID of the option.
+	TargetID uint64 `json:"targetID"`
+	// Value of the option.
+	Value *types.NullableJSON `json:"value,omitempty"`
+}
+
+type OptionListFilter struct {
+	OptionType  []OptionType `json:"optionType,omitempty"`
+	TargetID    []uint64     `json:"targetID,omitempty"`
+	Name        []string     `json:"name,omitempty"`
+	NamePattern []string     `json:"namePattern,omitempty"`
+}
+
+type OptionListOrder struct {
+	OptionType *Ordering `json:"optionType,omitempty"`
+	TargetID   *Ordering `json:"targetID,omitempty"`
+	Name       *Ordering `json:"name,omitempty"`
+	Value      *Ordering `json:"value,omitempty"`
+}
+
+type OptionPayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationID string  `json:"clientMutationId"`
+	OptionName       string  `json:"optionName"`
+	Option           *Option `json:"option,omitempty"`
 }
 
 // Information for paginating
@@ -542,6 +647,51 @@ func (e *MessangerType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e MessangerType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type OptionType string
+
+const (
+	OptionTypeUndefined OptionType = "UNDEFINED"
+	OptionTypeUser      OptionType = "USER"
+	OptionTypeAccount   OptionType = "ACCOUNT"
+	OptionTypeSystem    OptionType = "SYSTEM"
+)
+
+var AllOptionType = []OptionType{
+	OptionTypeUndefined,
+	OptionTypeUser,
+	OptionTypeAccount,
+	OptionTypeSystem,
+}
+
+func (e OptionType) IsValid() bool {
+	switch e {
+	case OptionTypeUndefined, OptionTypeUser, OptionTypeAccount, OptionTypeSystem:
+		return true
+	}
+	return false
+}
+
+func (e OptionType) String() string {
+	return string(e)
+}
+
+func (e *OptionType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OptionType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OptionType", str)
+	}
+	return nil
+}
+
+func (e OptionType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

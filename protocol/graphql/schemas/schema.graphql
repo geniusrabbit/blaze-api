@@ -9,7 +9,6 @@ scalar JSON
 scalar NullableJSON
 scalar UUID
 scalar ID64
-scalar Int64
 
 schema {
   query: Query
@@ -69,7 +68,7 @@ type Query {
   """
   Get auth client object by ID
   """
-  authClient(id: String!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["view"]}])
+  authClient(id: ID!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["view"]}])
 
   """
   List of the auth client objects which can be filtered and ordered by some fields
@@ -87,7 +86,7 @@ type Query {
   """
   Get RBAC role object by ID
   """
-  Role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
+  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
@@ -97,6 +96,37 @@ type Query {
     order: RBACRoleListOrder = null,
     page: Page = null
   ): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Role", access: ["list"]}])
+
+  #############################################################################
+  ### Option collection
+  #############################################################################
+
+  """
+  Get the option value by name
+  """
+  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["view"]}])
+
+  """
+  List of the option values which can be filtered and ordered by some fields
+  """
+  listOptions(
+    filter: OptionListFilter = null,
+    order: OptionListOrder = null,
+    page: Page = null
+  ): OptionConnection @hasPermissions(permissions: [{key: "model:Option", access: ["list"]}])
+
+  #############################################################################
+  ### Modification history
+  #############################################################################
+
+  """
+  List of the history actions which can be filtered and ordered by some fields
+  """
+  listHistory(
+    filter: HistoryActionListFilter = null,
+    order: HistoryActionListOrder = null,
+    page: Page = null
+  ): HistoryActionConnection @hasPermissions(permissions: [{key: "model:HistoryAction", access: ["list"]}])
 }
 
 type Mutation {
@@ -176,12 +206,12 @@ type Mutation {
   """
   Update auth client info
   """
-  updateAuthClient(id: String!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["update"]}])
+  updateAuthClient(id: ID!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["update"]}])
 
   """
   Delete auth client
   """
-  deleteAuthClient(id: String!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["delete"]}])
+  deleteAuthClient(id: ID!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["delete"]}])
 
   #############################################################################
   ### Role collection
@@ -201,4 +231,13 @@ type Mutation {
   Delete RBAC role
   """
   deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
+  
+  #############################################################################
+  ### Options
+  #############################################################################
+
+  """
+  Set the option value
+  """
+  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["update"]}])
 }

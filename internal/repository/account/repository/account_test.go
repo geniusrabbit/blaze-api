@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-
 	"github.com/stretchr/testify/suite"
 
 	"github.com/geniusrabbit/api-template-base/internal/repository/account"
@@ -69,7 +68,7 @@ func (s *testSuite) TestLoadPermissions() {
 
 func (s *testSuite) TestFetchList() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(1, 1, 2).
+		WithArgs(1, 2, 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "title", "description", "created_at"}).
 				AddRow(1, 1, "title1", "description1", time.Now()).
@@ -83,7 +82,7 @@ func (s *testSuite) TestFetchList() {
 
 func (s *testSuite) TestCount() {
 	s.Mock.ExpectQuery("SELECT count").
-		WithArgs(1, 1, 2).
+		WithArgs(1, 2, 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"count"}).
 				AddRow(2),
@@ -96,6 +95,7 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectQuery("INSERT INTO").
+		WithArgs(sqlmock.AnyArg(), "test", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	id, err := s.accountRepo.Create(
 		s.Ctx,
@@ -119,6 +119,7 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.Mock.ExpectExec("UPDATE").
+		WithArgs(sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.accountRepo.Delete(s.Ctx, 101)
 	s.NoError(err)
@@ -153,8 +154,10 @@ func (s *testSuite) TestLinkMember() {
 	s.Mock.ExpectBegin()
 	// stmt := s.Mock.ExpectPrepare("INSERT INTO")
 	s.Mock.ExpectQuery("INSERT INTO").
+		WithArgs(model.ApprovedApproveStatus, uint64(101), uint64(101), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	s.Mock.ExpectQuery("INSERT INTO").
+		WithArgs(model.ApprovedApproveStatus, uint64(101), uint64(102), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(102))
 	s.Mock.ExpectCommit()
 
@@ -167,6 +170,7 @@ func (s *testSuite) TestLinkMember() {
 func (s *testSuite) TestUnlinkMember() {
 	ctx := s.Ctx
 	s.Mock.ExpectExec("UPDATE").
+		WithArgs(sqlmock.AnyArg(), uint64(101), uint64(102)).
 		WillReturnResult(sqlmock.NewResult(101, 2))
 	account := &model.Account{ID: 101, Title: "test"}
 	users := []*model.User{{ID: 101}, {ID: 102}}

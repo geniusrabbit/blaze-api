@@ -7,6 +7,8 @@ import (
 
 	"github.com/geniusrabbit/api-template-base/internal/repository/account"
 	"github.com/geniusrabbit/api-template-base/internal/repository/authclient"
+	"github.com/geniusrabbit/api-template-base/internal/repository/historylog"
+	"github.com/geniusrabbit/api-template-base/internal/repository/option"
 	"github.com/geniusrabbit/api-template-base/internal/repository/rbac"
 	"github.com/geniusrabbit/api-template-base/internal/repository/user"
 	gqlmodels "github.com/geniusrabbit/api-template-base/internal/server/graphql/models"
@@ -94,6 +96,50 @@ func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *
 		ConvertToEdgeFunc: func(obj *gqlmodels.User) *gqlmodels.UserEdge {
 			return &gqlmodels.UserEdge{
 				Cursor: gocast.Str(obj.ID),
+				Node:   obj,
+			}
+		},
+	}, page)
+}
+
+// HistoryActionConnection implements collection accessor interface with pagination.
+type HistoryActionConnection = CollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]
+
+// NewHistoryActionConnection based on query object
+func NewHistoryActionConnection(ctx context.Context, historyActionsAccessor historylog.Usecase, filter *historylog.Filter, order *historylog.Order, page *gqlmodels.Page) *HistoryActionConnection {
+	return NewCollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge](ctx, &DataAccessorFunc[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]{
+		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.HistoryAction, error) {
+			historyActions, err := historyActionsAccessor.FetchList(ctx, filter, order, page.Pagination())
+			return gqlmodels.FromHistoryActionModelList(historyActions), err
+		},
+		CountDataFunc: func(ctx context.Context) (int64, error) {
+			return historyActionsAccessor.Count(ctx, filter)
+		},
+		ConvertToEdgeFunc: func(obj *gqlmodels.HistoryAction) *gqlmodels.HistoryActionEdge {
+			return &gqlmodels.HistoryActionEdge{
+				Cursor: gocast.Str(obj.ID),
+				Node:   obj,
+			}
+		},
+	}, page)
+}
+
+// OptionConnection implements collection accessor interface with pagination.
+type OptionConnection = CollectionConnection[gqlmodels.Option, gqlmodels.OptionEdge]
+
+// NewOptionConnection based on query object
+func NewOptionConnection(ctx context.Context, optionsAccessor option.Usecase, filter *gqlmodels.OptionListFilter, order *gqlmodels.OptionListOrder, page *gqlmodels.Page) *OptionConnection {
+	return NewCollectionConnection[gqlmodels.Option, gqlmodels.OptionEdge](ctx, &DataAccessorFunc[gqlmodels.Option, gqlmodels.OptionEdge]{
+		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Option, error) {
+			options, err := optionsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
+			return gqlmodels.FromOptionModelList(options), err
+		},
+		CountDataFunc: func(ctx context.Context) (int64, error) {
+			return optionsAccessor.Count(ctx, filter.Filter())
+		},
+		ConvertToEdgeFunc: func(obj *gqlmodels.Option) *gqlmodels.OptionEdge {
+			return &gqlmodels.OptionEdge{
+				Cursor: gocast.Str(obj.Name),
 				Node:   obj,
 			}
 		},

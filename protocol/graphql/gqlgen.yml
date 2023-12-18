@@ -83,3 +83,7 @@ models:
     model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.RBACRoleConnection
   AuthClientConnection:
     model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.AuthClientConnection
+  HistoryActionConnection:
+    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.HistoryActionConnection
+  OptionConnection:
+    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.OptionConnection

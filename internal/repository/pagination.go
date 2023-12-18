@@ -20,5 +20,8 @@ func (p *Pagination) PrepareQuery(q *gorm.DB) *gorm.DB {
 	if p.Size <= 0 {
 		p.Size = 10
 	}
-	return q.Offset(p.Offset).Limit(p.Size)
+	if p.Offset > 0 {
+		q = q.Offset(p.Offset)
+	}
+	return q.Limit(p.Size)
 }

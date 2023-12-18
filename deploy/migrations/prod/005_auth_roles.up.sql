@@ -36,6 +36,7 @@ INSERT INTO rbac_role
             'model:AccountMember',
             'model:Role',
             'model:AuthClient'
+          , 'model:Option'
           ]) AS object,
           LATERAL unnest(array[
             'none',
@@ -44,6 +45,21 @@ INSERT INTO rbac_role
           ]) AS cover
     ON CONFLICT DO NOTHING;
 
+INSERT INTO rbac_role
+  (name, title, type, context)
+  SELECT name, '' AS title, 'permission' AS type, ('{"object":"' || object || '","cover":"' || cover || '"}')::jsonb AS context
+    FROM  unnest(array[
+            'view','list'
+          ]) AS name,
+          LATERAL unnest(array[
+            'model:HistoryAction'
+          ]) AS object,
+          LATERAL unnest(array[
+            'none'
+          , 'account'  -- Modificator for access for the whole account
+          , 'system'   -- Modificator for access to the all objects in the system
+          ]) AS cover
+    ON CONFLICT DO NOTHING;
 
 -- Link all permissions to the system role
 INSERT INTO m2m_rbac_role (parent_role_id, child_role_id)

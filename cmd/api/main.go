@@ -19,6 +19,7 @@ import (
 	"github.com/geniusrabbit/api-template-base/internal/middleware"
 	"github.com/geniusrabbit/api-template-base/internal/permissions"
 	"github.com/geniusrabbit/api-template-base/internal/profiler"
+	"github.com/geniusrabbit/api-template-base/internal/repository/historylog/middleware/gormlog"
 	"github.com/geniusrabbit/api-template-base/internal/zlogger"
 )
 
@@ -74,6 +75,13 @@ func main() {
 	slaveDatabase, err := database.Connect(ctx,
 		conf.System.Storage.SlaveConnect, conf.IsDebug())
 	fatalError(err, "connect to slave database")
+
+	// Register callback for history log
+	if cb := masterDatabase.Callback(); cb != nil {
+		cb.Create().After("gorm:create").Register("historylog", gormlog.Log(masterDatabase, "create"))
+		cb.Update().After("gorm:update").Register("historylog", gormlog.Log(masterDatabase, "update"))
+		cb.Delete().After("gorm:delete").Register("historylog", gormlog.Log(masterDatabase, "delete"))
+	}
 
 	// Init permission manager
 	permissionManager := permissions.NewManager(masterDatabase, conf.Permissions.RoleCacheLifetime)

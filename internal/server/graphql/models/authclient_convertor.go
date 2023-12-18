@@ -1,8 +1,6 @@
 package models
 
-import (
-	"github.com/geniusrabbit/api-template-base/model"
-)
+import "github.com/geniusrabbit/api-template-base/model"
 
 // FromAuthClientModel to local graphql model
 func FromAuthClientModel(acc *model.AuthClient) *AuthClient {

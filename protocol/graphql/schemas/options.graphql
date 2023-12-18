@@ -1,0 +1,99 @@
+enum OptionType {
+  UNDEFINED,
+  USER,
+  ACCOUNT,
+  SYSTEM
+}
+
+"""
+Option type definition represents a single option of the user or the system.
+"""
+type Option {
+  optionType: OptionType!
+  targetID:   ID64!
+  name:       String!
+  value:      NullableJSON
+}
+
+"""
+The edge type for Option.
+"""
+type OptionEdge {
+  cursor: String!
+  node: Option!
+}
+
+"""
+The connection type for Option.
+"""
+type OptionConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  A list of edges.
+  """
+  edges: [OptionEdge!]!
+
+  """
+  A list of options.
+  """
+  list: [Option!]!
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+}
+
+type OptionPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationId: String!
+
+  optionName: String!
+
+  option: Option
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input OptionListFilter {
+  optionType: [OptionType!]
+  targetID: [ID64!]
+  name: [String!]
+  namePattern: [String!]
+}
+
+input OptionListOrder {
+  optionType: Ordering
+  targetID: Ordering
+  name: Ordering
+  value: Ordering
+}
+
+###############################################################################
+# Mutations
+###############################################################################
+
+input OptionInput {
+  """
+  The type of the option.
+  """
+  optionType: OptionType!
+
+  """
+  The target ID of the option.
+  """
+  targetID: ID64!
+
+  """
+  Value of the option.
+  """
+  value: NullableJSON
+}
