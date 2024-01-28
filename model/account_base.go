@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/demdxx/rbac"
+	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/gosql/v2"
 	"gorm.io/gorm"
 )
@@ -40,6 +42,7 @@ type Account struct {
 	Contacts gosql.NullableStringArray `json:"contacts" gorm:"column:contacts;type:text[]"`
 
 	Permissions permissionChecker `json:"-" gorm:"-"`
+	Admins      []uint64          `json:"-" gorm:"-"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -56,6 +59,22 @@ func (acc *Account) IsAnonimous() bool {
 	return acc == nil || acc.ID == 0
 }
 
+// IsApproved account
+func (acc *Account) IsAdminUser(userID uint64) bool {
+	if acc == nil || len(acc.Admins) == 0 {
+		return false
+	}
+	return xtypes.Slice[uint64](acc.Admins).Has(func(id uint64) bool { return id == userID })
+}
+
+// ExtendAdminUsers to the account
+func (acc *Account) ExtendAdminUsers(ids ...uint64) {
+	if acc == nil {
+		return
+	}
+	acc.Admins = xtypes.SliceUnique[uint64](append(acc.Admins, ids...))
+}
+
 // CheckPermissions for some specific resource
 func (acc *Account) CheckPermissions(ctx context.Context, resource any, names ...string) bool {
 	if acc == nil || acc.Permissions == nil {
@@ -63,6 +82,15 @@ func (acc *Account) CheckPermissions(ctx context.Context, resource any, names ..
 	}
 	ctx = context.WithValue(ctx, ctxPermissionCheckAccount, acc)
 	return acc.Permissions.CheckPermissions(ctx, resource, names...)
+}
+
+// CheckedPermissions for some specific resource
+func (acc *Account) CheckedPermissions(ctx context.Context, resource any, names ...string) rbac.Permission {
+	if acc == nil || acc.Permissions == nil {
+		return nil
+	}
+	ctx = context.WithValue(ctx, ctxPermissionCheckAccount, acc)
+	return acc.Permissions.CheckedPermissions(ctx, resource, names...)
 }
 
 // OwnerAccountID returns the account ID which belongs the object

@@ -21,7 +21,7 @@ func (member *M2MAccountMemberRole) TableName() string {
 // AccountMember contains reference from user to account as memeber
 type AccountMember struct {
 	ID      uint64        `db:"id"`
-	Approve ApproveStatus `db:"approve_status"`
+	Approve ApproveStatus `db:"approve_status" gorm:"column:approve_status"`
 
 	AccountID uint64 `db:"account_id"`
 	UserID    uint64 `db:"user_id"`
@@ -41,4 +41,12 @@ type AccountMember struct {
 // TableName of the model in the database
 func (member *AccountMember) TableName() string {
 	return `account_member`
+}
+
+func (member *AccountMember) CreatorUserID() uint64 {
+	return member.UserID
+}
+
+func (member *AccountMember) OwnerAccountID() uint64 {
+	return member.AccountID
 }

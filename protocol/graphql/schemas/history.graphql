@@ -129,3 +129,18 @@ input HistoryActionListOrder {
   objectIDs: Ordering
   actionAt: Ordering
 }
+
+###############################################################################
+# Query declarations
+###############################################################################
+
+extend type Query {
+  """
+  List of the history actions which can be filtered and ordered by some fields
+  """
+  listHistory(
+    filter: HistoryActionListFilter = null,
+    order: HistoryActionListOrder = null,
+    page: Page = null
+  ): HistoryActionConnection @hasPermissions(permissions: [{key: "model:HistoryAction", access: ["list"]}])
+}

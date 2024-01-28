@@ -124,3 +124,46 @@ input RBACRoleInput {
   type:     RoleType!
   context:  NullableJSON
 }
+
+###############################################################################
+# Query declarations
+###############################################################################
+
+extend type Query {
+  """
+  Get RBAC role object by ID
+  """
+  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
+
+  """
+  Check if the user has access to the particular role or permission.
+  Returns the area of the access or null if access is denied.
+  """
+  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: [{key: "model:Role", access: ["check"]}])
+
+  """
+  List of the RBAC role objects which can be filtered and ordered by some fields
+  """
+  listRoles(
+    filter: RBACRoleListFilter = null,
+    order: RBACRoleListOrder = null,
+    page: Page = null
+  ): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Role", access: ["list"]}])
+}
+
+extend type Mutation {
+  """
+  Create the new RBAC role
+  """
+  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["create"]}])
+
+  """
+  Update RBAC role info
+  """
+  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["update"]}])
+
+  """
+  Delete RBAC role
+  """
+  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
+}

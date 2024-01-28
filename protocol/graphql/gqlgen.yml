@@ -9,21 +9,21 @@ skip_mod_tidy: yes
 
 # Where should the generated server code go?
 exec:
-  filename: ../../internal/server/graphql/generated/exec.go
+  filename: ../../server/graphql/generated/exec.go
   package: generated
 
 # federation:
-#   filename: ../../internal/server/graphql/generated/federation.go
+#   filename: ../../server/graphql/generated/federation.go
 #   package: generated
 
 model:
-  filename: ../../internal/server/graphql/models/generated.go
+  filename: ../../server/graphql/models/generated.go
   package: models
 
 # Where should the resolver implementations go?
 resolver:
   layout: follow-schema
-  dir: ../../internal/server/graphql/resolvers
+  dir: ../../server/graphql/resolvers
   package: resolvers
 
 # Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
@@ -61,29 +61,29 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.Int64
   Time:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.Time
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.Time
   TimeDuration:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.TimeDuration
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.TimeDuration
   DateTime:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.DateTime
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.DateTime
   JSON:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.JSON
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.JSON
   NullableJSON:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.NullableJSON
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.NullableJSON
   UUID:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.UUID
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.UUID
   ID64:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/types.ID64
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.ID64
   # Connectors
   UserConnection:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.UserConnection
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.UserConnection
   AccountConnection:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.AccountConnection
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AccountConnection
   RBACRoleConnection:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.RBACRoleConnection
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.RBACRoleConnection
   AuthClientConnection:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.AuthClientConnection
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AuthClientConnection
   HistoryActionConnection:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.HistoryActionConnection
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.HistoryActionConnection
   OptionConnection:
-    model: github.com/geniusrabbit/api-template-base/internal/server/graphql/connectors.OptionConnection
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.OptionConnection

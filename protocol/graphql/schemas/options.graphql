@@ -97,3 +97,30 @@ input OptionInput {
   """
   value: NullableJSON
 }
+
+###############################################################################
+# Query declarations
+###############################################################################
+
+extend type Query {
+  """
+  Get the option value by name
+  """
+  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["view"]}])
+
+  """
+  List of the option values which can be filtered and ordered by some fields
+  """
+  listOptions(
+    filter: OptionListFilter = null,
+    order: OptionListOrder = null,
+    page: Page = null
+  ): OptionConnection @hasPermissions(permissions: [{key: "model:Option", access: ["list"]}])
+}
+
+extend type Mutation {
+  """
+  Set the option value
+  """
+  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["update"]}])
+}

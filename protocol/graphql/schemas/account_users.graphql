@@ -18,6 +18,11 @@ type User {
   """
   status: ApproveStatus!
 
+  """
+  Message which defined during user approve/rejection process
+  """
+  statusMessage: String
+
   createdAt: Time!
   updatedAt: Time!
 }
@@ -144,4 +149,64 @@ enum MessangerType {
 type ProfileMessanger {
   mtype: MessangerType!
   address: String!
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+extend type Query {
+  """
+  Current user from the session
+  """
+  currentUser: UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+
+  """
+  Get user object by ID or username
+  """
+  user(
+    id: ID64! = 0,
+    username: String! = ""
+  ): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+
+  """
+  List of the user objects which can be filtered and ordered by some fields
+  """
+  listUsers(
+    filter: UserListFilter = null,
+    order: UserListOrder = null,
+    page: Page = null
+  ): UserConnection @hasPermissions(permissions: [{key: "model:User", access: ["list"]}])
+}
+
+extend type Mutation {
+  """
+  Create the new user
+  """
+  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["create"]}])
+
+  """
+  Update user info
+  """
+  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["update"]}])
+
+  """
+  Approve user and leave the comment
+  """
+  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["approve"]}])
+
+  """
+  Reject user and leave the comment
+  """
+  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reject"]}])
+
+  """
+  Reset password of the particular user in case if user forgot it
+  """
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+
+  """
+  Update password of the particular user
+  """
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
 }

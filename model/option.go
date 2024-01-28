@@ -27,4 +27,18 @@ type Option struct {
 	DeletedAt gorm.DeletedAt `db:"deleted_at"`
 }
 
-func (o Option) TableName() string { return "option" }
+func (o *Option) TableName() string { return "option" }
+
+func (o *Option) CreatorUserID() uint64 {
+	if o != nil && o.Type == UserOptionType {
+		return o.TargetID
+	}
+	return 0
+}
+
+func (o *Option) OwnerAccountID() uint64 {
+	if o != nil && o.Type == AccountOptionType {
+		return o.TargetID
+	}
+	return 0
+}

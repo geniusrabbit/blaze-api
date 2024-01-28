@@ -83,6 +83,9 @@ func (role *Role) TableName() string {
 
 // ContextMap returns the map from the context
 func (role *Role) ContextMap() map[string]any {
+	if role == nil || role.Context.Data == nil {
+		return nil
+	}
 	return *role.Context.Data
 }
 

@@ -1,0 +1,90 @@
+# Generate the server inside the folder
+# > go run github.com/99designs/gqlgen
+
+# Where are all the schema files located? globs are supported eg  src/**/*.graphqls
+schema:
+  - ./schemas/*.graphql
+  - ../../../../protocol/graphql/schemas/*.graphql
+
+skip_mod_tidy: yes
+
+# Where should the generated server code go?
+exec:
+  filename: ../../internal/server/graphql/generated/exec.go
+  package: generated
+
+# federation:
+#   filename: ../../lib/server/graphql/generated/federation.go
+#   package: generated
+
+model:
+  filename: ../../internal/server/graphql/models/generated.go
+  package: models
+
+# Where should the resolver implementations go?
+resolver:
+  layout: follow-schema
+  dir: ../../internal/server/graphql/resolvers
+  package: resolvers
+
+# Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
+# struct_tag: json
+
+# Optional: turn on to use []Thing instead of []*Thing
+omit_slice_element_pointers: false
+
+# Optional: set to speed up generation time by not performing a final validation pass.
+skip_validation: true
+
+# gqlgen will search for any type names in the schema in these go packages
+# if they match it will use them, otherwise it will generate them.
+autobind:
+  - github.com/geniusrabbit/blaze-api/server/graphql/models
+
+# This section declares type mapping between the GraphQL and go type systems
+#
+# The first line in each type will be used as defaults for resolver arguments and
+# modelgen, the others will be allowed when binding to fields. Configure them to
+# your liking
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
+  Int64:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int64
+  Time:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.Time
+  TimeDuration:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.TimeDuration
+  DateTime:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.DateTime
+  JSON:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.JSON
+  NullableJSON:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.NullableJSON
+  UUID:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.UUID
+  ID64:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/types.ID64
+  # Connectors
+  UserConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.UserConnection
+  AccountConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AccountConnection
+  RBACRoleConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.RBACRoleConnection
+  AuthClientConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AuthClientConnection
+  HistoryActionConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.HistoryActionConnection
+  OptionConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.OptionConnection

@@ -151,6 +151,8 @@ SessionToken object represents an OAuth 2.0 / JWT session token
 type SessionToken {
   token: String!
   expiresAt: Time!
+  isAdmin: Boolean!
+  roles: [String!]
 }
 
 ###############################################################################
@@ -191,4 +193,41 @@ input AuthClientInput {
 	allowedCORSOrigins: [String!]
 	public: Boolean
 	expiresAt: Time
+}
+
+###############################################################################
+# Query and Mutations
+###############################################################################
+
+extend type Query {
+  """
+  Get auth client object by ID
+  """
+  authClient(id: ID!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["view"]}])
+
+  """
+  List of the auth client objects which can be filtered and ordered by some fields
+  """
+  listAuthClients(
+    filter: AuthClientListFilter = null,
+    order: AuthClientListOrder = null,
+    page: Page = null
+  ): AuthClientConnection @hasPermissions(permissions: [{key: "model:AuthClient", access: ["list"]}])
+}
+
+extend type Mutation {
+  """
+  Create the new auth client
+  """
+  createAuthClient(input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["create"]}])
+
+  """
+  Update auth client info
+  """
+  updateAuthClient(id: ID!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["update"]}])
+
+  """
+  Delete auth client
+  """
+  deleteAuthClient(id: ID!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["delete"]}])
 }

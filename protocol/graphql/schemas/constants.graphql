@@ -68,3 +68,18 @@ enum Ordering {
   """
   DESC
 }
+
+"""
+Constants of the response status
+"""
+enum ResponseStatus {
+  """
+  Success status of the response
+  """
+  SUCCESS
+
+  """
+  Error status of the response
+  """
+  ERROR
+}

@@ -1,0 +1,80 @@
+package gormlog
+
+import (
+	"reflect"
+	"strings"
+	"time"
+
+	"github.com/demdxx/gocast/v2"
+	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/gosql/v2"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+
+	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
+	"github.com/geniusrabbit/blaze-api/context/session"
+)
+
+// Register gorm callbacks for history log
+func Register(db *gorm.DB) {
+	if cb := db.Callback(); cb != nil {
+		cb.Create().Before("gorm:create").Register("historylog:create", Log(db, "create"))
+		cb.Update().Before("gorm:update").Register("historylog:update", Log(db, "update"))
+		cb.Delete().Before("gorm:delete").Register("historylog:delete", Log(db, "delete"))
+	}
+}
+
+// Log action to history log
+func Log(db *gorm.DB, name string) func(*gorm.DB) {
+	return func(cdb *gorm.DB) {
+		if false ||
+			cdb.Statement == nil ||
+			cdb.Statement.Schema == nil ||
+			cdb.Statement.Schema.Name == "HistoryAction" ||
+			!cdb.Statement.ReflectValue.IsValid() {
+			return
+		}
+		switch db.Statement.ReflectValue.Kind() {
+		case reflect.Slice, reflect.Array:
+			return
+		}
+		field := cdb.Statement.Schema.PrioritizedPrimaryField
+		if field == nil {
+			return
+		}
+		ctx := cdb.Statement.Context
+		pkVal, _ := field.ValueOf(ctx, cdb.Statement.ReflectValue)
+		user, acc := session.UserAccount(ctx)
+
+		data := make(map[string]any, len(cdb.Statement.Schema.Fields))
+		for _, field := range cdb.Statement.Schema.Fields {
+			fLowName := strings.ToLower(field.DBName)
+			// NOTE: Skip password and secret fields from history log as security reason
+			if !strings.Contains(fLowName, "password") && !strings.Contains(fLowName, "secret") {
+				data[field.DBName], _ = field.ValueOf(ctx, cdb.Statement.ReflectValue)
+			}
+		}
+
+		jdata, _ := gosql.NewNullableJSON[map[string]any](data)
+		if jdata == nil {
+			jdata = &gosql.NullableJSON[map[string]any]{}
+		}
+		err := db.Create(&model.HistoryAction{
+			ID:         uuid.New(),
+			Name:       name,
+			Message:    "",
+			UserID:     user.ID,
+			AccountID:  acc.ID,
+			ObjectType: cdb.Statement.Schema.Name,
+			ObjectID:   gocast.Number[uint64](pkVal),
+			ObjectIDs:  gocast.Str(pkVal),
+			Data:       *jdata,
+			ActionAt:   time.Now(),
+		}).Error
+		if err != nil {
+			ctxlogger.Get(ctx).
+				Error("history log", zap.String("name", name), zap.Error(err))
+		}
+	}
+}

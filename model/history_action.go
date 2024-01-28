@@ -47,3 +47,11 @@ func (act *HistoryAction) DataTo(dest any) error {
 	}
 	return json.Unmarshal(vl, dest)
 }
+
+func (act *HistoryAction) CreatorUserID() uint64 {
+	return act.UserID
+}
+
+func (act *HistoryAction) OwnerAccountID() uint64 {
+	return act.AccountID
+}

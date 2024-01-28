@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+
+  tracer:
+    restart: always
+    image: jaegertracing/all-in-one:latest
+    ports: [16686:16686]
+
+  api-template-db:
+    restart: always
+    image: postgres:13
+    environment:
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_DB: ${DATABASE_DB}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
+
+  migration:
+    image: github.com/geniusrabbit/blaze-api:migrate-latest
+    command: '-path "/migrations/prod/" -database "${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}" up'
+    depends_on: [ api-template-db ]
+
+  migration-fixtures:
+    image: github.com/geniusrabbit/blaze-api:migrate-latest
+    command: '-path "/migrations/fixtures/" -database "${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}&x-migrations-table=schema_migrations_fixtures" up'
+    depends_on: [ api-template-db ]
+
+  migration-dev:
+    image: github.com/geniusrabbit/blaze-api:migrate-latest
+    command: '-path "/migrations/dev/" -database ${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}&x-migrations-table=schema_migrations_dev up'
+    depends_on: [ api-template-db ]
+  
+  #############################################################################
+  # Services
+  #############################################################################
+
+  api:
+    image: github.com/geniusrabbit/blaze-api:latest
+    depends_on:
+      - api-template-db
+    ports:
+      - "${DOCKER_SERVER_LISTEN}:8080"
+      - "${DOCKER_SERVER_PROFILE_LISTEN}:6060"
+    env_file:
+      - ../../.env
+      - ./.api.env

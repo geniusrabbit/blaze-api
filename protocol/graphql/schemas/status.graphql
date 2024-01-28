@@ -1,0 +1,14 @@
+"""
+Simple response type for the API
+"""
+type StatusResponse {
+  """
+  The status of the response
+  """
+  status: ResponseStatus!
+
+  """
+  The message of the response
+  """
+  message: String
+}

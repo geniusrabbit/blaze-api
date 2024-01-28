@@ -22,6 +22,14 @@ type User struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+// GetID returns user id
+func (u *User) GetID() uint64 {
+	if u == nil {
+		return 0
+	}
+	return u.ID
+}
+
 // TableName returns the name in database
 func (u *User) TableName() string {
 	return "account_user"
