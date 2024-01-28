@@ -9,6 +9,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/gosql/v2"
 	"github.com/google/uuid"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -17,12 +18,13 @@ import (
 )
 
 // Register gorm callbacks for history log
-func Register(db *gorm.DB) {
+func Register(db *gorm.DB) (err error) {
 	if cb := db.Callback(); cb != nil {
-		cb.Create().Before("gorm:create").Register("historylog:create", Log(db, "create"))
-		cb.Update().Before("gorm:update").Register("historylog:update", Log(db, "update"))
-		cb.Delete().Before("gorm:delete").Register("historylog:delete", Log(db, "delete"))
+		err = multierr.Append(err, cb.Create().Before("gorm:create").Register("historylog:create", Log(db, "create")))
+		err = multierr.Append(err, cb.Update().Before("gorm:update").Register("historylog:update", Log(db, "update")))
+		err = multierr.Append(err, cb.Delete().Before("gorm:delete").Register("historylog:delete", Log(db, "delete")))
 	}
+	return err
 }
 
 // Log action to history log

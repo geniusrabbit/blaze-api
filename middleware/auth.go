@@ -109,7 +109,7 @@ func AuthHTTP(prefix string, next http.Handler, oauth2provider fosite.OAuth2Prov
 		if !authorized {
 			w.WriteHeader(http.StatusUnauthorized)
 			if strings.HasPrefix(r.URL.Path, "/graphql") {
-				w.Write([]byte(`{"errors":[{"message":"Unauthorized","code":401}]}`))
+				_, _ = w.Write([]byte(`{"errors":[{"message":"Unauthorized","code":401}]}`))
 			}
 			return
 		}

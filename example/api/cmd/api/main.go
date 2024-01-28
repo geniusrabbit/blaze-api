@@ -80,7 +80,7 @@ func main() {
 	fatalError(err, "connect to database")
 
 	// Register callback for history log (only for modifications)
-	gormlog.Register(masterDatabase)
+	fatalError(gormlog.Register(masterDatabase), "register history log")
 
 	// Init permission manager
 	permissionManager := permissions.NewManager(masterDatabase, conf.Permissions.RoleCacheLifetime)
