@@ -17,10 +17,6 @@ var (
 	errAccessForbidden       = errors.New("access forbidden")
 )
 
-// type objectOwner interface {
-// 	OwnerID() int64
-// }
-
 // HasPermissions for this user to the particular permission of the object
 // Every module have the list of permissions ["list", "view", "create", "update", "delete", etc]
 // This method checks, first of all, that object belongs to the user or have manager access and secondly
@@ -30,7 +26,7 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, permiss
 	pm := permissionmanager.Get(ctx)
 
 	if account == nil {
-		return nil, errAuthorizationRequired
+		return nil, errors.Wrap(errAuthorizationRequired, `no correct account`)
 	}
 
 	if len(permissions) < 1 {
