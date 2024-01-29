@@ -19,7 +19,8 @@ var (
 
 // Permission auth specific constants
 const (
-	PermAuthCross = `auth.cross`
+	PermAuthCross        = `auth.cross`
+	AnonymousDefaultRole = `anonymous`
 )
 
 // WithUserAccount puts to the context user and account models
@@ -32,10 +33,10 @@ func WithUserAccount(ctx context.Context, userObj *model.User, accountObj *model
 // WithAnonymousUserAccount puts to context user and account with anonym permissions
 func WithAnonymousUserAccount(ctx context.Context) context.Context {
 	pm := permissionmanager.Get(ctx)
-	role, _ := pm.RoleByName(ctx, "anonymous")
+	role, _ := pm.RoleByName(ctx, AnonymousDefaultRole)
 	return WithUserAccount(ctx,
 		&model.User{Email: "<anonymous>", Approve: model.ApprovedApproveStatus},
-		&model.Account{Permissions: role})
+		&model.Account{Title: "<anonymous>", Permissions: role})
 }
 
 // WithUserAccountDevelop sets development objects into the context

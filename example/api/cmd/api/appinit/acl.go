@@ -4,6 +4,7 @@ import (
 	"github.com/demdxx/rbac"
 
 	"github.com/geniusrabbit/blaze-api/acl"
+	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
 )
@@ -21,7 +22,7 @@ func InitModelPermissions(pm *permissions.Manager) {
 	)
 
 	// Register anonymous role and fill permissions for it
-	pm.RegisterRole(rbac.MustNewRole("anonymous", rbac.WithSubPermissins(
+	pm.RegisterRole(rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithSubPermissins(
 		pm.MustNewResourcePermission("view", (*model.User)(nil)),
 		pm.MustNewResourcePermission("reset_password", (*model.User)(nil)),
 		pm.MustNewResourcePermission("view", (*model.Account)(nil)),
