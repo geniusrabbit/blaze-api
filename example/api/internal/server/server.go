@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/basicauth-go"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/alexedwards/scs/v2"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/opentracing-contrib/go-stdlib/nethttp"
 	"github.com/opentracing/opentracing-go"
 	"github.com/ory/fosite"

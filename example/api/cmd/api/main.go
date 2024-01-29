@@ -11,6 +11,7 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
+	"github.com/geniusrabbit/blaze-api/context/version"
 	"github.com/geniusrabbit/blaze-api/database"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
@@ -67,6 +68,12 @@ func main() {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	ctx = version.WithContext(ctx, &version.Version{
+		Version: buildVersion,
+		Commit:  buildCommit,
+		Date:    buildDate,
+	})
 
 	// Profiling server of collector
 	profiler.Run(conf.Server.Profile.Mode,
