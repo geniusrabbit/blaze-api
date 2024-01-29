@@ -14,6 +14,14 @@ const dateTimeFormat = "2006-01-02 15:04:05"
 // DateTime implements IO custom type of time with custom format
 type DateTime time.Time
 
+// DateTimeFromPtr returns DateTime object from pointer
+func DateTimeFromPtr(tm *time.Time) DateTime {
+	if tm == nil {
+		return DateTime{}
+	}
+	return DateTime(*tm)
+}
+
 // GetTime object from DateTime
 func (t DateTime) GetTime() time.Time {
 	return (time.Time)(t)
