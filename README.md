@@ -1,6 +1,6 @@
 # blaze-api
 
-[![Build Status](https://github.com/geniusrabbit/blaze-api/workflows/Tests/badge.svg)](https://github.com/geniusrabbit/blaze-api/actions?workflow=Tests)
+[![Tests](https://github.com/geniusrabbit/blaze-api/actions/workflows/tests.yml/badge.svg)](https://github.com/geniusrabbit/blaze-api/actions?workflow=Tests)
 [![Go Report Card](https://goreportcard.com/badge/github.com/geniusrabbit/blaze-api)](https://goreportcard.com/report/github.com/geniusrabbit/blaze-api)
 [![Coverage Status](https://coveralls.io/repos/github/geniusrabbit/blaze-api/badge.svg?branch=main)](https://coveralls.io/github/geniusrabbit/blaze-api?branch=main)
 
