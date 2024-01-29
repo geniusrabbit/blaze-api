@@ -65,32 +65,30 @@ func (a *AccountUsecase) GetByTitle(ctx context.Context, title string) (*model.A
 
 // FetchList of accounts by filter
 func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
-	if !acl.HaveAccessList(ctx, &model.Account{}) {
+	var err error
+	if !acl.HaveAccessList(ctx, session.Account(ctx)) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
-	if filter == nil {
-		filter = &account.Filter{}
-	}
-	if filter.UserID == nil && len(filter.ID) == 0 {
-		filter.UserID = []uint64{session.User(ctx).ID}
-		return a.accountRepo.FetchList(ctx, filter, pagination)
-	}
-	list, err := a.accountRepo.FetchList(ctx, filter, pagination)
-	for _, link := range list {
-		if !acl.HaveAccessList(ctx, link) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
+	// If not `system` access then filter by current user
+	if !acl.HaveAccessList(ctx, &model.Account{}) {
+		if filter, err = adjustListFilter(ctx, filter); err != nil {
+			return nil, err
 		}
 	}
-	return list, err
+	return a.accountRepo.FetchList(ctx, filter, pagination)
 }
 
 // Count of accounts by filter
 func (a *AccountUsecase) Count(ctx context.Context, filter *account.Filter) (int64, error) {
-	if filter == nil {
-		filter = &account.Filter{}
-	}
-	if !acl.HaveAccessList(ctx, &model.Account{}) {
+	var err error
+	if !acl.HaveAccessCount(ctx, session.Account(ctx)) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list account")
+	}
+	// If not `system` access then filter by current user
+	if !acl.HaveAccessCount(ctx, &model.Account{}) {
+		if filter, err = adjustListFilter(ctx, filter); err != nil {
+			return 0, err
+		}
 	}
 	return a.accountRepo.Count(ctx, filter)
 }
@@ -208,4 +206,19 @@ func (a *AccountUsecase) UnlinkMember(ctx context.Context, accountObj *model.Acc
 		}
 	}
 	return a.accountRepo.UnlinkMember(ctx, accountObj, members...)
+}
+
+func adjustListFilter(ctx context.Context, filter *account.Filter) (*account.Filter, error) {
+	usr, acc := session.UserAccount(ctx)
+	if filter == nil {
+		return &account.Filter{UserID: []uint64{usr.ID}}, nil
+	} else if len(filter.UserID) == 0 {
+		filter.UserID = []uint64{usr.ID}
+	} else if len(filter.ID) == 0 {
+		filter.ID = []uint64{acc.ID}
+	}
+	if len(filter.UserID) != 1 || filter.UserID[0] != usr.ID {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "list account (too wide filter)")
+	}
+	return filter, nil
 }

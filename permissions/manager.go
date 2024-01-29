@@ -206,7 +206,7 @@ func (mng *Manager) refreshRoles(ctx context.Context) error {
 		return err
 	}
 	err = query.Find(&links).Error
-	if err != nil && err != sql.ErrNoRows && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	for _, role := range roles {

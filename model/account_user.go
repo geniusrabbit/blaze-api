@@ -40,3 +40,11 @@ func (u *User) TableName() string {
 func (u *User) IsAnonymous() bool {
 	return u == nil || u.ID == 0
 }
+
+// CreatorUserID returns the user id
+func (u *User) CreatorUserID() uint64 {
+	if u == nil {
+		return 0
+	}
+	return u.ID
+}

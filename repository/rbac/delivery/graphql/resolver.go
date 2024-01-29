@@ -87,6 +87,7 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key *string, tar
 	perm := session.Account(ctx).CheckedPermissions(ctx, obj, name)
 	if perm != nil {
 		switch ext := perm.Ext().(type) {
+		case nil:
 		case *permissions.ExtData:
 			return &[]string{ext.Cover}[0], nil
 		}
