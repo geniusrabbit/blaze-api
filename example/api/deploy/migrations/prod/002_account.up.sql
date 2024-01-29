@@ -24,8 +24,33 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON account_user FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 CREATE TRIGGER notify_update_event_trigger
-    AFTER INSERT OR UPDATE OR DELETE ON account_user
-        FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+AFTER INSERT OR UPDATE OR DELETE ON account_user
+    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+
+
+-- Reset password token
+CREATE TABLE IF NOT EXISTS account_user_password_reset
+( user_id                 BIGINT                      NOT NULL        REFERENCES account_user (id) MATCH SIMPLE
+                                                                        ON UPDATE NO ACTION
+                                                                        ON DELETE RESTRICT
+
+, token                   VARCHAR(128)                NOT NULL        PRIMARY KEY CHECK (token ~* '^[^\s]+$')
+
+, created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
+, expires_at              TIMESTAMP                   NOT NULL        DEFAULT NOW() + INTERVAL '30 minutes'
+);
+
+CREATE INDEX idx_account_user_password_reset_expires_at ON
+    account_user_password_reset (expires_at);
+
+CREATE TRIGGER notify_update_event_trigger
+AFTER INSERT OR UPDATE OR DELETE ON account_user_password_reset
+    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+
+CREATE TRIGGER keep_for_one_week
+    BEFORE UPDATE OR INSERT ON account_user_password_reset
+    FOR EACH ROW
+        EXECUTE PROCEDURE keep_for(expires_at, '1 week');
 
 -- Account this is the general entity which links all objects with one account
 -- Account can be linked with planty of accounts with different access permissions
@@ -52,8 +77,8 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON account_base FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 CREATE TRIGGER notify_update_event_trigger
-    AFTER INSERT OR UPDATE OR DELETE ON account_base
-        FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
+AFTER INSERT OR UPDATE OR DELETE ON account_base
+    FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
 
 -- ----------------------------------------------------------------------------
 -- Roles and permissions
@@ -68,7 +93,7 @@ CREATE TABLE rbac_role
                                                                       ON DELETE RESTRICT
 
 -- Name of the permission to matching
-, name                VARCHAR(256)                NOT NULL      CHECK (name   ~* '^[\w\d@_:-]+$')
+, name                VARCHAR(256)                NOT NULL      CHECK (name   ~* '^[\w\d@_:\.-]+$')
 
 , title               VARCHAR(256)                NOT NULL
 , type                role_type                   NOT NULL
@@ -109,7 +134,7 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
 
 CREATE TABLE account_member
 ( id                  BIGSERIAL                   PRIMARY KEY
-, status              INTEGER                     NOT NULL        DEFAULT 0
+, approve_status      INTEGER                     NOT NULL        DEFAULT 0
 
 -- Link to account
 , account_id          BIGINT                      NOT NULL      REFERENCES account_base (id) MATCH SIMPLE
@@ -134,7 +159,7 @@ CREATE TABLE account_member
 );
 
 CREATE UNIQUE INDEX idx_account_member_unique_account_user
-    ON account_member (account_id, user_id) WHERE deleted_at IS NULL;
+    ON account_member (account_id, user_id);
 
 CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON account_member FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
