@@ -39,7 +39,7 @@ func (r *Repository) List(ctx context.Context, filter *socialauth.Filter) ([]*mo
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil
 	}
-	return list, nil
+	return list, err
 }
 
 // Create new account in the database

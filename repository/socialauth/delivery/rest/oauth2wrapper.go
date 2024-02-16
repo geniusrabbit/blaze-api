@@ -145,7 +145,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"status": "ok",
 		"token":  sessToken,
 	})
