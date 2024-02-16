@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/goconfig"
@@ -68,8 +70,7 @@ func main() {
 	loggerObj := initZapLogger()
 
 	// Define cancelation context
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	ctx = version.WithContext(ctx, &version.Version{

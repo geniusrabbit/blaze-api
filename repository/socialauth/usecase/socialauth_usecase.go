@@ -14,6 +14,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
+var ErrLinkToExistsUser = errors.New("to connect social account to exists user, need to be authorized")
+
 type Usecase struct {
 	userRepo       user.Repository
 	socAccountRepo socialauth.Repository
@@ -51,6 +53,11 @@ func (u *Usecase) Register(ctx context.Context, ownerObj *model.User, accountObj
 	err := database.ContextTransactionExec(ctx, func(txctx context.Context, tx *gorm.DB) error {
 		// If user not exists then create it
 		if ownerObj.ID == 0 {
+			if existsUser, err := u.userRepo.GetByEmail(txctx, ownerObj.Email); existsUser != nil && err == nil {
+				return ErrLinkToExistsUser
+			}
+
+			// Create user in the database to link social account
 			uid, err := u.userRepo.Create(txctx, ownerObj, "")
 			if err != nil {
 				return err
