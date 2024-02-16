@@ -64,8 +64,8 @@ define build_platform_list
 	done;
 endef
 
-PROJECT_WORKSPACE ?= api-template
-PROJECT_NAME ?= api-template-base
+PROJECT_WORKSPACE ?= blaze-api
+PROJECT_NAME ?= blaze-api
 DOCKER_PLATFORM_LIST := $(shell $(call build_platform_list))
 DOCKER_PLATFORM_LIST := $(shell echo $(DOCKER_PLATFORM_LIST) | sed 's/.$$//')
 DOCKER_COMPOSE := docker-compose -p $(PROJECT_WORKSPACE) -f deploy/develop/docker-compose.yml
@@ -160,6 +160,6 @@ dbcli: ## Open development database
 
 .PHONY: help
 help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .DEFAULT_GOAL := help

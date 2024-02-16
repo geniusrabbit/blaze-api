@@ -1,8 +1,8 @@
 INSERT INTO account_base (approve_status, title, description) VALUES(1, 'system', 'System account');
 INSERT INTO account_user (approve_status, email, password)    VALUES(1, 'super@project.com', '$2a$10$1Eh45WHxlcO4Tb90mVc62Og.T8Q81QJTpGyF9pT1EwSkQUPA8XyAS');
 
-INSERT INTO account_member (user_id, account_id, status, is_admin)
-  SELECT MAX(user_id) AS user_id, MAX(account_id) AS account_id, 1, 't' AS status FROM (
+INSERT INTO account_member (user_id, account_id, approve_status, is_admin)
+  SELECT MAX(user_id) AS user_id, MAX(account_id) AS account_id, 1, 't' AS is_admin FROM (
     SELECT id AS user_id, 0 AS account_id FROM account_user WHERE email = 'super@project.com'
     UNION ALL
     SELECT 0 AS user_id, id AS account_id FROM account_base WHERE title = 'system'

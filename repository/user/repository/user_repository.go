@@ -56,7 +56,7 @@ func (r *Repository) GetByPassword(ctx context.Context, email, password string) 
 	if err != nil {
 		return nil, err
 	}
-	if !r.comparePasswords(object.Password, []byte(password)) {
+	if object.Password == "" || !r.comparePasswords(object.Password, []byte(password)) {
 		return nil, ErrInvalidPassword
 	}
 	return object, nil
@@ -179,10 +179,11 @@ func (r *Repository) EliminateResetPassword(ctx context.Context, userID uint64) 
 
 // Create new user object to database
 func (r *Repository) Create(ctx context.Context, userObj *model.User, password string) (uint64, error) {
-	if password == "" {
-		password = randomPassword(17)
+	if password != "" {
+		userObj.Password = r.hashAndSalt([]byte(password))
+	} else {
+		userObj.Password = "" // If password is empty then user can reset it
 	}
-	userObj.Password = r.hashAndSalt([]byte(password))
 	userObj.CreatedAt = time.Now()
 	userObj.UpdatedAt = userObj.CreatedAt
 	userObj.Approve = model.UndefinedApproveStatus

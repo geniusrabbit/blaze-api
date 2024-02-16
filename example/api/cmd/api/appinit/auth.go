@@ -16,7 +16,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/cache/redis"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/jwt"
-	"github.com/geniusrabbit/blaze-api/oauth2"
+	"github.com/geniusrabbit/blaze-api/oauth2srvprovider"
 	user_repository "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
 
@@ -32,13 +32,13 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 	}
 	sessionCache := newCache(ctx, conf.OAuth2.CacheConnect, conf.OAuth2.CacheLifetime)
 	userRepository := user_repository.New()
-	oauth2storage := oauth2.NewPostgresStorage(
+	oauth2storage := oauth2srvprovider.NewDatabaseStorage(
 		masterDatabase,
 		userRepository,
 		sessionCache,
 		conf.OAuth2.CacheLifetime,
 	)
-	oauth2provider := oauth2.NewProvider(
+	oauth2provider := oauth2srvprovider.NewProvider(
 		oauth2config,
 		oauth2storage,
 		&compose.CommonStrategy{

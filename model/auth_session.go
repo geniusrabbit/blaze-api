@@ -8,12 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// AuthSession describes session object
+// AuthSession describes session object of the external applications
+// which are authenticated by the oauth2 protocol with the current service
 type AuthSession struct {
 	ID     uint64 `db:"id"`
 	Active bool   `db:"active"`
 
-	ClientID string `db:"client_id"`
+	ClientID string `db:"client_id"` // Internal AuthClient id
 	Username string `db:"username"`
 	Subject  string `db:"subject"`
 

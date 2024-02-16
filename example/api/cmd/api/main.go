@@ -7,12 +7,14 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/goconfig"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/context/version"
 	"github.com/geniusrabbit/blaze-api/database"
+	"github.com/geniusrabbit/blaze-api/elogin/facebook"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/migratedb"
@@ -21,6 +23,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/permissions"
 	"github.com/geniusrabbit/blaze-api/profiler"
 	"github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
+	"github.com/geniusrabbit/blaze-api/repository/socialauth/delivery/rest"
 	"github.com/geniusrabbit/blaze-api/zlogger"
 )
 
@@ -116,6 +119,15 @@ func main() {
 			ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)
 			ctx = permissionmanager.WithManager(ctx, permissionManager)
 			return ctx
+		},
+		InitWrap: func(mux *chi.Mux) {
+			if conf.SocialAuth.Facebook.IsValid() {
+				oa2conf := conf.SocialAuth.Facebook.OAuth2Config("facebook")
+				mux.Handle("/auth/facebook/*",
+					rest.NewWrapper(facebook.NewFacebookConfig(oa2conf), rest.WithSessionProvider(jwtProvider)).
+						HandleWrapper("/auth/facebook"),
+				)
+			}
 		},
 	}
 	fatalError(httpServer.Run(ctx, conf.Server.HTTP.Listen), "HTTP server")

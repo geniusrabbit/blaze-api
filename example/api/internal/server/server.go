@@ -22,12 +22,16 @@ import (
 	"github.com/geniusrabbit/blaze-api/server/graphql"
 )
 
-type contextWrapper func(context.Context) context.Context
+type (
+	contextWrapper func(context.Context) context.Context
+	muxInitWrapper func(mux *chi.Mux)
+)
 
 // HTTPServer wrapper object
 type HTTPServer struct {
 	RequestTimeout time.Duration
 	ContextWrap    contextWrapper
+	InitWrap       muxInitWrapper
 	OAuth2provider fosite.OAuth2Provider
 	JWTProvider    *jwt.Provider
 	SessionManager *scs.SessionManager
@@ -41,19 +45,21 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	s.Logger.Info("Start balance HTTP API: " + address)
 
 	mux := chi.NewRouter()
-	mux.HandleFunc("/healthcheck", profiler.HealthCheckHandler)
-	mux.Handle("/metrics", promhttp.Handler())
-
 	mux.With(basicauth.NewFromEnv("Graph", "GRAPHQL_USERS_")).
 		Handle("/", playground.Handler("Query console", "/graphql"))
+	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider))
 
-	// OAuth2 handlers
-	swh := graphql.GraphQL(s.JWTProvider)
-	swh = middleware.AuthHTTP("http_", swh, s.OAuth2provider, s.JWTProvider, s.AuthOption)
+	if s.InitWrap != nil {
+		s.InitWrap(mux)
+	}
 
-	mux.Handle("/graphql", swh)
+	h := http.Handler(mux)
 
-	h := middleware.HTTPContextWrapper(mux, s.ContextWrap)
+	// Add middleware's
+	h = middleware.AuthHTTP("http_", h, s.OAuth2provider, s.JWTProvider, s.AuthOption)
+	h = middleware.HTTPContextWrapper(h, s.ContextWrap)
 	h = middleware.HTTPSession(h, s.SessionManager)
 	h = middleware.RealIP(h)
 	h = middleware.AllowCORS(h)

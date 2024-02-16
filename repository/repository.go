@@ -14,8 +14,7 @@ import (
 )
 
 // Repository with basic functionality
-type Repository struct {
-}
+type Repository struct{}
 
 // PermissionManager returns permission-manager object from context
 func (r *Repository) PermissionManager(ctx context.Context) *permissions.Manager {

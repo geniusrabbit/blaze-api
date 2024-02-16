@@ -15,6 +15,8 @@ func InitModelPermissions(pm *permissions.Manager) {
 		&model.User{},
 		&model.Account{},
 		&model.AccountMember{},
+		&model.AccountSocial{},
+		&model.AccountSocialSession{},
 		&model.Role{},
 		&model.AuthClient{},
 		&model.HistoryAction{},

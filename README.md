@@ -176,3 +176,20 @@ models:
   OptionConnection:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.OptionConnection
 ```
+
+## TODO features
+
+- [ ] OAuth2 add authorization providers: Google, Facebook, LinkedIn, GitHub, etc.
+- [x] OAuth2 remote authorization.
+- [ ] REST API: RESTful API interface for your application.
+- [ ] Swagger API documentation: Generate comprehensive API documentation with Swagger.
+- [x] GraphQL API: Integrated GraphQL support for building flexible APIs.
+- [x] Support different databases (PostgreSQL, MySQL, SQLite, etc.)
+- [x] OAuth2 server and client support.
+- [ ] OAuth2 authorization code flow.
+- [x] RBAC: Role-Based Access Control (RBAC) for managing user permissions.
+- [x] JWT Authentication: Secure your API with JWT-based authentication.
+- [x] Object modification history log.
+- [x] Profiler: Integrated profiler for monitoring and debugging.
+- [x] Mailer/messanger support (abstract interface layer).
+- [ ] Add support [OpenTelemetry-Go](https://github.com/open-telemetry/opentelemetry-go/)

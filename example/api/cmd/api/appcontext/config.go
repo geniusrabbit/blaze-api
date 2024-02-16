@@ -14,6 +14,11 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/facebook"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/linkedin"
 )
 
 type serverConfig struct {
@@ -40,6 +45,82 @@ type sessionConfig struct {
 type storageConfig struct {
 	MasterConnect string `json:"master_connect" yaml:"master_connect" env:"SYSTEM_STORAGE_DATABASE_MASTER_CONNECT"`
 	SlaveConnect  string `json:"slave_connect" yaml:"slave_connect" env:"SYSTEM_STORAGE_DATABASE_SLAVE_CONNECT"`
+}
+
+type socialAuthProviderEndpoint struct {
+	AuthURL       string `json:"auth_url" yaml:"auth_url" env:"AUTH_URL"`
+	DeviceAuthURL string `json:"device_auth_url" yaml:"device_auth_url" env:"DEVICE_AUTH_URL"`
+	TokenURL      string `json:"token_url" yaml:"token_url" env:"TOKEN_URL"`
+
+	// AuthStyle optionally specifies how the endpoint wants the
+	// client ID & client secret sent. The zero value means to
+	// auto-detect.
+	AuthStyle oauth2.AuthStyle `json:"auth_style" yaml:"auth_style" env:"AUTH_STYLE"`
+}
+
+func (en *socialAuthProviderEndpoint) IsEmpty() bool {
+	return en.AuthURL == "" && en.DeviceAuthURL == "" && en.TokenURL == ""
+}
+
+func (en *socialAuthProviderEndpoint) OAuth2(provider string) oauth2.Endpoint {
+	if en.IsEmpty() {
+		switch strings.ToLower(provider) {
+		case "google":
+			return google.Endpoint
+		case "facebook":
+			return facebook.Endpoint
+		case "linkedin":
+			return linkedin.Endpoint
+		}
+	}
+	return oauth2.Endpoint{
+		AuthURL:       en.AuthURL,
+		DeviceAuthURL: en.DeviceAuthURL,
+		TokenURL:      en.TokenURL,
+		AuthStyle:     en.AuthStyle,
+	}
+}
+
+type socialAuthProviderConfig struct {
+	// ClientID is the application's ID.
+	ClientID string `json:"client_id" yaml:"client_id" env:"CLIENT_ID"`
+
+	// ClientSecret is the application's secret.
+	ClientSecret string `json:"client_secret" yaml:"client_secret" env:"CLIENT_SECRET"`
+
+	// Endpoint contains the resource server's token endpoint
+	// URLs. These are constants specific to each server and are
+	// often available via site-specific packages, such as
+	// google.Endpoint or github.Endpoint.
+	Endpoint socialAuthProviderEndpoint `json:"endpoint" yaml:"endpoint" envPrefix:"ENDPOINT_"`
+
+	// RedirectURL is the URL to redirect users going through
+	// the OAuth flow, after the resource owner's URLs.
+	RedirectURL string `json:"redirect_url" yaml:"redirect_url" env:"REDIRECT_URL"`
+
+	// Scope specifies optional requested permissions.
+	Scopes []string `json:"scopes" yaml:"scopes" env:"SCOPES"`
+}
+
+func (s *socialAuthProviderConfig) OAuth2Config(provider string) *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     s.ClientID,
+		ClientSecret: s.ClientSecret,
+		Endpoint:     s.Endpoint.OAuth2(provider),
+		RedirectURL:  s.RedirectURL,
+		Scopes:       s.Scopes,
+	}
+}
+
+func (s *socialAuthProviderConfig) IsValid() bool {
+	return s != nil && s.ClientID != "" && s.ClientSecret != "" && s.RedirectURL != ""
+}
+
+type socialAuthConfig struct {
+	Google   socialAuthProviderConfig `json:"google" yaml:"google" envPrefix:"GOOGLE_"`
+	Facebook socialAuthProviderConfig `json:"facebook" yaml:"facebook" envPrefix:"FACEBOOK_"`
+	XCOM     socialAuthProviderConfig `json:"xcom" yaml:"xcom" envPrefix:"XCOM_"` // Ex Twitter
+	LinkedIn socialAuthProviderConfig `json:"linkedin" yaml:"linkedin" envPrefix:"LINKEDIN_"`
 }
 
 type oauth2Config struct {
@@ -97,6 +178,7 @@ type ConfigType struct {
 	Server      serverConfig     `json:"server" yaml:"server"`
 	Session     sessionConfig    `json:"session" yaml:"session"`
 	System      systemConfig     `json:"system" yaml:"system"`
+	SocialAuth  socialAuthConfig `json:"social_auth" yaml:"social_auth"`
 	OAuth2      oauth2Config     `json:"oauth2" yaml:"oauth2"`
 	Permissions permissionConfig `json:"permissions" yaml:"permissions"`
 }

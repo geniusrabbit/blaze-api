@@ -13,7 +13,7 @@ CREATE TABLE account_user
 , approve_status          INTEGER                     NOT NULL        DEFAULT 0
 
 , email                   VARCHAR(128)                NOT NULL        CHECK (email ~* '^[^\s]+$')  UNIQUE
-, password                VARCHAR(128)                NOT NULL        CHECK (LENGTH(password) > 5)
+, password                VARCHAR(128)                NOT NULL        CHECK (LENGTH(password) = 0 OR LENGTH(password) > 5)
 
 , created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()

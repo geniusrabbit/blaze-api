@@ -1,4 +1,4 @@
-package oauth2
+package oauth2srvprovider
 
 import (
 	"context"
@@ -41,8 +41,8 @@ type DatabaseStorage struct {
 	cacheLifetime time.Duration
 }
 
-// NewPostgresStorage object accesor
-func NewPostgresStorage(db *gorm.DB, userAccessor userAccessor, cache cacher, cacheLifetime time.Duration) *DatabaseStorage {
+// NewDatabaseStorage object accesor
+func NewDatabaseStorage(db *gorm.DB, userAccessor userAccessor, cache cacher, cacheLifetime time.Duration) *DatabaseStorage {
 	return &DatabaseStorage{
 		db:            db,
 		userAccessor:  userAccessor,

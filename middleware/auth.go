@@ -19,7 +19,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/jwt"
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/oauth2"
+	"github.com/geniusrabbit/blaze-api/oauth2srvprovider"
 	accountRepository "github.com/geniusrabbit/blaze-api/repository/account/repository"
 	userRepository "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
@@ -64,9 +64,9 @@ func newAuthWrapper(prefix string) *authWrapper {
 }
 
 // AuthHTTP middleware
-func AuthHTTP(prefix string, next http.Handler, oauth2provider fosite.OAuth2Provider, jwtProvider *jwt.Provider, authOpt *AuthOption) http.Handler {
+func AuthHTTP(metricsPrefix string, next http.Handler, oauth2provider fosite.OAuth2Provider, jwtProvider *jwt.Provider, authOpt *AuthOption) http.Handler {
 	jwtmiddleware := jwtProvider.Middleware()
-	authWr := newAuthWrapper(prefix)
+	authWr := newAuthWrapper(metricsPrefix)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var (
 			err          error
@@ -132,7 +132,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 	}()
 
 	if !testMode {
-		oauth2Ctx := oauth2.NewContext(ctx)
+		oauth2Ctx := oauth2srvprovider.NewContext(ctx)
 		tokenType, aa, errToken := oauth2provider.IntrospectToken(
 			oauth2Ctx, token, fosite.AccessToken,
 			&fosite.DefaultSession{})
@@ -142,7 +142,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 		if tokenType != fosite.AccessToken {
 			return nil, errAccessTokensOnlyAllows
 		}
-		session := aa.GetSession().(*oauth2.Session)
+		session := aa.GetSession().(*oauth2srvprovider.Session)
 		users := userRepository.New()
 		userObj, accountObj, err = users.GetByToken(ctx, session.AccessToken)
 	} else {

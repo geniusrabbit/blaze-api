@@ -25,7 +25,8 @@ func (r *Repository) comparePasswords(hashedPwd string, plainPwd []byte) bool {
 	return true
 }
 
-func randomPassword(length int) string {
+// RandomPassword returns a random password of the given length
+func RandomPassword(length int) string {
 	const (
 		digits   = "0123456789"
 		specials = "~=+%^*/()[]{}/!@#$?|"

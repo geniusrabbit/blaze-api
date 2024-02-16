@@ -1,4 +1,4 @@
-package oauth2
+package oauth2srvprovider
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func (sess *Session) SetExpiresAt(key fosite.TokenType, exp time.Time) {
 
 // GetExpiresAt returns the expiration time of a token if set, or time.IsZero() if not.
 //
-//  session.GetExpiresAt(fosite.AccessToken)
+//	session.GetExpiresAt(fosite.AccessToken)
 func (sess *Session) GetExpiresAt(key fosite.TokenType) time.Time {
 	switch key {
 	case fosite.AccessToken:
