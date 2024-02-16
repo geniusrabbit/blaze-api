@@ -79,7 +79,14 @@ func (wr *Oauth2Wrapper) Error(w http.ResponseWriter, r *http.Request, err error
 		http.Redirect(w, r, wr.errorRedirectURL, http.StatusTemporaryRedirect)
 		return
 	}
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	w.WriteHeader(http.StatusInternalServerError)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"status":   "error",
+		"protocol": wr.wrapper.Protocol(),
+		"provider": wr.wrapper.Provider(),
+		"error":    err.Error(),
+	})
 }
 
 // Success handles the success of the oauth2 authentication
@@ -146,8 +153,10 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"status": "ok",
-		"token":  sessToken,
+		"status":   "ok",
+		"protocol": wr.wrapper.Protocol(),
+		"provider": wr.wrapper.Provider(),
+		"token":    sessToken,
 	})
 }
 
