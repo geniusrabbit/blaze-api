@@ -22,9 +22,9 @@ func NewCrossAuthHeader(accid, uid uint64) string {
 // ParseCrossAuthHeader from value
 func ParseCrossAuthHeader(val string) (accid, uid uint64) {
 	connectIDs := strings.Split(val, ":")
-	accid = gocast.Number[uint64](connectIDs[0])
+	accid = gocast.Uint64(connectIDs[0])
 	if len(connectIDs) == 2 {
-		uid = gocast.Number[uint64](connectIDs[1])
+		uid = gocast.Uint64(connectIDs[1])
 	}
 	return accid, uid
 }

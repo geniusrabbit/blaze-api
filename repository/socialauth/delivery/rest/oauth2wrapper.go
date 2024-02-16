@@ -62,11 +62,23 @@ func (wr *Oauth2Wrapper) HandleWrapper(prefix string) http.Handler {
 
 // RedirectParams returns the redirect parameters for the oauth2 authentication default redirect URL
 func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) []elogin.URLParam {
-	redirectURL := r.URL.Query().Get("redirect")
+	var (
+		redirectURL = r.URL.Query().Get("redirect")
+		res         []elogin.URLParam
+	)
 	if redirectURL != "" {
-		return []elogin.URLParam{{Key: "redirect", Value: redirectURL}}
+		res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
 	}
-	return nil
+	if isLogin {
+		if token := session.Token(r.Context()); token != "" {
+			res = append(res, elogin.URLParam{Key: "access_token", Value: token})
+		}
+	} else {
+		if token := r.URL.Query().Get("access_token"); token != "" {
+			res = append(res, elogin.URLParam{Key: "access_token", Value: token})
+		}
+	}
+	return res
 }
 
 // Error handles the error occurred during the oauth2 authentication
@@ -133,10 +145,10 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	}
 
 	// Session token initialization
-	var sessToken string
+	sessToken := session.Token(ctx)
 
 	// Create session if provided
-	if wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
+	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
 		sessToken, err = wr.sessProvider.CreateToken(accSocial.UserID, 0)
 		if err != nil {
 			wr.Error(w, r, err)
@@ -194,12 +206,16 @@ func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, token *
 }
 
 func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.AccountSocial, token *elogin.Token, userData *elogin.UserData) error {
+	var scopes []string
+	if userData.OAuth2conf != nil {
+		scopes = userData.OAuth2conf.Scopes
+	}
 	socAcc.Email = gocast.Or(userData.Email, socAcc.Email)
 	socAcc.FirstName = gocast.Or(userData.FirstName, socAcc.FirstName)
 	socAcc.LastName = gocast.Or(userData.LastName, socAcc.LastName)
 	socAcc.Avatar = gocast.Or(userData.AvatarURL, socAcc.Avatar)
 	socAcc.Link = gocast.Or(userData.Link, socAcc.Link)
-	socAcc.Scope = gocast.IfThen(userData.OAuth2conf != nil, userData.OAuth2conf.Scopes, socAcc.Scope)
+	socAcc.Scope = gocast.IfThen(len(scopes) > 0, scopes, socAcc.Scope)
 	return wr.socialAuthUsecase.Update(ctx, socAcc.ID, socAcc)
 }
 

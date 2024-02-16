@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	"go.uber.org/zap"
 
 	// grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	// "github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/demdxx/gocast/v2"
 	"github.com/ory/fosite"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -28,9 +28,7 @@ var testMode = false
 
 // SetTestMode state
 // nolint:unused // used in tests
-func SetTestMode(test bool) {
-	testMode = test
-}
+func SetTestMode(test bool) { testMode = test }
 
 var (
 	errAccessTokensOnlyAllows       = errors.New("only access tokens are allowed in the authorization header")
@@ -107,13 +105,14 @@ func AuthHTTP(metricsPrefix string, next http.Handler, oauth2provider fosite.OAu
 			}
 		}
 		if !authorized {
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			if strings.HasPrefix(r.URL.Path, "/graphql") {
-				_, _ = w.Write([]byte(`{"errors":[{"message":"Unauthorized","code":401}]}`))
-			}
+			_, _ = w.Write([]byte(`{"errors":[{"message":"Unauthorized","code":401}]}`))
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(session.WithToken(
+			ctx, gocast.IfThen(authorized, token, ""),
+		)))
 	})
 }
 
@@ -133,7 +132,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 
 	if !testMode {
 		oauth2Ctx := oauth2srvprovider.NewContext(ctx)
-		tokenType, aa, errToken := oauth2provider.IntrospectToken(
+		tokenType, accessReq, errToken := oauth2provider.IntrospectToken(
 			oauth2Ctx, token, fosite.AccessToken,
 			&fosite.DefaultSession{})
 		if errToken != nil {
@@ -142,7 +141,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 		if tokenType != fosite.AccessToken {
 			return nil, errAccessTokensOnlyAllows
 		}
-		session := aa.GetSession().(*oauth2srvprovider.Session)
+		session := accessReq.GetSession().(*oauth2srvprovider.Session)
 		users := userRepository.New()
 		userObj, accountObj, err = users.GetByToken(ctx, session.AccessToken)
 	} else {
