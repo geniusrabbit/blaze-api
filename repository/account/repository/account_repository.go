@@ -70,7 +70,7 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Acco
 		if accountObj.Approve.IsApproved() && userObj.Approve.IsApproved() {
 			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, memeber.IsAdmin, nil, roles...)
 		} else {
-			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(r rbac.Role) bool {
+			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(_ context.Context, r rbac.Role) bool {
 				// Skip system or account roles for not approved accounts
 				return !strings.HasPrefix(r.Name(), "system:") || !strings.HasPrefix(r.Name(), "account:")
 			}, roles...)

@@ -42,3 +42,8 @@ func (o *Option) OwnerAccountID() uint64 {
 	}
 	return 0
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (o *Option) RBACResourceName() string {
+	return "option"
+}

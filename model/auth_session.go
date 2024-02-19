@@ -40,3 +40,8 @@ type AuthSession struct {
 func (m *AuthSession) TableName() string {
 	return `auth_session`
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (m *AuthSession) RBACResourceName() string {
+	return `auth_session`
+}

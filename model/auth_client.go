@@ -80,3 +80,8 @@ func (m *AuthClient) TableName() string {
 func (m *AuthClient) OwnerAccountID() uint64 {
 	return m.AccountID
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (m *AuthClient) RBACResourceName() string {
+	return `auth_client`
+}

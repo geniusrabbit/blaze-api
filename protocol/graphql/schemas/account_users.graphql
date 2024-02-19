@@ -159,7 +159,7 @@ extend type Query {
   """
   Current user from the session
   """
-  currentUser: UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+  currentUser: UserPayload! @hasPermissions(permissions: ["user.view.*"])
 
   """
   Get user object by ID or username
@@ -167,7 +167,7 @@ extend type Query {
   user(
     id: ID64! = 0,
     username: String! = ""
-  ): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+  ): UserPayload! @hasPermissions(permissions: ["user.view.*"])
 
   """
   List of the user objects which can be filtered and ordered by some fields
@@ -176,37 +176,37 @@ extend type Query {
     filter: UserListFilter = null,
     order: UserListOrder = null,
     page: Page = null
-  ): UserConnection @hasPermissions(permissions: [{key: "model:User", access: ["list"]}])
+  ): UserConnection @hasPermissions(permissions: ["user.list.*"])
 }
 
 extend type Mutation {
   """
   Create the new user
   """
-  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["create"]}])
+  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.create.*"])
 
   """
   Update user info
   """
-  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["update"]}])
+  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.update.*"])
 
   """
   Approve user and leave the comment
   """
-  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["approve"]}])
+  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.approve.*"])
 
   """
   Reject user and leave the comment
   """
-  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reject"]}])
+  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.reject.*"])
 
   """
   Reset password of the particular user in case if user forgot it
   """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.reset_password"])
 
   """
   Update password of the particular user
   """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.reset_password"])
 }

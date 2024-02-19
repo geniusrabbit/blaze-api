@@ -39,14 +39,13 @@ func (s *testSuite) TestGetByName() {
 	s.Mock.ExpectQuery("SELECT *").
 		WithArgs("system:manager").
 		WillReturnRows(
-			sqlmock.NewRows([]string{"id", "name", "title", "type", "created_at"}).
-				AddRow(1, "system:manager", "manager", "role", time.Now()),
+			sqlmock.NewRows([]string{"id", "name", "title", "created_at"}).
+				AddRow(1, "system:manager", "manager", time.Now()),
 		)
 	role, err := s.roleRepo.GetByName(s.Ctx, "system:manager")
 	s.NoError(err)
 	s.Equal(uint64(1), role.ID)
 	s.Equal("manager", role.Title)
-	s.Equal("role", role.Type.String())
 }
 
 func (s *testSuite) TestFetchList() {

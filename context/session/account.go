@@ -5,7 +5,6 @@ import (
 
 	// "github.com/geniusrabbit/blaze-api/repository/user"
 
-	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
 	// "github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
@@ -32,8 +31,8 @@ func WithUserAccount(ctx context.Context, userObj *model.User, accountObj *model
 
 // WithAnonymousUserAccount puts to context user and account with anonym permissions
 func WithAnonymousUserAccount(ctx context.Context) context.Context {
-	pm := permissionmanager.Get(ctx)
-	role, _ := pm.RoleByName(ctx, AnonymousDefaultRole)
+	pm := permissions.FromContext(ctx)
+	role := pm.Role(ctx, AnonymousDefaultRole)
 	return WithUserAccount(ctx,
 		&model.User{Email: "<anonymous>", Approve: model.ApprovedApproveStatus},
 		&model.Account{Title: "<anonymous>", Permissions: role})
@@ -42,8 +41,8 @@ func WithAnonymousUserAccount(ctx context.Context) context.Context {
 // WithUserAccountDevelop sets development objects into the context
 // nolint:unused // ...
 func WithUserAccountDevelop(ctx context.Context) context.Context {
-	manager := permissions.NewTestManager()
-	role, _ := manager.Role(ctx, 1) // INFO: Assume that there is no error because of this is the test manager
+	manager := permissions.NewTestManager(ctx)
+	role, _ := manager.RoleByID(ctx, 1) // INFO: Assume that there is no error because of this is the test manager
 	ctx = WithUserAccount(ctx, &model.User{ID: 1}, &model.Account{ID: 1, Permissions: role})
 	// if changelog.MessageQueue(ctx) == nil {
 	// 	ctx = changelog.WithMessageQueue(ctx)

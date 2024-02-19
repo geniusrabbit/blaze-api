@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
-	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/database"
 	"github.com/geniusrabbit/blaze-api/permissions"
 )
@@ -44,7 +43,7 @@ func (s *DatabaseSuite) SetupSuite() {
 	}
 	s.Mock = mock
 	s.Ctx = context.TODO()
-	s.Ctx = permissionmanager.WithManager(s.Ctx, permissions.NewTestManager())
+	s.Ctx = permissions.WithManager(s.Ctx, permissions.NewTestManager(s.Ctx))
 	s.Ctx = ctxlogger.WithLogger(s.Ctx, s.Logger)
 	s.Ctx = database.WithDatabase(s.Ctx, s.DB, s.DB)
 }

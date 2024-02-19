@@ -13,31 +13,26 @@ import (
 type Filter struct {
 	ID    []uint64
 	Names []string
-	Types []model.RoleType
 }
 
 func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
-	if fl != nil {
-		if len(fl.Types) > 0 {
-			query = query.Where(`type IN (?)`, fl.Types)
-		}
-		if len(fl.Names) > 0 {
-			query = query.Where(`name IN (?)`, fl.Names)
-		}
-		if len(fl.ID) > 0 {
-			query = query.Where(`id IN (?)`, fl.ID)
-		}
+	if fl == nil {
+		return query
+	}
+	if len(fl.Names) > 0 {
+		query = query.Where(`name IN (?)`, fl.Names)
+	}
+	if len(fl.ID) > 0 {
+		query = query.Where(`id IN (?)`, fl.ID)
 	}
 	return query
 }
 
 // Order of the objects list
 type Order struct {
-	ID       model.Order
-	ParentID model.Order
-	Name     model.Order
-	Title    model.Order
-	Type     model.Order
+	ID    model.Order
+	Name  model.Order
+	Title model.Order
 }
 
 func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -45,10 +40,8 @@ func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
 		return query
 	}
 	query = o.ID.PrepareQuery(query, `id`)
-	query = o.ParentID.PrepareQuery(query, `parent_id`)
 	query = o.Name.PrepareQuery(query, `name`)
 	query = o.Title.PrepareQuery(query, `title`)
-	query = o.Type.PrepareQuery(query, `type`)
 	return query
 }
 

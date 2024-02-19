@@ -26,11 +26,7 @@ func FromAccountModel(acc *model.Account) *Account {
 
 // FromAccountModelList converts model list to local model list
 func FromAccountModelList(list []*model.Account) []*Account {
-	accounts := make([]*Account, 0, len(list))
-	for _, u := range list {
-		accounts = append(accounts, FromAccountModel(u))
-	}
-	return accounts
+	return xtypes.SliceApply[*model.Account, *Account](list, FromAccountModel)
 }
 
 // Filter converts local graphql model to filter

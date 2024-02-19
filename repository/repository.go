@@ -9,7 +9,6 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/database"
-	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/permissions"
 )
 
@@ -18,7 +17,7 @@ type Repository struct{}
 
 // PermissionManager returns permission-manager object from context
 func (r *Repository) PermissionManager(ctx context.Context) *permissions.Manager {
-	return permissionmanager.Get(ctx)
+	return permissions.FromContext(ctx)
 }
 
 // Logger returns logger object from context

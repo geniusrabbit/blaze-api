@@ -2,14 +2,13 @@ package directives
 
 import (
 	"context"
-	"reflect"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/pkg/errors"
 
-	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/context/session"
-	gmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
+	"github.com/geniusrabbit/blaze-api/permissions"
 )
 
 var (
@@ -21,50 +20,34 @@ var (
 // Every module have the list of permissions ["list", "view", "create", "update", "delete", etc]
 // This method checks, first of all, that object belongs to the user or have manager access and secondly
 // that the user has the requested permissions of the module or several modules
-func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, permissions []*gmodels.Permission) (any, error) {
+func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms []string) (any, error) {
 	account := session.Account(ctx)
-	pm := permissionmanager.Get(ctx)
+	pm := permissions.FromContext(ctx)
 
 	if account == nil {
 		return nil, errors.Wrap(errAuthorizationRequired, `no correct account`)
 	}
 
-	if len(permissions) < 1 {
+	if len(perms) < 1 {
 		return nil, errAccessForbidden
 	}
 
-	for _, perm := range permissions {
-		newObj := pm.ObjectByName(perm.Key)
-
-		// Check if user have permission to the whole module
-		// for example: users.*, campaigns.*, banners.*, etc.
-		if account.CheckPermissions(ctx, newObj, "*") {
-			continue
-		} else if len(perm.Access) == 0 {
+	for _, perm := range perms {
+		var (
+			index   = max(0, strings.Index(perm, "."))
+			objName = perm[:index]
+			newObj  any
+		)
+		if objName != `` {
+			newObj = pm.ObjectByName(objName)
+		}
+		if !account.CheckPermissions(ctx, newObj, perm) {
 			if account.IsAnonimous() {
 				return nil, errAuthorizationRequired
 			}
-			return nil, errors.Wrap(errAccessForbidden, objectName(newObj)+` [*]`)
-		}
-
-		// Check permission one by one if user doesn't have at least one of them then return the error
-		for _, access := range perm.Access {
-			if !account.CheckPermissions(ctx, newObj, access) {
-				if account.IsAnonimous() {
-					return nil, errAuthorizationRequired
-				}
-				return nil, errors.Wrap(errAccessForbidden, objectName(newObj)+` [`+access+`]`)
-			}
+			return nil, errors.Wrap(errAccessForbidden, objName+` [`+strings.Trim(objName[index:], `.`)+`]`)
 		}
 	}
 
 	return next(ctx)
-}
-
-func objectName(obj any) string {
-	t := reflect.TypeOf(obj)
-	for t.Kind() == reflect.Interface || t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	return t.Name()
 }

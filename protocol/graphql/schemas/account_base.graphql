@@ -178,12 +178,12 @@ extend type Query {
   """
   Current account from the session
   """
-  currentAccount: AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+  currentAccount: AccountPayload! @hasPermissions(permissions: ["account.view.*"])
 
   """
   Get account object by ID
   """
-  account(id: ID64!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+  account(id: ID64!): AccountPayload! @hasPermissions(permissions: ["account.view.*"])
 
   """
   List of the account objects which can be filtered and ordered by some fields
@@ -192,12 +192,12 @@ extend type Query {
     filter: AccountListFilter = null,
     order: AccountListOrder = null,
     page: Page = null
-  ): AccountConnection @hasPermissions(permissions: [{key: "model:Account", access: ["list"]}])
+  ): AccountConnection @hasPermissions(permissions: ["account.list.*"])
 
   """
   List of the account roles/permissions
   """
-  listAccountRolesAndPermissions(accountID: ID64!, order: RBACRoleListOrder = null): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+  listAccountRolesAndPermissions(accountID: ID64!, order: RBACRoleListOrder = null): RBACRoleConnection @hasPermissions(permissions: ["account.view.*"])
 }
 
 extend type Mutation {
@@ -214,20 +214,20 @@ extend type Mutation {
   """
   Register the new account
   """
-  registerAccount(input: AccountCreateInput!): AccountCreatePayload! @hasPermissions(permissions: [{key: "model:Account", access: ["register"]}])
+  registerAccount(input: AccountCreateInput!): AccountCreatePayload! @hasPermissions(permissions: ["account.register"])
 
   """
   Update account info
   """
-  updateAccount(id: ID64!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["update"]}])
+  updateAccount(id: ID64!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: ["account.update.*"])
 
   """
   Approve account and leave the comment
   """
-  approveAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["approve"]}])
+  approveAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.approve.*"])
 
   """
   Reject account and leave the comment
   """
-  rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["reject"]}])
+  rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.reject.*"])
 }

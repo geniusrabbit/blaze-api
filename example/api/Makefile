@@ -136,6 +136,18 @@ run-api: build-docker-dev ## Run API service by docker-compose
 	@echo "Run API service ${DOCKER_SERVER_LISTEN}"
 	$(DOCKER_COMPOSE) up api
 
+.PHONY: announce-api
+announce-api: ## Announce API service in internet
+# https://theboroer.github.io/localtunnel-www/
+	@echo "Test API server"
+	curl https://loca.lt/mytunnelpassword
+	@echo ""
+	lt --port ${DOCKER_SERVER_LISTEN}
+	# gotunnelme ${DOCKER_SERVER_LISTEN}
+
+.PHONY: announce-run-api
+announce-run-api: run-api announce-api ## Run and announce API service
+
 .PHONY: stop
 stop: ## Stop all services
 	@echo "Stop all services"

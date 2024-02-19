@@ -47,7 +47,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	HasPermissions func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []*models.Permission) (res interface{}, err error)
+	HasPermissions func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -254,17 +254,23 @@ type ComplexityRoot struct {
 		User                           func(childComplexity int, id uint64, username string) int
 	}
 
+	RBACPermission struct {
+		Access func(childComplexity int) int
+		Name   func(childComplexity int) int
+		Object func(childComplexity int) int
+	}
+
 	RBACRole struct {
-		ChildRolesAndPermissions func(childComplexity int) int
-		Context                  func(childComplexity int) int
-		CreatedAt                func(childComplexity int) int
-		DeletedAt                func(childComplexity int) int
-		ID                       func(childComplexity int) int
-		Name                     func(childComplexity int) int
-		ParentID                 func(childComplexity int) int
-		Title                    func(childComplexity int) int
-		Type                     func(childComplexity int) int
-		UpdatedAt                func(childComplexity int) int
+		ChildRoles         func(childComplexity int) int
+		Context            func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		DeletedAt          func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		Name               func(childComplexity int) int
+		PermissionPatterns func(childComplexity int) int
+		Permissions        func(childComplexity int) int
+		Title              func(childComplexity int) int
+		UpdatedAt          func(childComplexity int) int
 	}
 
 	RBACRoleConnection struct {
@@ -1499,12 +1505,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity, args["id"].(uint64), args["username"].(string)), true
 
-	case "RBACRole.childRolesAndPermissions":
-		if e.complexity.RBACRole.ChildRolesAndPermissions == nil {
+	case "RBACPermission.access":
+		if e.complexity.RBACPermission.Access == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.ChildRolesAndPermissions(childComplexity), true
+		return e.complexity.RBACPermission.Access(childComplexity), true
+
+	case "RBACPermission.name":
+		if e.complexity.RBACPermission.Name == nil {
+			break
+		}
+
+		return e.complexity.RBACPermission.Name(childComplexity), true
+
+	case "RBACPermission.object":
+		if e.complexity.RBACPermission.Object == nil {
+			break
+		}
+
+		return e.complexity.RBACPermission.Object(childComplexity), true
+
+	case "RBACRole.childRoles":
+		if e.complexity.RBACRole.ChildRoles == nil {
+			break
+		}
+
+		return e.complexity.RBACRole.ChildRoles(childComplexity), true
 
 	case "RBACRole.context":
 		if e.complexity.RBACRole.Context == nil {
@@ -1541,12 +1568,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.RBACRole.Name(childComplexity), true
 
-	case "RBACRole.parentID":
-		if e.complexity.RBACRole.ParentID == nil {
+	case "RBACRole.permissionPatterns":
+		if e.complexity.RBACRole.PermissionPatterns == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.ParentID(childComplexity), true
+		return e.complexity.RBACRole.PermissionPatterns(childComplexity), true
+
+	case "RBACRole.permissions":
+		if e.complexity.RBACRole.Permissions == nil {
+			break
+		}
+
+		return e.complexity.RBACRole.Permissions(childComplexity), true
 
 	case "RBACRole.title":
 		if e.complexity.RBACRole.Title == nil {
@@ -1554,13 +1588,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.RBACRole.Title(childComplexity), true
-
-	case "RBACRole.type":
-		if e.complexity.RBACRole.Type == nil {
-			break
-		}
-
-		return e.complexity.RBACRole.Type(childComplexity), true
 
 	case "RBACRole.updatedAt":
 		if e.complexity.RBACRole.UpdatedAt == nil {
@@ -1800,7 +1827,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputOptionListFilter,
 		ec.unmarshalInputOptionListOrder,
 		ec.unmarshalInputPage,
-		ec.unmarshalInputPermission,
 		ec.unmarshalInputRBACRoleInput,
 		ec.unmarshalInputRBACRoleListFilter,
 		ec.unmarshalInputRBACRoleListOrder,
@@ -2084,12 +2110,12 @@ extend type Query {
   """
   Current account from the session
   """
-  currentAccount: AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+  currentAccount: AccountPayload! @hasPermissions(permissions: ["account.view.*"])
 
   """
   Get account object by ID
   """
-  account(id: ID64!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+  account(id: ID64!): AccountPayload! @hasPermissions(permissions: ["account.view.*"])
 
   """
   List of the account objects which can be filtered and ordered by some fields
@@ -2098,12 +2124,12 @@ extend type Query {
     filter: AccountListFilter = null,
     order: AccountListOrder = null,
     page: Page = null
-  ): AccountConnection @hasPermissions(permissions: [{key: "model:Account", access: ["list"]}])
+  ): AccountConnection @hasPermissions(permissions: ["account.list.*"])
 
   """
   List of the account roles/permissions
   """
-  listAccountRolesAndPermissions(accountID: ID64!, order: RBACRoleListOrder = null): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Account", access: ["view"]}])
+  listAccountRolesAndPermissions(accountID: ID64!, order: RBACRoleListOrder = null): RBACRoleConnection @hasPermissions(permissions: ["account.view.*"])
 }
 
 extend type Mutation {
@@ -2120,22 +2146,22 @@ extend type Mutation {
   """
   Register the new account
   """
-  registerAccount(input: AccountCreateInput!): AccountCreatePayload! @hasPermissions(permissions: [{key: "model:Account", access: ["register"]}])
+  registerAccount(input: AccountCreateInput!): AccountCreatePayload! @hasPermissions(permissions: ["account.register"])
 
   """
   Update account info
   """
-  updateAccount(id: ID64!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["update"]}])
+  updateAccount(id: ID64!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: ["account.update.*"])
 
   """
   Approve account and leave the comment
   """
-  approveAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["approve"]}])
+  approveAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.approve.*"])
 
   """
   Reject account and leave the comment
   """
-  rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: [{key: "model:Account", access: ["reject"]}])
+  rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.reject.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/account_users.graphql", Input: `
@@ -2299,7 +2325,7 @@ extend type Query {
   """
   Current user from the session
   """
-  currentUser: UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+  currentUser: UserPayload! @hasPermissions(permissions: ["user.view.*"])
 
   """
   Get user object by ID or username
@@ -2307,7 +2333,7 @@ extend type Query {
   user(
     id: ID64! = 0,
     username: String! = ""
-  ): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["view"]}])
+  ): UserPayload! @hasPermissions(permissions: ["user.view.*"])
 
   """
   List of the user objects which can be filtered and ordered by some fields
@@ -2316,39 +2342,39 @@ extend type Query {
     filter: UserListFilter = null,
     order: UserListOrder = null,
     page: Page = null
-  ): UserConnection @hasPermissions(permissions: [{key: "model:User", access: ["list"]}])
+  ): UserConnection @hasPermissions(permissions: ["user.list.*"])
 }
 
 extend type Mutation {
   """
   Create the new user
   """
-  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["create"]}])
+  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.create.*"])
 
   """
   Update user info
   """
-  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["update"]}])
+  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.update.*"])
 
   """
   Approve user and leave the comment
   """
-  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["approve"]}])
+  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.approve.*"])
 
   """
   Reject user and leave the comment
   """
-  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: [{key: "model:User", access: ["reject"]}])
+  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.reject.*"])
 
   """
   Reset password of the particular user in case if user forgot it
   """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.reset_password"])
 
   """
   Update password of the particular user
   """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: [{key: "model:User", access: ["reset_password"]}])
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.reset_password"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/auth_client.graphql", Input: `"""
@@ -2556,7 +2582,7 @@ extend type Query {
   """
   Get auth client object by ID
   """
-  authClient(id: ID!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["view"]}])
+  authClient(id: ID!): AuthClientPayload! @hasPermissions(permissions: ["auth_client.view.*"])
 
   """
   List of the auth client objects which can be filtered and ordered by some fields
@@ -2565,24 +2591,24 @@ extend type Query {
     filter: AuthClientListFilter = null,
     order: AuthClientListOrder = null,
     page: Page = null
-  ): AuthClientConnection @hasPermissions(permissions: [{key: "model:AuthClient", access: ["list"]}])
+  ): AuthClientConnection @hasPermissions(permissions: ["auth_client.list.*"])
 }
 
 extend type Mutation {
   """
   Create the new auth client
   """
-  createAuthClient(input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["create"]}])
+  createAuthClient(input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: ["auth_client.create.*"])
 
   """
   Update auth client info
   """
-  updateAuthClient(id: ID!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["update"]}])
+  updateAuthClient(id: ID!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: ["auth_client.update.*"])
 
   """
   Delete auth client
   """
-  deleteAuthClient(id: ID!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: [{key: "model:AuthClient", access: ["delete"]}])
+  deleteAuthClient(id: ID!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: ["auth_client.delete.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/constants.graphql", Input: `
@@ -2672,13 +2698,8 @@ enum ResponseStatus {
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/directives.graphql", Input: `
-input Permission {
-  key:    String!
-  access: [String!]
-}
-
 "Prevents access to a field if the user doesnt have the matching permissions"
-directive @hasPermissions(permissions: [Permission!]!) on FIELD_DEFINITION | FIELD
+directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/history.graphql", Input: `"""
 HistoryAction is the model for history actions.
@@ -2824,7 +2845,7 @@ extend type Query {
     filter: HistoryActionListFilter = null,
     order: HistoryActionListOrder = null,
     page: Page = null
-  ): HistoryActionConnection @hasPermissions(permissions: [{key: "model:HistoryAction", access: ["list"]}])
+  ): HistoryActionConnection @hasPermissions(permissions: ["history_action.list"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/options.graphql", Input: `enum OptionType {
@@ -2935,7 +2956,7 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["view"]}])
+  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.view"])
 
   """
   List of the option values which can be filtered and ordered by some fields
@@ -2944,14 +2965,14 @@ extend type Query {
     filter: OptionListFilter = null,
     order: OptionListOrder = null,
     page: Page = null
-  ): OptionConnection @hasPermissions(permissions: [{key: "model:Option", access: ["list"]}])
+  ): OptionConnection @hasPermissions(permissions: ["option.list"])
 }
 
 extend type Mutation {
   """
   Set the option value
   """
-  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["update"]}])
+  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: ["option.update"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/pagination.graphql", Input: `
@@ -3017,12 +3038,10 @@ input Page {
   size: Int
 }
 `, BuiltIn: false},
-	{Name: "../../../protocol/graphql/schemas/rbac.graphql", Input: `"""
-Role type defines whether the role is a role or a permission.
-"""
-enum RoleType {
-  ROLE
-  PERMISSION
+	{Name: "../../../protocol/graphql/schemas/rbac.graphql", Input: `type RBACPermission {
+  name:   String!
+  object: String!
+  access: String!
 }
 
 """
@@ -3030,17 +3049,15 @@ A role is a collection of permissions. A role can be a child of another role.
 """
 type RBACRole {
 	ID:       ID64!
-	parentID: ID64
 	name:     String!
 	title:    String!
-	type:     RoleType!
 
   """
   Context is a JSON object that defines the context of the role.
   The context is used to determine whether the role is applicable to the object.
   The context is a JSON object with the following structure:
 
-	{"cover": "system", "object": "model:Role"}
+	{"cover": "system", "object": "role"}
 
   where:
 	"cover" - is a name of the cover area of the object type
@@ -3048,7 +3065,9 @@ type RBACRole {
   """
 	context:  NullableJSON
 
-	childRolesAndPermissions: [RBACRole!]
+	childRoles: [RBACRole!]
+  permissions: [RBACPermission!]
+  permissionPatterns: [String!]
 
   createdAt: Time!
   updatedAt: Time!
@@ -3122,14 +3141,12 @@ type RBACRolePayload {
 input RBACRoleListFilter {
   ID:   [ID64!]
   name: [String!]
-  type: [RoleType!]
 }
 
 input RBACRoleListOrder {
   ID:    Ordering
   name:  Ordering
   title: Ordering
-  type:  Ordering
 }
 
 ###############################################################################
@@ -3137,11 +3154,10 @@ input RBACRoleListOrder {
 ###############################################################################
 
 input RBACRoleInput {
-  parentID: ID64
-  name:     String
-  title:    String
-  type:     RoleType!
-  context:  NullableJSON
+  name:        String
+  title:       String
+  context:     NullableJSON
+  permissions: [String!]
 }
 
 ###############################################################################
@@ -3152,13 +3168,13 @@ extend type Query {
   """
   Get RBAC role object by ID
   """
-  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
+  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: ["role.view.*"])
 
   """
   Check if the user has access to the particular role or permission.
   Returns the area of the access or null if access is denied.
   """
-  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: [{key: "model:Role", access: ["check"]}])
+  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: ["role.check.*"])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
@@ -3167,24 +3183,24 @@ extend type Query {
     filter: RBACRoleListFilter = null,
     order: RBACRoleListOrder = null,
     page: Page = null
-  ): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Role", access: ["list"]}])
+  ): RBACRoleConnection @hasPermissions(permissions: ["role.list.*"])
 }
 
 extend type Mutation {
   """
   Create the new RBAC role
   """
-  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["create"]}])
+  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.create.*"])
 
   """
   Update RBAC role info
   """
-  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["update"]}])
+  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.update.*"])
 
   """
   Delete RBAC role
   """
-  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
+  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: ["role.delete.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/schema.graphql", Input: `# https://github.com/prisma/graphql-import
@@ -3237,10 +3253,10 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) dir_hasPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []*models.Permission
+	var arg0 []string
 	if tmp, ok := rawArgs["permissions"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
-		arg0, err = ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, tmp)
+		arg0, err = ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4067,7 +4083,7 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj interface{
 				if ec.directives.HasPermissions == nil {
 					return nil, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, obj, n, args["permissions"].([]*models.Permission))
+				return ec.directives.HasPermissions(ctx, obj, n, args["permissions"].([]string))
 			}
 		}
 	}
@@ -7375,7 +7391,7 @@ func (ec *executionContext) _Mutation_registerAccount(ctx context.Context, field
 			return ec.resolvers.Mutation().RegisterAccount(rctx, fc.Args["input"].(models.AccountCreateInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"register"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.register"})
 			if err != nil {
 				return nil, err
 			}
@@ -7459,7 +7475,7 @@ func (ec *executionContext) _Mutation_updateAccount(ctx context.Context, field g
 			return ec.resolvers.Mutation().UpdateAccount(rctx, fc.Args["id"].(uint64), fc.Args["input"].(models.AccountInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"update"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.update.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -7543,7 +7559,7 @@ func (ec *executionContext) _Mutation_approveAccount(ctx context.Context, field 
 			return ec.resolvers.Mutation().ApproveAccount(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"approve"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.approve.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -7627,7 +7643,7 @@ func (ec *executionContext) _Mutation_rejectAccount(ctx context.Context, field g
 			return ec.resolvers.Mutation().RejectAccount(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"reject"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.reject.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -7711,7 +7727,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 			return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["input"].(models.UserInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"create"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.create.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -7795,7 +7811,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 			return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(uint64), fc.Args["input"].(models.UserInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"update"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.update.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -7879,7 +7895,7 @@ func (ec *executionContext) _Mutation_approveUser(ctx context.Context, field gra
 			return ec.resolvers.Mutation().ApproveUser(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"approve"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.approve.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -7963,7 +7979,7 @@ func (ec *executionContext) _Mutation_rejectUser(ctx context.Context, field grap
 			return ec.resolvers.Mutation().RejectUser(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"reject"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.reject.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -8047,7 +8063,7 @@ func (ec *executionContext) _Mutation_resetUserPassword(ctx context.Context, fie
 			return ec.resolvers.Mutation().ResetUserPassword(rctx, fc.Args["email"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"reset_password"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.reset_password"})
 			if err != nil {
 				return nil, err
 			}
@@ -8129,7 +8145,7 @@ func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, fi
 			return ec.resolvers.Mutation().UpdateUserPassword(rctx, fc.Args["token"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"reset_password"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.reset_password"})
 			if err != nil {
 				return nil, err
 			}
@@ -8211,7 +8227,7 @@ func (ec *executionContext) _Mutation_createAuthClient(ctx context.Context, fiel
 			return ec.resolvers.Mutation().CreateAuthClient(rctx, fc.Args["input"].(models.AuthClientInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"create"}, "key": "model:AuthClient"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.create.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -8295,7 +8311,7 @@ func (ec *executionContext) _Mutation_updateAuthClient(ctx context.Context, fiel
 			return ec.resolvers.Mutation().UpdateAuthClient(rctx, fc.Args["id"].(string), fc.Args["input"].(models.AuthClientInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"update"}, "key": "model:AuthClient"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.update.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -8379,7 +8395,7 @@ func (ec *executionContext) _Mutation_deleteAuthClient(ctx context.Context, fiel
 			return ec.resolvers.Mutation().DeleteAuthClient(rctx, fc.Args["id"].(string), fc.Args["msg"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"delete"}, "key": "model:AuthClient"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.delete.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -8463,7 +8479,7 @@ func (ec *executionContext) _Mutation_setOption(ctx context.Context, field graph
 			return ec.resolvers.Mutation().SetOption(rctx, fc.Args["name"].(string), fc.Args["input"].(models.OptionInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"update"}, "key": "model:Option"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"option.update"})
 			if err != nil {
 				return nil, err
 			}
@@ -8547,7 +8563,7 @@ func (ec *executionContext) _Mutation_createRole(ctx context.Context, field grap
 			return ec.resolvers.Mutation().CreateRole(rctx, fc.Args["input"].(models.RBACRoleInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"create"}, "key": "model:Role"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.create.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -8631,7 +8647,7 @@ func (ec *executionContext) _Mutation_updateRole(ctx context.Context, field grap
 			return ec.resolvers.Mutation().UpdateRole(rctx, fc.Args["id"].(uint64), fc.Args["input"].(models.RBACRoleInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"update"}, "key": "model:Role"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.update.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -8715,7 +8731,7 @@ func (ec *executionContext) _Mutation_deleteRole(ctx context.Context, field grap
 			return ec.resolvers.Mutation().DeleteRole(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"delete"}, "key": "model:Role"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.delete.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10215,7 +10231,7 @@ func (ec *executionContext) _Query_currentAccount(ctx context.Context, field gra
 			return ec.resolvers.Query().CurrentAccount(rctx)
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10288,7 +10304,7 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 			return ec.resolvers.Query().Account(rctx, fc.Args["id"].(uint64))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10372,7 +10388,7 @@ func (ec *executionContext) _Query_listAccounts(ctx context.Context, field graph
 			return ec.resolvers.Query().ListAccounts(rctx, fc.Args["filter"].(*models.AccountListFilter), fc.Args["order"].(*models.AccountListOrder), fc.Args["page"].(*models.Page))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"list"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.list.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10455,7 +10471,7 @@ func (ec *executionContext) _Query_listAccountRolesAndPermissions(ctx context.Co
 			return ec.resolvers.Query().ListAccountRolesAndPermissions(rctx, fc.Args["accountID"].(uint64), fc.Args["order"].(*models.RBACRoleListOrder))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:Account"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10538,7 +10554,7 @@ func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphq
 			return ec.resolvers.Query().CurrentUser(rctx)
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10611,7 +10627,7 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 			return ec.resolvers.Query().User(rctx, fc.Args["id"].(uint64), fc.Args["username"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10695,7 +10711,7 @@ func (ec *executionContext) _Query_listUsers(ctx context.Context, field graphql.
 			return ec.resolvers.Query().ListUsers(rctx, fc.Args["filter"].(*models.UserListFilter), fc.Args["order"].(*models.UserListOrder), fc.Args["page"].(*models.Page))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"list"}, "key": "model:User"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.list.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10778,7 +10794,7 @@ func (ec *executionContext) _Query_authClient(ctx context.Context, field graphql
 			return ec.resolvers.Query().AuthClient(rctx, fc.Args["id"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:AuthClient"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10862,7 +10878,7 @@ func (ec *executionContext) _Query_listAuthClients(ctx context.Context, field gr
 			return ec.resolvers.Query().ListAuthClients(rctx, fc.Args["filter"].(*models.AuthClientListFilter), fc.Args["order"].(*models.AuthClientListOrder), fc.Args["page"].(*models.Page))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"list"}, "key": "model:AuthClient"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.list.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -10945,7 +10961,7 @@ func (ec *executionContext) _Query_listHistory(ctx context.Context, field graphq
 			return ec.resolvers.Query().ListHistory(rctx, fc.Args["filter"].(*models.HistoryActionListFilter), fc.Args["order"].(*models.HistoryActionListOrder), fc.Args["page"].(*models.Page))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"list"}, "key": "model:HistoryAction"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"history_action.list"})
 			if err != nil {
 				return nil, err
 			}
@@ -11028,7 +11044,7 @@ func (ec *executionContext) _Query_option(ctx context.Context, field graphql.Col
 			return ec.resolvers.Query().Option(rctx, fc.Args["name"].(string), fc.Args["optionType"].(models.OptionType), fc.Args["targetID"].(uint64))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:Option"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"option.view"})
 			if err != nil {
 				return nil, err
 			}
@@ -11112,7 +11128,7 @@ func (ec *executionContext) _Query_listOptions(ctx context.Context, field graphq
 			return ec.resolvers.Query().ListOptions(rctx, fc.Args["filter"].(*models.OptionListFilter), fc.Args["order"].(*models.OptionListOrder), fc.Args["page"].(*models.Page))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"list"}, "key": "model:Option"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"option.list"})
 			if err != nil {
 				return nil, err
 			}
@@ -11195,7 +11211,7 @@ func (ec *executionContext) _Query_role(ctx context.Context, field graphql.Colle
 			return ec.resolvers.Query().Role(rctx, fc.Args["id"].(uint64))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"view"}, "key": "model:Role"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.view.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -11279,7 +11295,7 @@ func (ec *executionContext) _Query_checkPermission(ctx context.Context, field gr
 			return ec.resolvers.Query().CheckPermission(rctx, fc.Args["name"].(string), fc.Args["key"].(*string), fc.Args["targetID"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"check"}, "key": "model:Role"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.check.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -11352,7 +11368,7 @@ func (ec *executionContext) _Query_listRoles(ctx context.Context, field graphql.
 			return ec.resolvers.Query().ListRoles(rctx, fc.Args["filter"].(*models.RBACRoleListFilter), fc.Args["order"].(*models.RBACRoleListOrder), fc.Args["page"].(*models.Page))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx, []interface{}{map[string]interface{}{"access": []interface{}{"list"}, "key": "model:Role"}})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.list.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -11540,6 +11556,129 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _RBACPermission_name(ctx context.Context, field graphql.CollectedField, obj *models.RBACPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACPermission_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RBACPermission_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RBACPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RBACPermission_object(ctx context.Context, field graphql.CollectedField, obj *models.RBACPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACPermission_object(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Object, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RBACPermission_object(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RBACPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RBACPermission_access(ctx context.Context, field graphql.CollectedField, obj *models.RBACPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACPermission_access(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Access, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RBACPermission_access(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RBACPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RBACRole_ID(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RBACRole_ID(ctx, field)
 	if err != nil {
@@ -11569,44 +11708,6 @@ func (ec *executionContext) _RBACRole_ID(ctx context.Context, field graphql.Coll
 }
 
 func (ec *executionContext) fieldContext_RBACRole_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RBACRole",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _RBACRole_parentID(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_RBACRole_parentID(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ParentID, nil
-	})
-
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*uint64)
-	fc.Result = res
-	return ec.marshalOID642ᚖuint64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_RBACRole_parentID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -11701,47 +11802,6 @@ func (ec *executionContext) fieldContext_RBACRole_title(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _RBACRole_type(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_RBACRole_type(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Type, nil
-	})
-
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(models.RoleType)
-	fc.Result = res
-	return ec.marshalNRoleType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_RBACRole_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RBACRole",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type RoleType does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _RBACRole_context(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RBACRole_context(ctx, field)
 	if err != nil {
@@ -11780,8 +11840,8 @@ func (ec *executionContext) fieldContext_RBACRole_context(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _RBACRole_childRolesAndPermissions(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_RBACRole_childRolesAndPermissions(ctx, field)
+func (ec *executionContext) _RBACRole_childRoles(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACRole_childRoles(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11794,7 +11854,7 @@ func (ec *executionContext) _RBACRole_childRolesAndPermissions(ctx context.Conte
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ChildRolesAndPermissions, nil
+		return obj.ChildRoles, nil
 	})
 
 	if resTmp == nil {
@@ -11805,7 +11865,7 @@ func (ec *executionContext) _RBACRole_childRolesAndPermissions(ctx context.Conte
 	return ec.marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_childRolesAndPermissions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_childRoles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -11815,18 +11875,18 @@ func (ec *executionContext) fieldContext_RBACRole_childRolesAndPermissions(ctx c
 			switch field.Name {
 			case "ID":
 				return ec.fieldContext_RBACRole_ID(ctx, field)
-			case "parentID":
-				return ec.fieldContext_RBACRole_parentID(ctx, field)
 			case "name":
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
-			case "type":
-				return ec.fieldContext_RBACRole_type(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
-			case "childRolesAndPermissions":
-				return ec.fieldContext_RBACRole_childRolesAndPermissions(ctx, field)
+			case "childRoles":
+				return ec.fieldContext_RBACRole_childRoles(ctx, field)
+			case "permissions":
+				return ec.fieldContext_RBACRole_permissions(ctx, field)
+			case "permissionPatterns":
+				return ec.fieldContext_RBACRole_permissionPatterns(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RBACRole_createdAt(ctx, field)
 			case "updatedAt":
@@ -11835,6 +11895,90 @@ func (ec *executionContext) fieldContext_RBACRole_childRolesAndPermissions(ctx c
 				return ec.fieldContext_RBACRole_deletedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type RBACRole", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RBACRole_permissions(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACRole_permissions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Permissions, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*models.RBACPermission)
+	fc.Result = res
+	return ec.marshalORBACPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermissionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RBACRole_permissions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RBACRole",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_RBACPermission_name(ctx, field)
+			case "object":
+				return ec.fieldContext_RBACPermission_object(ctx, field)
+			case "access":
+				return ec.fieldContext_RBACPermission_access(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RBACPermission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RBACRole_permissionPatterns(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACRole_permissionPatterns(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PermissionPatterns, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RBACRole_permissionPatterns(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RBACRole",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -12080,18 +12224,18 @@ func (ec *executionContext) fieldContext_RBACRoleConnection_list(ctx context.Con
 			switch field.Name {
 			case "ID":
 				return ec.fieldContext_RBACRole_ID(ctx, field)
-			case "parentID":
-				return ec.fieldContext_RBACRole_parentID(ctx, field)
 			case "name":
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
-			case "type":
-				return ec.fieldContext_RBACRole_type(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
-			case "childRolesAndPermissions":
-				return ec.fieldContext_RBACRole_childRolesAndPermissions(ctx, field)
+			case "childRoles":
+				return ec.fieldContext_RBACRole_childRoles(ctx, field)
+			case "permissions":
+				return ec.fieldContext_RBACRole_permissions(ctx, field)
+			case "permissionPatterns":
+				return ec.fieldContext_RBACRole_permissionPatterns(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RBACRole_createdAt(ctx, field)
 			case "updatedAt":
@@ -12238,18 +12382,18 @@ func (ec *executionContext) fieldContext_RBACRoleEdge_node(ctx context.Context, 
 			switch field.Name {
 			case "ID":
 				return ec.fieldContext_RBACRole_ID(ctx, field)
-			case "parentID":
-				return ec.fieldContext_RBACRole_parentID(ctx, field)
 			case "name":
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
-			case "type":
-				return ec.fieldContext_RBACRole_type(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
-			case "childRolesAndPermissions":
-				return ec.fieldContext_RBACRole_childRolesAndPermissions(ctx, field)
+			case "childRoles":
+				return ec.fieldContext_RBACRole_childRoles(ctx, field)
+			case "permissions":
+				return ec.fieldContext_RBACRole_permissions(ctx, field)
+			case "permissionPatterns":
+				return ec.fieldContext_RBACRole_permissionPatterns(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RBACRole_createdAt(ctx, field)
 			case "updatedAt":
@@ -12380,18 +12524,18 @@ func (ec *executionContext) fieldContext_RBACRolePayload_role(ctx context.Contex
 			switch field.Name {
 			case "ID":
 				return ec.fieldContext_RBACRole_ID(ctx, field)
-			case "parentID":
-				return ec.fieldContext_RBACRole_parentID(ctx, field)
 			case "name":
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
-			case "type":
-				return ec.fieldContext_RBACRole_type(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
-			case "childRolesAndPermissions":
-				return ec.fieldContext_RBACRole_childRolesAndPermissions(ctx, field)
+			case "childRoles":
+				return ec.fieldContext_RBACRole_childRoles(ctx, field)
+			case "permissions":
+				return ec.fieldContext_RBACRole_permissions(ctx, field)
+			case "permissionPatterns":
+				return ec.fieldContext_RBACRole_permissionPatterns(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_RBACRole_createdAt(ctx, field)
 			case "updatedAt":
@@ -15734,40 +15878,6 @@ func (ec *executionContext) unmarshalInputPage(ctx context.Context, obj interfac
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPermission(ctx context.Context, obj interface{}) (models.Permission, error) {
-	var it models.Permission
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"key", "access"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "key":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Key = data
-		case "access":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("access"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Access = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputRBACRoleInput(ctx context.Context, obj interface{}) (models.RBACRoleInput, error) {
 	var it models.RBACRoleInput
 	asMap := map[string]interface{}{}
@@ -15775,20 +15885,13 @@ func (ec *executionContext) unmarshalInputRBACRoleInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"parentID", "name", "title", "type", "context"}
+	fieldsInOrder := [...]string{"name", "title", "context", "permissions"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "parentID":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentID"))
-			data, err := ec.unmarshalOID642ᚖuint64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ParentID = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -15803,13 +15906,6 @@ func (ec *executionContext) unmarshalInputRBACRoleInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Title = data
-		case "type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-			data, err := ec.unmarshalNRoleType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleType(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Type = data
 		case "context":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("context"))
 			data, err := ec.unmarshalONullableJSON2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋtypesᚐNullableJSON(ctx, v)
@@ -15817,6 +15913,13 @@ func (ec *executionContext) unmarshalInputRBACRoleInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Context = data
+		case "permissions":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Permissions = data
 		}
 	}
 
@@ -15830,7 +15933,7 @@ func (ec *executionContext) unmarshalInputRBACRoleListFilter(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"ID", "name", "type"}
+	fieldsInOrder := [...]string{"ID", "name"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15851,13 +15954,6 @@ func (ec *executionContext) unmarshalInputRBACRoleListFilter(ctx context.Context
 				return it, err
 			}
 			it.Name = data
-		case "type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-			data, err := ec.unmarshalORoleType2ᚕgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleTypeᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Type = data
 		}
 	}
 
@@ -15871,7 +15967,7 @@ func (ec *executionContext) unmarshalInputRBACRoleListOrder(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"ID", "name", "title", "type"}
+	fieldsInOrder := [...]string{"ID", "name", "title"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15899,13 +15995,6 @@ func (ec *executionContext) unmarshalInputRBACRoleListOrder(ctx context.Context,
 				return it, err
 			}
 			it.Title = data
-		case "type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Type = data
 		}
 	}
 
@@ -17764,6 +17853,55 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var rBACPermissionImplementors = []string{"RBACPermission"}
+
+func (ec *executionContext) _RBACPermission(ctx context.Context, sel ast.SelectionSet, obj *models.RBACPermission) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rBACPermissionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RBACPermission")
+		case "name":
+			out.Values[i] = ec._RBACPermission_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "object":
+			out.Values[i] = ec._RBACPermission_object(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "access":
+			out.Values[i] = ec._RBACPermission_access(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var rBACRoleImplementors = []string{"RBACRole"}
 
 func (ec *executionContext) _RBACRole(ctx context.Context, sel ast.SelectionSet, obj *models.RBACRole) graphql.Marshaler {
@@ -17780,8 +17918,6 @@ func (ec *executionContext) _RBACRole(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "parentID":
-			out.Values[i] = ec._RBACRole_parentID(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._RBACRole_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -17792,15 +17928,14 @@ func (ec *executionContext) _RBACRole(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "type":
-			out.Values[i] = ec._RBACRole_type(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "context":
 			out.Values[i] = ec._RBACRole_context(ctx, field, obj)
-		case "childRolesAndPermissions":
-			out.Values[i] = ec._RBACRole_childRolesAndPermissions(ctx, field, obj)
+		case "childRoles":
+			out.Values[i] = ec._RBACRole_childRoles(ctx, field, obj)
+		case "permissions":
+			out.Values[i] = ec._RBACRole_permissions(ctx, field, obj)
+		case "permissionPatterns":
+			out.Values[i] = ec._RBACRole_permissionPatterns(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._RBACRole_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -18944,28 +19079,6 @@ func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋbl
 	return ec._PageInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermissionᚄ(ctx context.Context, v interface{}) ([]*models.Permission, error) {
-	var vSlice []interface{}
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
-	var err error
-	res := make([]*models.Permission, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNPermission2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermission(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalNPermission2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPermission(ctx context.Context, v interface{}) (*models.Permission, error) {
-	res, err := ec.unmarshalInputPermission(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) marshalNProfileMessanger2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐProfileMessanger(ctx context.Context, sel ast.SelectionSet, v *models.ProfileMessanger) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -18974,6 +19087,16 @@ func (ec *executionContext) marshalNProfileMessanger2ᚖgithubᚗcomᚋgeniusrab
 		return graphql.Null
 	}
 	return ec._ProfileMessanger(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRBACPermission2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermission(ctx context.Context, sel ast.SelectionSet, v *models.RBACPermission) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RBACPermission(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNRBACRole2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRole(ctx context.Context, sel ast.SelectionSet, v *models.RBACRole) graphql.Marshaler {
@@ -19025,16 +19148,6 @@ func (ec *executionContext) marshalNResponseStatus2githubᚗcomᚋgeniusrabbit�
 	return v
 }
 
-func (ec *executionContext) unmarshalNRoleType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleType(ctx context.Context, v interface{}) (models.RoleType, error) {
-	var res models.RoleType
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNRoleType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleType(ctx context.Context, sel ast.SelectionSet, v models.RoleType) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) marshalNSessionToken2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSessionToken(ctx context.Context, sel ast.SelectionSet, v models.SessionToken) graphql.Marshaler {
 	return ec._SessionToken(ctx, sel, &v)
 }
@@ -19076,6 +19189,38 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
@@ -20128,6 +20273,53 @@ func (ec *executionContext) marshalOProfileMessanger2ᚕᚖgithubᚗcomᚋgenius
 	return ret
 }
 
+func (ec *executionContext) marshalORBACPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermissionᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.RBACPermission) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRBACPermission2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermission(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.RBACRole) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -20250,73 +20442,6 @@ func (ec *executionContext) unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgenius
 	}
 	res, err := ec.unmarshalInputRBACRoleListOrder(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalORoleType2ᚕgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleTypeᚄ(ctx context.Context, v interface{}) ([]models.RoleType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
-	var err error
-	res := make([]models.RoleType, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNRoleType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleType(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalORoleType2ᚕgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []models.RoleType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNRoleType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRoleType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

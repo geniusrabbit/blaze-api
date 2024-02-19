@@ -142,5 +142,5 @@ extend type Query {
     filter: HistoryActionListFilter = null,
     order: HistoryActionListOrder = null,
     page: Page = null
-  ): HistoryActionConnection @hasPermissions(permissions: [{key: "model:HistoryAction", access: ["list"]}])
+  ): HistoryActionConnection @hasPermissions(permissions: ["history_action.list"])
 }

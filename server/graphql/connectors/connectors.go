@@ -44,7 +44,7 @@ func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filt
 	return NewCollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge](ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
 			roles, err := rolesAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
-			return gqlmodels.FromRBACRoleModelList(roles), err
+			return gqlmodels.FromRBACRoleModelList(ctx, roles), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
 			return rolesAccessor.Count(ctx, filter.Filter())
@@ -63,7 +63,7 @@ func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, 
 	return NewCollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge](ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
 			roles, err := rolesPepo.FetchList(ctx, &rbac.Filter{ID: ids}, order.Order(), nil)
-			return gqlmodels.FromRBACRoleModelList(roles), err
+			return gqlmodels.FromRBACRoleModelList(ctx, roles), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
 			return int64(len(ids)), nil

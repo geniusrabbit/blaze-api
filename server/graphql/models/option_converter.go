@@ -67,9 +67,5 @@ func FromOption(opt *model.Option) *Option {
 }
 
 func FromOptionModelList(opts []*model.Option) []*Option {
-	res := make([]*Option, len(opts))
-	for i, opt := range opts {
-		res[i] = FromOption(opt)
-	}
-	return res
+	return xtypes.SliceApply[*model.Option, *Option](opts, FromOption)
 }

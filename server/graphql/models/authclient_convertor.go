@@ -1,6 +1,9 @@
 package models
 
-import "github.com/geniusrabbit/blaze-api/model"
+import (
+	"github.com/demdxx/xtypes"
+	"github.com/geniusrabbit/blaze-api/model"
+)
 
 // FromAuthClientModel to local graphql model
 func FromAuthClientModel(acc *model.AuthClient) *AuthClient {
@@ -26,9 +29,5 @@ func FromAuthClientModel(acc *model.AuthClient) *AuthClient {
 
 // FromAuthClientModelList converts model list to local model list
 func FromAuthClientModelList(list []*model.AuthClient) []*AuthClient {
-	userClients := make([]*AuthClient, 0, len(list))
-	for _, u := range list {
-		userClients = append(userClients, FromAuthClientModel(u))
-	}
-	return userClients
+	return xtypes.SliceApply[*model.AuthClient, *AuthClient](list, FromAuthClientModel)
 }

@@ -67,6 +67,11 @@ func (acc *Account) IsAdminUser(userID uint64) bool {
 	return xtypes.Slice[uint64](acc.Admins).Has(func(id uint64) bool { return id == userID })
 }
 
+// RBACResourceName returns the name of the resource for the RBAC
+func (acc *Account) RBACResourceName() string {
+	return "account"
+}
+
 // ExtendAdminUsers to the account
 func (acc *Account) ExtendAdminUsers(ids ...uint64) {
 	if acc == nil {

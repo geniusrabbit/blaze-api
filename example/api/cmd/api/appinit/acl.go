@@ -1,6 +1,8 @@
 package appinit
 
 import (
+	"context"
+
 	"github.com/demdxx/rbac"
 
 	"github.com/geniusrabbit/blaze-api/acl"
@@ -11,24 +13,43 @@ import (
 
 // InitModelPermissions models
 func InitModelPermissions(pm *permissions.Manager) {
-	acl.InitModelPermissions(pm,
+	crudModels := []any{
 		&model.User{},
 		&model.Account{},
-		&model.AccountMember{},
-		&model.AccountSocial{},
-		&model.AccountSocialSession{},
 		&model.Role{},
 		&model.AuthClient{},
-		&model.HistoryAction{},
-		&model.Option{},
+	}
+
+	acl.InitModelPermissions(pm,
+		append(crudModels,
+			&model.HistoryAction{},
+			&model.Option{},
+			&model.AccountMember{},
+			&model.AccountSocialSession{},
+			&model.AccountSocial{},
+		)...,
 	)
 
+	// Register basic models CRUD permissions
+	for _, model := range crudModels {
+		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "update", "create"})
+	}
+
+	// Extend user permissions
+	_ = pm.RegisterNewPermissions(&model.User{}, []string{"reset_password"})
+	_ = pm.RegisterNewOwningPermissions(&model.User{}, []string{"reset_password"})
+
+	// Extend account permissions
+	_ = pm.RegisterNewPermission(&model.Account{}, "register", rbac.WithoutCustomCheck)
+
+	// Register basic permissions for the Option model
+	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{"get", "set", "list"})
+
 	// Register anonymous role and fill permissions for it
-	pm.RegisterRole(rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithSubPermissins(
-		pm.MustNewResourcePermission("view", (*model.User)(nil)),
-		pm.MustNewResourcePermission("reset_password", (*model.User)(nil)),
-		pm.MustNewResourcePermission("view", (*model.Account)(nil)),
-		pm.MustNewResourcePermission("register", (*model.Account)(nil)),
-		rbac.MustNewSimplePermission("account.register"),
-	)))
+	pm.RegisterRole(context.Background(),
+		rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithPermissions(
+			`user.view.owner`, `user.reset_password.*`,
+			`account.view.owner`, `account.register`,
+		)),
+	)
 }

@@ -98,7 +98,7 @@ func (r *Repository) GetByToken(ctx context.Context, token string) (*model.User,
 		if account.Approve.IsApproved() && userObj.Approve.IsApproved() {
 			account.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, memeber.IsAdmin, nil, roles...)
 		} else {
-			account.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(r rbac.Role) bool {
+			account.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(_ context.Context, r rbac.Role) bool {
 				return !strings.HasPrefix(r.Name(), "system:")
 			}, roles...)
 		}

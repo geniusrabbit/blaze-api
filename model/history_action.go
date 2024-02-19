@@ -55,3 +55,8 @@ func (act *HistoryAction) CreatorUserID() uint64 {
 func (act *HistoryAction) OwnerAccountID() uint64 {
 	return act.AccountID
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (*HistoryAction) RBACResourceName() string {
+	return `history_log`
+}

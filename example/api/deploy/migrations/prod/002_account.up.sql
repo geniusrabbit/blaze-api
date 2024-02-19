@@ -84,32 +84,22 @@ AFTER INSERT OR UPDATE OR DELETE ON account_base
 -- Roles and permissions
 -- ----------------------------------------------------------------------------
 
-CREATE TYPE role_type AS ENUM ('role', 'permission');
-
 CREATE TABLE rbac_role
 ( id                  BIGSERIAL                   PRIMARY KEY
-, parent_id           BIGINT                                   REFERENCES rbac_role (id) MATCH SIMPLE
-                                                                      ON UPDATE NO ACTION
-                                                                      ON DELETE RESTRICT
 
 -- Name of the permission to matching
-, name                VARCHAR(256)                NOT NULL      CHECK (name   ~* '^[\w\d@_:\.-]+$')
+, name                VARCHAR(256)                NOT NULL      CHECK (name ~* '^[\w\d@_:\.-]+$') UNIQUE
 
 , title               VARCHAR(256)                NOT NULL
-, type                role_type                   NOT NULL
 , context             JSONB                                     DEFAULT NULL  -- {model:flags,@custom:value}
+
+-- [`user.view.owner`, `account.*.owner`]
+, permissions         TEXT[]
 
 , created_at          TIMESTAMPTZ                 NOT NULL      DEFAULT NOW()
 , updated_at          TIMESTAMPTZ                 NOT NULL      DEFAULT NOW()
 , deleted_at          TIMESTAMPTZ
 );
-
-CREATE UNIQUE INDEX idx_rbac_role_uniq_role_name ON
-    rbac_role (name, type) WHERE deleted_at IS NULL AND type='role';
-
-CREATE UNIQUE INDEX idx_rbac_role_uniq_permission_name ON
-    rbac_role (name, type, (context->>'object'), (context->>'cover'))
-        WHERE deleted_at IS NULL AND type='permission';
 
 CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON rbac_role FOR EACH ROW EXECUTE PROCEDURE updated_at_column();

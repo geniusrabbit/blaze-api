@@ -1,21 +1,63 @@
 package models
 
 import (
+	"context"
+	"strings"
+
+	mrbac "github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/permissions"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
 // FromRBACRoleModel to local graphql model
-func FromRBACRoleModel(role *model.Role) *RBACRole {
+func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
+	perms := permissions.FromContext(ctx).Permissions(role.PermissionPatterns...)
 	return &RBACRole{
-		ID:        role.ID,
-		Name:      role.Name,
-		Title:     role.Title,
-		Type:      RoleType(role.Type),
-		Context:   types.MustNullableJSONFrom(role.Context.Data),
+		ID:      role.ID,
+		Name:    role.Name,
+		Title:   role.Title,
+		Context: types.MustNullableJSONFrom(role.Context.Data),
+		Permissions: xtypes.SliceApply[mrbac.Permission](perms, func(v mrbac.Permission) *RBACPermission {
+			type rname interface {
+				ResourceName() string
+			}
+			var (
+				name    = v.Name()
+				objName string
+				access  string
+			)
+			if r, ok := v.(rname); ok {
+				objName = r.ResourceName()
+				name = name[len(objName)+1:]
+				if strings.HasSuffix(name, `.owner`) || strings.HasSuffix(name, `.account`) ||
+					strings.HasSuffix(name, `.all`) || strings.HasSuffix(name, `.system`) {
+					access = name[strings.LastIndex(name, `.`)+1:]
+					name = name[:len(name)-len(access)-1]
+				}
+			}
+			return &RBACPermission{
+				Name:   name,
+				Object: objName,
+				Access: access,
+			}
+		}).Sort(func(a, b *RBACPermission) bool {
+			if a.Object < b.Object {
+				return true
+			}
+			if a.Object != b.Object {
+				return false
+			}
+			if a.Name < b.Name {
+				return true
+			}
+			return a.Name == b.Name && a.Access < b.Access
+		}),
+		PermissionPatterns: role.PermissionPatterns,
+
 		CreatedAt: role.CreatedAt,
 		UpdatedAt: role.UpdatedAt,
 		DeletedAt: deletedAt(role.DeletedAt),
@@ -23,12 +65,10 @@ func FromRBACRoleModel(role *model.Role) *RBACRole {
 }
 
 // FromRBACRoleModelList converts model list to local model list
-func FromRBACRoleModelList(list []*model.Role) []*RBACRole {
-	roles := make([]*RBACRole, 0, len(list))
-	for _, role := range list {
-		roles = append(roles, FromRBACRoleModel(role))
-	}
-	return roles
+func FromRBACRoleModelList(ctx context.Context, list []*model.Role) []*RBACRole {
+	return xtypes.SliceApply[*model.Role, *RBACRole](list, func(val *model.Role) *RBACRole {
+		return FromRBACRoleModel(ctx, val)
+	})
 }
 
 func (fl *RBACRoleListFilter) Filter() *rbac.Filter {
@@ -38,15 +78,6 @@ func (fl *RBACRoleListFilter) Filter() *rbac.Filter {
 	return &rbac.Filter{
 		ID:    fl.ID,
 		Names: fl.Name,
-		Types: xtypes.SliceApply[RoleType](fl.Type, func(v RoleType) model.RoleType {
-			switch v {
-			case RoleTypeRole:
-				return model.RbacRoleType
-			case RoleTypePermission:
-				return model.RbacPermissionType
-			}
-			return model.RoleType(v)
-		}),
 	}
 }
 
@@ -58,6 +89,5 @@ func (ol *RBACRoleListOrder) Order() *rbac.Order {
 		ID:    ol.ID.AsOrder(),
 		Name:  ol.Name.AsOrder(),
 		Title: ol.Title.AsOrder(),
-		Type:  ol.Type.AsOrder(),
 	}
 }

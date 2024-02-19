@@ -1,5 +1,9 @@
 APP_TAGS  ?= $(or ${APP_BUILD_TAGS},postgres jaeger migrate)
 
+.DEPS:
+	@echo "Install dependencies"
+	go install github.com/NoahShen/gotunnelme
+
 .PHONY: all
 all: lint cover
 
@@ -57,6 +61,10 @@ build-gql: ## Build graphql server
 .PHONY: run-test-api
 run-test-api: ## Run test api server
 	cd example/api && make run-api
+
+.PHONY: announce-test-api
+announce-test-api:
+	cd example/api && make -j2 announce-run-api
 
 .PHONY: help
 help:

@@ -15,18 +15,18 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// Migrate database
+// Migrate database schema from many source directories and one target database
 func Migrate(connet string, dataSources []string) error {
 	connURL, err := url.Parse(connet)
 	if err != nil {
 		return err
 	}
+	db, err := sql.Open(connURL.Scheme, connet)
+	if err != nil {
+		return err
+	}
 	for _, source := range dataSources {
 		sourceURL, err := url.Parse(source)
-		if err != nil {
-			return err
-		}
-		db, err := sql.Open(connURL.Scheme, connet)
 		if err != nil {
 			return err
 		}

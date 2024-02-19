@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/goconfig"
@@ -13,7 +14,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
-	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/context/version"
 	"github.com/geniusrabbit/blaze-api/database"
 	"github.com/geniusrabbit/blaze-api/elogin/facebook"
@@ -70,7 +70,7 @@ func main() {
 	loggerObj := initZapLogger()
 
 	// Define cancelation context
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	ctx = version.WithContext(ctx, &version.Version{
@@ -103,7 +103,7 @@ func main() {
 	// Prepare context
 	ctx = ctxlogger.WithLogger(ctx, loggerObj)
 	ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)
-	ctx = permissionmanager.WithManager(ctx, permissionManager)
+	ctx = permissions.WithManager(ctx, permissionManager)
 
 	httpServer := server.HTTPServer{
 		Logger:         loggerObj,
@@ -118,7 +118,7 @@ func main() {
 		ContextWrap: func(ctx context.Context) context.Context {
 			ctx = ctxlogger.WithLogger(ctx, loggerObj)
 			ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)
-			ctx = permissionmanager.WithManager(ctx, permissionManager)
+			ctx = permissions.WithManager(ctx, permissionManager)
 			return ctx
 		},
 		InitWrap: func(mux *chi.Mux) {

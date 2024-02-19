@@ -5,10 +5,8 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/google/uuid"
-	"github.com/guregu/null"
 	"github.com/pkg/errors"
 
-	"github.com/geniusrabbit/blaze-api/context/permissionmanager"
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
@@ -44,7 +42,7 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 	}
 	return &gqlmodels.RBACRolePayload{
 		RoleID: role.ID,
-		Role:   gqlmodels.FromRBACRoleModel(role),
+		Role:   gqlmodels.FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
@@ -52,7 +50,7 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 func (r *QueryResolver) Check(ctx context.Context, name string, key *string, targetID *string) (*string, error) {
 	var obj any
 	if key != nil {
-		obj = permissionmanager.Get(ctx).ObjectByName(*key)
+		obj = permissions.FromContext(ctx).ObjectByName(*key)
 		if obj == nil {
 			return nil, errors.Wrap(ErrUndefinedPermissionKey, *key)
 		}
@@ -104,10 +102,8 @@ func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRol
 // CreateRole is the resolver for the createRole field.
 func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRoleInput) (*gqlmodels.RBACRolePayload, error) {
 	roleObj := &model.Role{
-		ParentID: null.IntFromPtr(int64Ptr(input.ParentID)),
-		Name:     valOrDef(input.Name, ""),
-		Title:    valOrDef(input.Title, ""),
-		Type:     model.RoleType(input.Type),
+		Name:  valOrDef(input.Name, ""),
+		Title: valOrDef(input.Title, ""),
 	}
 	if input.Context != nil {
 		if err := roleObj.Context.SetValue(input.Context.Data); err != nil {
@@ -124,7 +120,7 @@ func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRol
 	// }
 	return &gqlmodels.RBACRolePayload{
 		RoleID: id,
-		Role:   gqlmodels.FromRBACRoleModel(roleObj),
+		Role:   gqlmodels.FromRBACRoleModel(ctx, roleObj),
 	}, nil
 }
 
@@ -135,10 +131,8 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 		return nil, err
 	}
 	// Update object fields
-	role.ParentID = null.IntFrom(valOrDef(int64Ptr(input.ParentID), role.ParentID.Int64))
 	role.Name = valOrDef(input.Name, role.Name)
 	role.Title = valOrDef(input.Title, role.Title)
-	role.Type = model.RoleType(input.Type)
 	if input.Context != nil {
 		if err := role.Context.SetValue(input.Context.Data); err != nil {
 			return nil, err
@@ -149,7 +143,7 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 	}
 	return &gqlmodels.RBACRolePayload{
 		RoleID: id,
-		Role:   gqlmodels.FromRBACRoleModel(role),
+		Role:   gqlmodels.FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
@@ -165,7 +159,7 @@ func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) 
 	}
 	return &gqlmodels.RBACRolePayload{
 		RoleID: id,
-		Role:   gqlmodels.FromRBACRoleModel(role),
+		Role:   gqlmodels.FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
@@ -174,12 +168,4 @@ func valOrDef[T any](v *T, def T) T {
 		return def
 	}
 	return *v
-}
-
-func int64Ptr(v *uint64) *int64 {
-	if v == nil {
-		return nil
-	}
-	u := int64(*v)
-	return &u
 }

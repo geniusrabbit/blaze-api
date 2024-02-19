@@ -1,9 +1,7 @@
-"""
-Role type defines whether the role is a role or a permission.
-"""
-enum RoleType {
-  ROLE
-  PERMISSION
+type RBACPermission {
+  name:   String!
+  object: String!
+  access: String!
 }
 
 """
@@ -11,17 +9,15 @@ A role is a collection of permissions. A role can be a child of another role.
 """
 type RBACRole {
 	ID:       ID64!
-	parentID: ID64
 	name:     String!
 	title:    String!
-	type:     RoleType!
 
   """
   Context is a JSON object that defines the context of the role.
   The context is used to determine whether the role is applicable to the object.
   The context is a JSON object with the following structure:
 
-	{"cover": "system", "object": "model:Role"}
+	{"cover": "system", "object": "role"}
 
   where:
 	"cover" - is a name of the cover area of the object type
@@ -29,7 +25,9 @@ type RBACRole {
   """
 	context:  NullableJSON
 
-	childRolesAndPermissions: [RBACRole!]
+	childRoles: [RBACRole!]
+  permissions: [RBACPermission!]
+  permissionPatterns: [String!]
 
   createdAt: Time!
   updatedAt: Time!
@@ -103,14 +101,12 @@ type RBACRolePayload {
 input RBACRoleListFilter {
   ID:   [ID64!]
   name: [String!]
-  type: [RoleType!]
 }
 
 input RBACRoleListOrder {
   ID:    Ordering
   name:  Ordering
   title: Ordering
-  type:  Ordering
 }
 
 ###############################################################################
@@ -118,11 +114,10 @@ input RBACRoleListOrder {
 ###############################################################################
 
 input RBACRoleInput {
-  parentID: ID64
-  name:     String
-  title:    String
-  type:     RoleType!
-  context:  NullableJSON
+  name:        String
+  title:       String
+  context:     NullableJSON
+  permissions: [String!]
 }
 
 ###############################################################################
@@ -133,13 +128,13 @@ extend type Query {
   """
   Get RBAC role object by ID
   """
-  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["view"]}])
+  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: ["role.view.*"])
 
   """
   Check if the user has access to the particular role or permission.
   Returns the area of the access or null if access is denied.
   """
-  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: [{key: "model:Role", access: ["check"]}])
+  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: ["role.check.*"])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
@@ -148,22 +143,22 @@ extend type Query {
     filter: RBACRoleListFilter = null,
     order: RBACRoleListOrder = null,
     page: Page = null
-  ): RBACRoleConnection @hasPermissions(permissions: [{key: "model:Role", access: ["list"]}])
+  ): RBACRoleConnection @hasPermissions(permissions: ["role.list.*"])
 }
 
 extend type Mutation {
   """
   Create the new RBAC role
   """
-  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["create"]}])
+  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.create.*"])
 
   """
   Update RBAC role info
   """
-  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["update"]}])
+  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.update.*"])
 
   """
   Delete RBAC role
   """
-  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: [{key: "model:Role", access: ["delete"]}])
+  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: ["role.delete.*"])
 }

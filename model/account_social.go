@@ -34,3 +34,8 @@ type AccountSocial struct {
 func (m *AccountSocial) TableName() string {
 	return `account_social`
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (m *AccountSocial) RBACResourceName() string {
+	return `account_social`
+}

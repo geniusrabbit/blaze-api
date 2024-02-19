@@ -335,11 +335,6 @@ type PageInfo struct {
 	Count int `json:"count"`
 }
 
-type Permission struct {
-	Key    string   `json:"key"`
-	Access []string `json:"access,omitempty"`
-}
-
 type Profile struct {
 	ID          uint64              `json:"ID"`
 	User        *User               `json:"user"`
@@ -361,27 +356,33 @@ type ProfileMessanger struct {
 type Query struct {
 }
 
+type RBACPermission struct {
+	Name   string `json:"name"`
+	Object string `json:"object"`
+	Access string `json:"access"`
+}
+
 // A role is a collection of permissions. A role can be a child of another role.
 type RBACRole struct {
-	ID       uint64   `json:"ID"`
-	ParentID *uint64  `json:"parentID,omitempty"`
-	Name     string   `json:"name"`
-	Title    string   `json:"title"`
-	Type     RoleType `json:"type"`
+	ID    uint64 `json:"ID"`
+	Name  string `json:"name"`
+	Title string `json:"title"`
 	//  Context is a JSON object that defines the context of the role.
 	//  The context is used to determine whether the role is applicable to the object.
 	//  The context is a JSON object with the following structure:
 	//
-	// {"cover": "system", "object": "model:Role"}
+	// {"cover": "system", "object": "role"}
 	//
 	//  where:
 	// "cover" - is a name of the cover area of the object type
 	// "object" - is a name of the object type <module>:<object-name>
-	Context                  *types.NullableJSON `json:"context,omitempty"`
-	ChildRolesAndPermissions []*RBACRole         `json:"childRolesAndPermissions,omitempty"`
-	CreatedAt                time.Time           `json:"createdAt"`
-	UpdatedAt                time.Time           `json:"updatedAt"`
-	DeletedAt                *time.Time          `json:"deletedAt,omitempty"`
+	Context            *types.NullableJSON `json:"context,omitempty"`
+	ChildRoles         []*RBACRole         `json:"childRoles,omitempty"`
+	Permissions        []*RBACPermission   `json:"permissions,omitempty"`
+	PermissionPatterns []string            `json:"permissionPatterns,omitempty"`
+	CreatedAt          time.Time           `json:"createdAt"`
+	UpdatedAt          time.Time           `json:"updatedAt"`
+	DeletedAt          *time.Time          `json:"deletedAt,omitempty"`
 }
 
 // RBACRoleEdge is a connection edge type for RBACRole.
@@ -393,24 +394,21 @@ type RBACRoleEdge struct {
 }
 
 type RBACRoleInput struct {
-	ParentID *uint64             `json:"parentID,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Title    *string             `json:"title,omitempty"`
-	Type     RoleType            `json:"type"`
-	Context  *types.NullableJSON `json:"context,omitempty"`
+	Name        *string             `json:"name,omitempty"`
+	Title       *string             `json:"title,omitempty"`
+	Context     *types.NullableJSON `json:"context,omitempty"`
+	Permissions []string            `json:"permissions,omitempty"`
 }
 
 type RBACRoleListFilter struct {
-	ID   []uint64   `json:"ID,omitempty"`
-	Name []string   `json:"name,omitempty"`
-	Type []RoleType `json:"type,omitempty"`
+	ID   []uint64 `json:"ID,omitempty"`
+	Name []string `json:"name,omitempty"`
 }
 
 type RBACRoleListOrder struct {
 	ID    *Ordering `json:"ID,omitempty"`
 	Name  *Ordering `json:"name,omitempty"`
 	Title *Ordering `json:"title,omitempty"`
-	Type  *Ordering `json:"type,omitempty"`
 }
 
 // RBACRolePayload wrapper to access of RBACRole oprtation results
@@ -815,47 +813,5 @@ func (e *ResponseStatus) UnmarshalGQL(v interface{}) error {
 }
 
 func (e ResponseStatus) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-// Role type defines whether the role is a role or a permission.
-type RoleType string
-
-const (
-	RoleTypeRole       RoleType = "ROLE"
-	RoleTypePermission RoleType = "PERMISSION"
-)
-
-var AllRoleType = []RoleType{
-	RoleTypeRole,
-	RoleTypePermission,
-}
-
-func (e RoleType) IsValid() bool {
-	switch e {
-	case RoleTypeRole, RoleTypePermission:
-		return true
-	}
-	return false
-}
-
-func (e RoleType) String() string {
-	return string(e)
-}
-
-func (e *RoleType) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = RoleType(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid RoleType", str)
-	}
-	return nil
-}
-
-func (e RoleType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

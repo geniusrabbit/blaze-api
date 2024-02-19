@@ -5,33 +5,13 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/gosql/v2"
-	"github.com/guregu/null"
 	"gorm.io/gorm"
 )
 
-// RoleType type casting
-type RoleType string
-
-// RBAC role constant list...
-const (
-	RbacUndefinedType  RoleType = ``
-	RbacRoleType       RoleType = `role`
-	RbacPermissionType RoleType = `permission`
-)
-
-func (rt RoleType) String() string {
-	return string(rt)
-}
-
-// IsPermission type
-func (rt RoleType) IsPermission() bool {
-	return rt == RbacPermissionType
-}
-
 // M2MRole link parent and child role
 type M2MRole struct {
-	ParentRoleID uint64    `db:"parent_role_id"`
-	ChildRoleID  uint64    `db:"child_role_id"`
+	ParentRoleID uint64    `db:"parent_role_id" gorm:"primaryKey"`
+	ChildRoleID  uint64    `db:"child_role_id" gorm:"primaryKey"`
 	CreatedAt    time.Time `db:"created_at"`
 }
 
@@ -42,18 +22,15 @@ func (m2m *M2MRole) TableName() string {
 
 // Role base model
 type Role struct {
-	ID       uint64   `db:"id"`
-	ParentID null.Int `db:"parent_id"`
-	Name     string   `db:"name"`
-	Title    string   `db:"title"`
-	Type     RoleType `db:"type"`
+	ID    uint64 `db:"id"`
+	Name  string `db:"name"`
+	Title string `db:"title"`
 
-	// {"cover": "account", "object": "model:User"}
-	// "cover" - is a name of the cover area of the object type
-	// "object" - is a name of the object type <module>:<object-name>
+	// Contains additional data for the role
 	Context gosql.NullableJSON[map[string]any] `db:"context"`
 
-	ChildRolesAndPermissions []*Role `db:"-" gorm:"-"`
+	ChildRoles         []*Role                   `db:"-" gorm:"many2many:m2m_rbac_role;ForeignKey:ID;joinForeignKey:parent_role_id;joinReferences:child_role_id;References:ID"`
+	PermissionPatterns gosql.NullableStringArray `db:"permissions" gorm:"column:permissions;type:text[]"`
 
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
@@ -63,22 +40,17 @@ type Role struct {
 // GetTitle from role object
 // nolint:unused // exported
 func (role *Role) GetTitle() string {
-	if role.Title != `` {
-		return role.Title
-	}
-	if objName := role.ContextItemString(`object`); objName != `` {
-		role.Title = objName + `:` + role.Name
-		if coverName := role.ContextItemString(`cover`); coverName != `` {
-			role.Title += ` ` + coverName
-		}
-		return role.Title
-	}
-	return role.Name
+	return gocast.Or(role.Title, role.Name)
 }
 
 // TableName of the model in the database
 func (role *Role) TableName() string {
 	return `rbac_role`
+}
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (role *Role) RBACResourceName() string {
+	return "role"
 }
 
 // ContextMap returns the map from the context

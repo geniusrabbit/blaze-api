@@ -50,3 +50,8 @@ func (member *AccountMember) CreatorUserID() uint64 {
 func (member *AccountMember) OwnerAccountID() uint64 {
 	return member.AccountID
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (member *AccountMember) RBACResourceName() string {
+	return "accmember"
+}

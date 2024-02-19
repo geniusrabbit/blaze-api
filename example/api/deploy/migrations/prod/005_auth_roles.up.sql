@@ -1,73 +1,18 @@
--- Permission list
---
--- view    - 
--- list    - 
--- create  - 
--- update  - 
--- delete  - 
--- restore - 
--- approve - 
--- reject  - 
-
 -- Create roles
 INSERT INTO rbac_role
-  (name, title, type, context) VALUES
-  ('system:admin',       'System admins',      'role', NULL),
-  ('system:manager',     'System manager',     'role', NULL),
-  ('system:analyst',     'System analyst',     'role', NULL),
-  ('system:viewer',      'System viewer',      'role', NULL),
-  ('system:compliance',  'System compliance',  'role', NULL),
-  ('account:admin',      'Account admins',     'role', NULL),
-  ('account:writer',     'Account writer',     'role', NULL),
-  ('account:analyst',    'Account analyst',    'role', NULL),
-  ('account:viewer',     'Account viewer',     'role', NULL),
-  ('account:compliance', 'Account compliance', 'role', NULL);
-
--- Create permisssions
-INSERT INTO rbac_role
-  (name, title, type, context)
-  SELECT name, '' AS title, 'permission' AS type, ('{"object":"' || object || '","cover":"' || cover || '"}')::jsonb AS context
-    FROM  unnest(array[
-            'view','list','create','update','delete','restore','approve','reject'
-          ]) AS name,
-          LATERAL unnest(array[
-            'model:User',
-            'model:Account',
-            'model:AccountMember',
-            'model:Role',
-            'model:AuthClient'
-          , 'model:Option'
-          ]) AS object,
-          LATERAL unnest(array[
-            'none',
-            'account', -- Modificator for access for the whole account
-            'system'   -- Modificator for access to the all objects in the system
-          ]) AS cover
-    ON CONFLICT DO NOTHING;
-
-INSERT INTO rbac_role
-  (name, title, type, context)
-  SELECT name, '' AS title, 'permission' AS type, ('{"object":"' || object || '","cover":"' || cover || '"}')::jsonb AS context
-    FROM  unnest(array['view','list']) AS name,
-          LATERAL unnest(array['model:HistoryAction']) AS object,
-          LATERAL unnest(array['none', 'account', 'system']) AS cover
-    ON CONFLICT DO NOTHING;
-
-INSERT INTO rbac_role
-  (name, title, type, context)
-  SELECT name, '' AS title, 'permission' AS type, ('{"object":"' || object || '","cover":"' || cover || '"}')::jsonb AS context
-    FROM  unnest(array['check']) AS name,
-          LATERAL unnest(array['model:Role']) AS object,
-          LATERAL unnest(array['none', 'account', 'system']) AS cover
-    ON CONFLICT DO NOTHING;
-
-
--- Link all permissions to the system role
-INSERT INTO m2m_rbac_role (parent_role_id, child_role_id)
-  SELECT (SELECT id FROM rbac_role WHERE name = 'system:admin') AS parent_role_id, id AS child_role_id
-    FROM rbac_role WHERE type = 'permission' AND COALESCE(context->>'cover', '') = 'system' AND deleted_at IS NULL
-  ON CONFLICT DO NOTHING;
-
+  (name, title, context, permissions) VALUES
+  -- System roles
+  ('system:admin',       'System admins',      NULL, '{"*"}'),
+  ('system:manager',     'System manager',     NULL, '{"*.view.*", "*.list.*", "*.count.*", "*.create.*", "*.update.*", "*.delete.*", "*.restore.*", "*.approve.*", "*.reject.*", "role.*.*", "user.reset_password"}'),
+  ('system:analyst',     'System analyst',     NULL, '{"*.view.*", "*.list.*", "*.count.*", "user.reset_password"}'),
+  ('system:viewer',      'System viewer',      NULL, '{"*.view.*", "*.list.*", "*.count.*", "user.reset_password"}'),
+  ('system:compliance',  'System compliance',  NULL, '{"*.view.*", "*.list.*", "*.count.*", "*.approve.*", "*.reject.*", "user.reset_password"}'),
+  -- Account roles'
+  ('account:admin',      'Account admins',     NULL, '{"*.*.{account|owner}", "user.reset_password"}'),
+  ('account:writer',     'Account writer',     NULL, '{"*.{view|list|restore}.{account|owner}", "user.reset_password"}'),
+  ('account:analyst',    'Account analyst',    NULL, '{"*.view.{account|owner}", "*.list.{account|owner}", "user.reset_password"}'),
+  ('account:viewer',     'Account viewer',     NULL, '{"*.view.{account|owner}", "*.list.{account|owner}", "user.reset_password"}'),
+  ('account:compliance', 'Account compliance', NULL, '{"*.view.{account|owner}", "*.list.{account|owner}", "*.approve.{account|owner}", "*.reject.{account|owner}", "user.reset_password"}');
 
 INSERT INTO m2m_account_member_role(member_id, role_id)
   SELECT m.id as member_id, (SELECT id FROM rbac_role WHERE name = 'system:admin') AS role_id

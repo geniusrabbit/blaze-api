@@ -106,7 +106,7 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["view"]}])
+  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.view"])
 
   """
   List of the option values which can be filtered and ordered by some fields
@@ -115,12 +115,12 @@ extend type Query {
     filter: OptionListFilter = null,
     order: OptionListOrder = null,
     page: Page = null
-  ): OptionConnection @hasPermissions(permissions: [{key: "model:Option", access: ["list"]}])
+  ): OptionConnection @hasPermissions(permissions: ["option.list"])
 }
 
 extend type Mutation {
   """
   Set the option value
   """
-  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: [{key: "model:Option", access: ["update"]}])
+  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: ["option.update"])
 }

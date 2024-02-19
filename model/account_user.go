@@ -48,3 +48,8 @@ func (u *User) CreatorUserID() uint64 {
 	}
 	return u.ID
 }
+
+// RBACResourceName returns the name of the resource for the RBAC
+func (u *User) RBACResourceName() string {
+	return "user"
+}
