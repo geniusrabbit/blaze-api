@@ -54,8 +54,8 @@ func (acc *Account) TableName() string {
 	return `account_base`
 }
 
-// IsAnonimous account
-func (acc *Account) IsAnonimous() bool {
+// IsAnonymous account
+func (acc *Account) IsAnonymous() bool {
 	return acc == nil || acc.ID == 0
 }
 

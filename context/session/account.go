@@ -24,6 +24,11 @@ const (
 
 // WithUserAccount puts to the context user and account models
 func WithUserAccount(ctx context.Context, userObj *model.User, accountObj *model.Account) context.Context {
+	if accountObj == nil {
+		pm := permissions.FromContext(ctx)
+		role := pm.Role(ctx, AnonymousDefaultRole)
+		accountObj = &model.Account{Title: "<anonymous>", Permissions: role, Admins: []uint64{userObj.ID}}
+	}
 	ctx = context.WithValue(ctx, ctxUserKey, userObj)
 	ctx = context.WithValue(ctx, ctxAccountKey, accountObj)
 	return ctx
@@ -43,7 +48,10 @@ func WithAnonymousUserAccount(ctx context.Context) context.Context {
 func WithUserAccountDevelop(ctx context.Context) context.Context {
 	manager := permissions.NewTestManager(ctx)
 	role, _ := manager.RoleByID(ctx, 1) // INFO: Assume that there is no error because of this is the test manager
-	ctx = WithUserAccount(ctx, &model.User{ID: 1}, &model.Account{ID: 1, Permissions: role})
+	ctx = WithUserAccount(ctx,
+		&model.User{ID: 1},
+		&model.Account{ID: 1, Permissions: role, Admins: []uint64{1}},
+	)
 	// if changelog.MessageQueue(ctx) == nil {
 	// 	ctx = changelog.WithMessageQueue(ctx)
 	// }

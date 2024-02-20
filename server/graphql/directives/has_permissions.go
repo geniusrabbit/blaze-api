@@ -21,7 +21,7 @@ var (
 // This method checks, first of all, that object belongs to the user or have manager access and secondly
 // that the user has the requested permissions of the module or several modules
 func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms []string) (any, error) {
-	account := session.Account(ctx)
+	user, account := session.UserAccount(ctx)
 	pm := permissions.FromContext(ctx)
 
 	if account == nil {
@@ -42,10 +42,10 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 			newObj = pm.ObjectByName(objName)
 		}
 		if !account.CheckPermissions(ctx, newObj, perm) {
-			if account.IsAnonimous() {
+			if user.IsAnonymous() {
 				return nil, errAuthorizationRequired
 			}
-			return nil, errors.Wrap(errAccessForbidden, objName+` [`+strings.Trim(objName[index:], `.`)+`]`)
+			return nil, errors.Wrap(errAccessForbidden, objName+` [`+strings.Trim(perm[index:], `.`)+`]`)
 		}
 	}
 

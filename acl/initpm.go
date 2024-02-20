@@ -73,6 +73,10 @@ func commonPermissionCheck(custCheck ...checkFnk) checkFnk {
 			return customCheck(ctx, resource, perm)
 		}
 
+		if ccu == 0 && coa == 0 {
+			return true
+		}
+
 		// check if this is mode which no belongs to anyone.
 		// Here we are expecting that user have the required permission
 		// and as the object is not belongs to anyone we can allow access
@@ -87,7 +91,7 @@ func permExtractCover(perm rbac.Permission) string {
 
 func checkOwnerAccount(resource any, ownerID uint64) int {
 	own, _ := resource.(owner)
-	if own == nil {
+	if own == nil || own.OwnerAccountID() == 0 {
 		return 0
 	}
 	if own.OwnerAccountID() == ownerID {
@@ -98,7 +102,7 @@ func checkOwnerAccount(resource any, ownerID uint64) int {
 
 func checkCreatorUser(resource any, creatorID uint64) int {
 	crt, _ := resource.(creator)
-	if crt == nil {
+	if crt == nil || crt.CreatorUserID() == 0 {
 		return 0
 	}
 	if crt.CreatorUserID() == creatorID {

@@ -67,7 +67,11 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 		return nil, err
 	}
 
-	roles, _ := permissions.AllRolesAndPermissions(account.Permissions.ChildRoles(), nil)
+	childRoles := account.Permissions.ChildRoles()
+	if role, ok := account.Permissions.(lrbac.Role); ok {
+		childRoles = append(childRoles[:0], role)
+	}
+	roles, _ := permissions.AllRolesAndPermissions(childRoles, nil)
 	return &models.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
@@ -84,7 +88,11 @@ func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 // CurrentSession is the resolver for the currentSession field
 func (r *AuthResolver) CurrentSession(ctx context.Context) (*models.SessionToken, error) {
 	user, account, token := session.User(ctx), session.Account(ctx), session.Token(ctx)
-	roles, _ := permissions.AllRolesAndPermissions(account.Permissions.ChildRoles(), nil)
+	childRoles := account.Permissions.ChildRoles()
+	if role, ok := account.Permissions.(lrbac.Role); ok {
+		childRoles = append(childRoles[:0], role)
+	}
+	roles, _ := permissions.AllRolesAndPermissions(childRoles, nil)
 	return &models.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
