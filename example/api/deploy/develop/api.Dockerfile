@@ -12,7 +12,7 @@ ENV SERVER_GRPC_LISTEN=tcp://:8081
 ENV SERVER_PROFILE_MODE=net
 ENV SERVER_PROFILE_LISTEN=8082
 
-COPY .build/${TARGETPLATFORM}/api /api
-COPY deploy/migrations /data/migrations
+COPY example/api/.build/${TARGETPLATFORM}/api /api
+COPY ./migrations /data/migrations
 
 ENTRYPOINT [ "/api" ]

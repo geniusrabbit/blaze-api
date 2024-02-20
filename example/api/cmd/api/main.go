@@ -43,10 +43,17 @@ func init() {
 		fmt.Println(conf)
 	}
 
-	sources := []string{"file:///data/migrations/prod", "file:///data/migrations/fixtures"}
-	if len(sources) > 0 {
-		fatalError(migratedb.Migrate(conf.System.Storage.MasterConnect, sources), "migrate database")
-	}
+	// Migrate database schemas
+	fatalError(migratedb.Migrate(conf.System.Storage.MasterConnect, []migratedb.MigrateSource{
+		{
+			URI:                   []string{"file:///data/migrations/initial"},
+			SchemaMigrationsTable: "schema_migrations_prod",
+		},
+		{
+			URI:                   []string{"file:///data/migrations/fixtures"},
+			SchemaMigrationsTable: "schema_migrations_dev",
+		},
+	}), "migrate database")
 }
 
 func initZapLogger() *zap.Logger {

@@ -45,6 +45,9 @@ func InitModelPermissions(pm *permissions.Manager) {
 	// Register basic permissions for the Option model
 	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{"get", "set", "list"})
 
+	// Register RBAC permissions
+	_ = pm.RegisterNewPermission(nil, "permission.list")
+
 	// Register anonymous role and fill permissions for it
 	pm.RegisterRole(context.Background(),
 		rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithPermissions(

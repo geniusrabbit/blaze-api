@@ -40,3 +40,8 @@ func (r *queryResolver) CheckPermission(ctx context.Context, name string, key *s
 func (r *queryResolver) ListRoles(ctx context.Context, filter *models.RBACRoleListFilter, order *models.RBACRoleListOrder, page *models.Page) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error) {
 	return r.roles.ListRoles(ctx, filter, order, page)
 }
+
+// ListPermissions is the resolver for the listPermissions field.
+func (r *queryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
+	return r.roles.ListPermissions(ctx, patterns)
+}

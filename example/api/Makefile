@@ -129,7 +129,7 @@ build-api: ## Build API application
 .PHONY: build-docker-dev
 build-docker-dev: build-api
 	echo "Build develop docker image"
-	DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker build -t ${DOCKER_CONTAINER_IMAGE} -f deploy/develop/api.Dockerfile .
+	DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker build -t ${DOCKER_CONTAINER_IMAGE} -f deploy/develop/api.Dockerfile  ../../
 
 .PHONY: run-api
 run-api: build-docker-dev ## Run API service by docker-compose
@@ -155,7 +155,7 @@ stop: ## Stop all services
 
 .PHONY: build-migrate
 build-migrate:
-	DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker build -t ${DOCKER_CONTAINER_MUGRATE_IMAGE} -f deploy/develop/migrate.Dockerfile .
+	DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker build -t ${DOCKER_CONTAINER_MUGRATE_IMAGE} -f deploy/develop/migrate.Dockerfile ../../
 
 .PHONY: migrate
 migrate: build-migrate ## Migrate migrations and fixtures

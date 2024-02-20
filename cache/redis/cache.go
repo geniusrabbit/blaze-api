@@ -38,13 +38,14 @@ func NewByURL(host string) (*Cache, error) {
 	if urlHost.User != nil {
 		password, _ = urlHost.User.Password()
 	}
+	query := urlHost.Query()
 	return New(redis.NewClient(&redis.Options{
-		DB:           gocast.Number[int](strings.Trim(urlHost.Path, `/`)),
+		DB:           gocast.Int(strings.Trim(urlHost.Path, `/`)),
 		Addr:         urlHost.Host,
 		Password:     password,
-		PoolSize:     gocast.Number[int](urlHost.Query().Get(`pool`)),
-		MaxRetries:   gocast.Number[int](urlHost.Query().Get(`max_retries`)),
-		MinIdleConns: gocast.Number[int](urlHost.Query().Get(`idle_cons`)),
+		PoolSize:     gocast.Int(query.Get(`pool`)),
+		MaxRetries:   gocast.Int(query.Get(`max_retries`)),
+		MinIdleConns: gocast.Int(query.Get(`idle_cons`)),
 	})), nil
 }
 

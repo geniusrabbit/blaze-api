@@ -13,38 +13,37 @@ import (
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
-// FromRBACRoleModel to local graphql model
-func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
-	perms := permissions.FromContext(ctx).Permissions(role.PermissionPatterns...)
-	return &RBACRole{
-		ID:      role.ID,
-		Name:    role.Name,
-		Title:   role.Title,
-		Context: types.MustNullableJSONFrom(role.Context.Data),
-		Permissions: xtypes.SliceApply[mrbac.Permission](perms, func(v mrbac.Permission) *RBACPermission {
-			type rname interface {
-				ResourceName() string
-			}
-			var (
-				name    = v.Name()
-				objName string
-				access  string
-			)
-			if r, ok := v.(rname); ok {
-				objName = r.ResourceName()
-				name = name[len(objName)+1:]
-				if strings.HasSuffix(name, `.owner`) || strings.HasSuffix(name, `.account`) ||
-					strings.HasSuffix(name, `.all`) || strings.HasSuffix(name, `.system`) {
-					access = name[strings.LastIndex(name, `.`)+1:]
-					name = name[:len(name)-len(access)-1]
-				}
-			}
-			return &RBACPermission{
-				Name:   name,
-				Object: objName,
-				Access: access,
-			}
-		}).Sort(func(a, b *RBACPermission) bool {
+func FromRBACPermissionModel(perm mrbac.Permission) *RBACPermission {
+	type rname interface {
+		ResourceName() string
+	}
+	var (
+		name    = perm.Name()
+		objName string
+		access  string
+	)
+	if r, ok := perm.(rname); ok {
+		objName = r.ResourceName()
+		name = name[len(objName)+1:]
+		if strings.HasSuffix(name, `.owner`) || strings.HasSuffix(name, `.account`) ||
+			strings.HasSuffix(name, `.all`) || strings.HasSuffix(name, `.system`) {
+			access = name[strings.LastIndex(name, `.`)+1:]
+			name = name[:len(name)-len(access)-1]
+		}
+	}
+	return &RBACPermission{
+		Fullname:    perm.Name(),
+		Name:        name,
+		Object:      objName,
+		Access:      access,
+		Description: nil, // perm.Description(), - TODO: add description
+	}
+}
+
+// FromRBACPermissionModelList converts model list to local model list
+func FromRBACPermissionModelList(perms []mrbac.Permission) []*RBACPermission {
+	return xtypes.SliceApply[mrbac.Permission, *RBACPermission](perms, FromRBACPermissionModel).
+		Sort(func(a, b *RBACPermission) bool {
 			if a.Object < b.Object {
 				return true
 			}
@@ -55,7 +54,19 @@ func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
 				return true
 			}
 			return a.Name == b.Name && a.Access < b.Access
-		}),
+		})
+}
+
+// FromRBACRoleModel to local graphql model
+func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
+	perms := permissions.FromContext(ctx).Permissions(role.PermissionPatterns...)
+	return &RBACRole{
+		ID:      role.ID,
+		Name:    role.Name,
+		Title:   role.Title,
+		Context: types.MustNullableJSONFrom(role.Context.Data),
+
+		Permissions:        FromRBACPermissionModelList(perms),
 		PermissionPatterns: role.PermissionPatterns,
 
 		CreatedAt: role.CreatedAt,

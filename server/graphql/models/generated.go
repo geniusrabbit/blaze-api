@@ -357,9 +357,11 @@ type Query struct {
 }
 
 type RBACPermission struct {
-	Name   string `json:"name"`
-	Object string `json:"object"`
-	Access string `json:"access"`
+	Name        string  `json:"name"`
+	Object      string  `json:"object"`
+	Access      string  `json:"access"`
+	Fullname    string  `json:"fullname"`
+	Description *string `json:"description,omitempty"`
 }
 
 // A role is a collection of permissions. A role can be a child of another role.

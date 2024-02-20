@@ -2,6 +2,8 @@ type RBACPermission {
   name:   String!
   object: String!
   access: String!
+  fullname: String!
+  description: String
 }
 
 """
@@ -144,6 +146,11 @@ extend type Query {
     order: RBACRoleListOrder = null,
     page: Page = null
   ): RBACRoleConnection @hasPermissions(permissions: ["role.list.*"])
+
+  """
+  List of the RBAC permissions
+  """
+  listPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
 }
 
 extend type Mutation {

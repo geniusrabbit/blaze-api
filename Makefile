@@ -63,7 +63,7 @@ run-test-api: ## Run test api server
 	cd example/api && make run-api
 
 .PHONY: announce-test-api
-announce-test-api:
+announce-test-api: ## Run test api server with announce via tunnelme
 	cd example/api && make -j2 announce-run-api
 
 .PHONY: help
