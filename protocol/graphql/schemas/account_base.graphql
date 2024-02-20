@@ -176,6 +176,11 @@ type AccountCreatePayload {
 
 extend type Query {
   """
+  Current session from the token
+  """
+  currentSession: SessionToken! @hasPermissions(permissions: ["account.view.*"])
+
+  """
   Current account from the session
   """
   currentAccount: AccountPayload! @hasPermissions(permissions: ["account.view.*"])

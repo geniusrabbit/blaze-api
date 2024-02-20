@@ -26,7 +26,7 @@ var (
 	errUserIsNotAuthorized  = errors.New(`user is not authorized properly`)
 )
 
-// AuthResolver is the resolver for the Auth type.
+// AuthResolver is the resolver for the Auth type
 type AuthResolver struct {
 	provider       *jwt.Provider
 	userRepo       *userrepo.Repository
@@ -35,7 +35,7 @@ type AuthResolver struct {
 	roleRepo       rbac.Repository
 }
 
-// NewAuthResolver creates new resolver for the Auth type.
+// NewAuthResolver creates new resolver for the Auth type
 func NewAuthResolver(provider *jwt.Provider, roleRepo rbac.Repository) *AuthResolver {
 	return &AuthResolver{
 		provider:       provider,
@@ -46,7 +46,7 @@ func NewAuthResolver(provider *jwt.Provider, roleRepo rbac.Repository) *AuthReso
 	}
 }
 
-// Login is the resolver for the login field.
+// Login is the resolver for the login field
 func (r *AuthResolver) Login(ctx context.Context, login string, password string) (*models.SessionToken, error) {
 	accountID := uint64(0)
 	user, err := r.userRepo.GetByPassword(ctx, login, password)
@@ -81,7 +81,19 @@ func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// ListRolesAndPermissions is the resolver for the listRolesAndPermissions field.
+// CurrentSession is the resolver for the currentSession field
+func (r *AuthResolver) CurrentSession(ctx context.Context) (*models.SessionToken, error) {
+	user, account, token := session.User(ctx), session.Account(ctx), session.Token(ctx)
+	roles, _ := permissions.AllRolesAndPermissions(account.Permissions.ChildRoles(), nil)
+	return &models.SessionToken{
+		Token:     token,
+		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
+		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
+		Roles:     xtypes.SliceApply[lrbac.Role, string](roles, func(r lrbac.Role) string { return r.Name() }),
+	}, nil
+}
+
+// ListRolesAndPermissions is the resolver for the listRolesAndPermissions field
 func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID uint64, order *models.RBACRoleListOrder) (*connectors.RBACRoleConnection, error) {
 	var (
 		err     error

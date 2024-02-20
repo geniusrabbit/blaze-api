@@ -41,6 +41,11 @@ func (r *mutationResolver) RejectAccount(ctx context.Context, id uint64, msg str
 	return r.Resolver.Mutation().RejectAccount(ctx, id, msg)
 }
 
+// CurrentSession is the resolver for the currentSession field.
+func (r *queryResolver) CurrentSession(ctx context.Context) (*models.SessionToken, error) {
+	return r.Resolver.Query().CurrentSession(ctx)
+}
+
 // CurrentAccount is the resolver for the currentAccount field.
 func (r *queryResolver) CurrentAccount(ctx context.Context) (*models.AccountPayload, error) {
 	return r.Resolver.Query().CurrentAccount(ctx)

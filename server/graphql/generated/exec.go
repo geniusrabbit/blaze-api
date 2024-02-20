@@ -240,6 +240,7 @@ type ComplexityRoot struct {
 		AuthClient                     func(childComplexity int, id string) int
 		CheckPermission                func(childComplexity int, name string, key *string, targetID *string) int
 		CurrentAccount                 func(childComplexity int) int
+		CurrentSession                 func(childComplexity int) int
 		CurrentUser                    func(childComplexity int) int
 		ListAccountRolesAndPermissions func(childComplexity int, accountID uint64, order *models.RBACRoleListOrder) int
 		ListAccounts                   func(childComplexity int, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) int
@@ -358,6 +359,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	ServiceVersion(ctx context.Context) (string, error)
+	CurrentSession(ctx context.Context) (*models.SessionToken, error)
 	CurrentAccount(ctx context.Context) (*models.AccountPayload, error)
 	Account(ctx context.Context, id uint64) (*models.AccountPayload, error)
 	ListAccounts(ctx context.Context, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.Account, models.AccountEdge], error)
@@ -1375,6 +1377,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.CurrentAccount(childComplexity), true
 
+	case "Query.currentSession":
+		if e.complexity.Query.CurrentSession == nil {
+			break
+		}
+
+		return e.complexity.Query.CurrentSession(childComplexity), true
+
 	case "Query.currentUser":
 		if e.complexity.Query.CurrentUser == nil {
 			break
@@ -2137,6 +2146,11 @@ type AccountCreatePayload {
 ###############################################################################
 
 extend type Query {
+  """
+  Current session from the token
+  """
+  currentSession: SessionToken! @hasPermissions(permissions: ["account.view.*"])
+
   """
   Current account from the session
   """
@@ -10265,6 +10279,81 @@ func (ec *executionContext) fieldContext_Query_serviceVersion(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_currentSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_currentSession(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().CurrentSession(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.SessionToken); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/models.SessionToken`, tmp)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.SessionToken)
+	fc.Result = res
+	return ec.marshalNSessionToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSessionToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_currentSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_SessionToken_token(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_SessionToken_expiresAt(ctx, field)
+			case "isAdmin":
+				return ec.fieldContext_SessionToken_isAdmin(ctx, field)
+			case "roles":
+				return ec.fieldContext_SessionToken_roles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SessionToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_currentAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_currentAccount(ctx, field)
 	if err != nil {
@@ -17724,6 +17813,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_serviceVersion(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "currentSession":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_currentSession(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
