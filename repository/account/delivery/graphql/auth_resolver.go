@@ -68,6 +68,9 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 	}
 
 	roles := account.Permissions.ChildRoles()
+	if r, ok := account.Permissions.(lrbac.Role); ok {
+		roles = append(roles, r)
+	}
 	return &models.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
