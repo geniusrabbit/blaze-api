@@ -84,7 +84,10 @@ func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 // CurrentSession is the resolver for the currentSession field
 func (r *AuthResolver) CurrentSession(ctx context.Context) (*models.SessionToken, error) {
 	user, account, token := session.User(ctx), session.Account(ctx), session.Token(ctx)
-	roles := account.Permissions.ChildRoles()
+	roles := append([]lrbac.Role{}, account.Permissions.ChildRoles()...)
+	if r, ok := account.Permissions.(lrbac.Role); ok {
+		roles = append(roles, r)
+	}
 	return &models.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
@@ -112,7 +115,11 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 		}
 	}
 	if account != nil && account.Permissions != nil {
-		permIDs = xtypes.SliceApply[lrbac.Role](account.Permissions.ChildRoles(), func(r lrbac.Role) uint64 {
+		childRoles := append([]lrbac.Role{}, account.Permissions.ChildRoles()...)
+		if r, ok := account.Permissions.(lrbac.Role); ok {
+			childRoles = append(childRoles, r)
+		}
+		permIDs = xtypes.SliceApply[lrbac.Role](childRoles, func(r lrbac.Role) uint64 {
 			switch ext := r.Ext().(type) {
 			case *permissions.ExtData:
 				return ext.ID
