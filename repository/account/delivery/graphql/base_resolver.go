@@ -2,7 +2,9 @@ package graphql
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/demdxx/sendmsg"
@@ -71,9 +73,16 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 		accObj  = input.Account.Model(model.UndefinedApproveStatus)
 	)
 
-	if userObj == nil && input.OwnerID != nil {
-		userObj = &model.User{ID: *input.OwnerID}
+	if input.OwnerID != nil && *input.OwnerID > 0 {
+		if userObj != nil {
+			userObj.ID = *input.OwnerID
+		} else {
+			userObj = &model.User{ID: *input.OwnerID}
+		}
 	}
+	json.NewEncoder(os.Stdout).Encode(input)
+	json.NewEncoder(os.Stdout).Encode(userObj)
+	json.NewEncoder(os.Stdout).Encode(accObj)
 
 	if _, err := r.accounts.Register(ctx, userObj, accObj, input.Password); err != nil {
 		return nil, err

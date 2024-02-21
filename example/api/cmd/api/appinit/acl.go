@@ -32,15 +32,16 @@ func InitModelPermissions(pm *permissions.Manager) {
 
 	// Register basic models CRUD permissions
 	for _, model := range crudModels {
-		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "update", "create"})
+		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "count", "update", "create"})
 	}
 
 	// Extend user permissions
 	_ = pm.RegisterNewPermissions(&model.User{}, []string{"reset_password"})
+	_ = pm.RegisterNewPermissions(&model.User{}, []string{"password.reset"})
 	_ = pm.RegisterNewOwningPermissions(&model.User{}, []string{"reset_password"})
 
 	// Extend account permissions
-	_ = pm.RegisterNewPermission(&model.Account{}, "register", rbac.WithoutCustomCheck)
+	_ = pm.RegisterNewPermission(nil, "account.register", rbac.WithoutCustomCheck)
 
 	// Register basic permissions for the Option model
 	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{"get", "set", "list"})
@@ -51,7 +52,7 @@ func InitModelPermissions(pm *permissions.Manager) {
 	// Register anonymous role and fill permissions for it
 	pm.RegisterRole(context.Background(),
 		rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithPermissions(
-			`user.view.owner`, `user.reset_password.*`,
+			`user.view.owner`, `user.reset_password`, `user.reset_password.*`, `user.password.reset`,
 			`account.view.owner`, `account.register`,
 		)),
 	)

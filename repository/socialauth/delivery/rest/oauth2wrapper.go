@@ -149,7 +149,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	// Create session if provided
 	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
-		sessToken, err = wr.sessProvider.CreateToken(accSocial.UserID, 0)
+		sessToken, err = wr.sessProvider.CreateToken(accSocial.UserID, 0, accSocial.ID)
 		if err != nil {
 			wr.Error(w, r, err)
 			return
@@ -166,10 +166,10 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"status":   "ok",
-		"protocol": wr.wrapper.Protocol(),
-		"provider": wr.wrapper.Provider(),
-		"token":    sessToken,
+		"status":       "ok",
+		"protocol":     wr.wrapper.Protocol(),
+		"provider":     wr.wrapper.Provider(),
+		"access_token": sessToken,
 	})
 }
 

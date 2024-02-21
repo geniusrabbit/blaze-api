@@ -66,7 +66,7 @@ CREATE TABLE account_base
 , policy_uri              VARCHAR(1024)               NOT NULL        DEFAULT ''
 , tos_uri                 VARCHAR(1024)               NOT NULL        DEFAULT ''
 , client_uri              VARCHAR(1024)               NOT NULL        DEFAULT ''
-, contacts                JSONB
+, contacts                TEXT[]
 
 , created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()

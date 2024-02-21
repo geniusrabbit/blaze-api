@@ -17,9 +17,10 @@ var (
 )
 
 const (
-	claimUserID    = "uid"
-	claimAccountID = "acc"
-	claimExpiredAt = "exp"
+	claimUserID          = "uid"
+	claimAccountID       = "acc"
+	claimExpiredAt       = "exp"
+	claimSocialAccountID = "sid"
 )
 
 type (
@@ -36,9 +37,10 @@ type (
 
 // TokenData extracted from token
 type TokenData struct {
-	UserID    uint64
-	AccountID uint64
-	ExpireAt  int64
+	UserID          uint64
+	AccountID       uint64
+	SocealAccountID uint64
+	ExpireAt        int64
 }
 
 // Provider to JWT constructions
@@ -54,7 +56,7 @@ type Provider struct {
 }
 
 // CreateToken new token for user ID
-func (provider *Provider) CreateToken(userID, accountID uint64) (string, error) {
+func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64) (string, error) {
 	var err error
 	lifetime := provider.TokenLifetime
 	if lifetime == 0 {
@@ -63,8 +65,13 @@ func (provider *Provider) CreateToken(userID, accountID uint64) (string, error) 
 	//Creating Access Token
 	atClaims := jwt.MapClaims{
 		claimUserID:    userID,
-		claimAccountID: accountID,
 		claimExpiredAt: time.Now().Add(lifetime).Unix(),
+	}
+	if accountID > 0 {
+		atClaims[claimAccountID] = accountID
+	}
+	if socialAccountID > 0 {
+		atClaims[claimSocialAccountID] = socialAccountID
 	}
 	opt := provider.MiddlewareOptions()
 	at := jwt.NewWithClaims(opt.SigningMethod, atClaims)
@@ -106,14 +113,16 @@ func (provider *Provider) ExtractTokenData(token *Token) (*TokenData, error) {
 		return nil, errJWTInvalidToken
 	}
 	claims := token.Claims.(MapClaims)
-	uid := claims[claimUserID]
-	acc := claims[claimAccountID]
-	exp := claims[claimExpiredAt]
+	uid := gocast.Uint64(claims[claimUserID])
+	acc := gocast.Uint64(claims[claimAccountID])
+	sid := gocast.Uint64(claims[claimSocialAccountID])
+	exp := gocast.Int64(claims[claimExpiredAt])
 
 	data := &TokenData{
-		UserID:    gocast.Number[uint64](uid),
-		AccountID: gocast.Number[uint64](acc),
-		ExpireAt:  gocast.Number[int64](exp),
+		UserID:          uid,
+		AccountID:       acc,
+		SocealAccountID: sid,
+		ExpireAt:        exp,
 	}
 
 	if data.ExpireAt < time.Now().Unix() {
@@ -134,10 +143,10 @@ func (provider *Provider) validationKeyGetter(token *Token) (any, error) {
 	// acc, _ := claims[claimAccountID]
 	exp := claims[claimExpiredAt]
 
-	if gocast.Number[int64](exp) < time.Now().Unix() {
+	if gocast.Int64(exp) < time.Now().Unix() {
 		return nil, errJWTTokenIsExpired
 	}
-	if gocast.Number[int64](uid) <= 0 {
+	if gocast.Int64(uid) <= 0 {
 		return nil, jwt.ErrInvalidKey
 	}
 

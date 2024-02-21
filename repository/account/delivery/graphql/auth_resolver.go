@@ -62,7 +62,7 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 		accountID = account.ID
 	}
 
-	token, err := r.provider.CreateToken(user.ID, accountID)
+	token, err := r.provider.CreateToken(user.ID, accountID, 0)
 	if err != nil {
 		return nil, err
 	}
