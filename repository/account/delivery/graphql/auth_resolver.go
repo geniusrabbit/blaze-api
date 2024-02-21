@@ -67,11 +67,7 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 		return nil, err
 	}
 
-	childRoles := account.Permissions.ChildRoles()
-	if role, ok := account.Permissions.(lrbac.Role); ok {
-		childRoles = append(childRoles[:0], role)
-	}
-	roles, _ := permissions.AllRolesAndPermissions(childRoles, nil)
+	roles := account.Permissions.ChildRoles()
 	return &models.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
@@ -88,11 +84,7 @@ func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 // CurrentSession is the resolver for the currentSession field
 func (r *AuthResolver) CurrentSession(ctx context.Context) (*models.SessionToken, error) {
 	user, account, token := session.User(ctx), session.Account(ctx), session.Token(ctx)
-	childRoles := account.Permissions.ChildRoles()
-	if role, ok := account.Permissions.(lrbac.Role); ok {
-		childRoles = append(childRoles[:0], role)
-	}
-	roles, _ := permissions.AllRolesAndPermissions(childRoles, nil)
+	roles := account.Permissions.ChildRoles()
 	return &models.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
@@ -106,6 +98,7 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 	var (
 		err     error
 		account *model.Account
+		permIDs []uint64
 	)
 	if accountID != 0 {
 		account, err = r.accountUsecase.Get(ctx, accountID)
@@ -118,7 +111,16 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 			return nil, errUserIsNotAuthorized
 		}
 	}
-	permIDs := permissions.AllRolesAndPermissionsIDs(account.Permissions.ChildRoles(), account.Permissions.ChildPermissions())
+	if account != nil && account.Permissions != nil {
+		permIDs = xtypes.SliceApply[lrbac.Role](account.Permissions.ChildRoles(), func(r lrbac.Role) uint64 {
+			switch ext := r.Ext().(type) {
+			case *permissions.ExtData:
+				return ext.ID
+			default:
+				return 0
+			}
+		}).Filter(func(id uint64) bool { return id != 0 })
+	}
 	return connectors.NewRBACRoleConnectionByIDs(ctx, r.roleRepo, permIDs, order), nil
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 
+	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
@@ -62,7 +63,13 @@ func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filt
 func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, ids []uint64, order *gqlmodels.RBACRoleListOrder) *RBACRoleConnection {
 	return NewCollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge](ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
-			roles, err := rolesPepo.FetchList(ctx, &rbac.Filter{ID: ids}, order.Order(), nil)
+			var (
+				roles []*model.Role
+				err   error
+			)
+			if len(ids) > 0 {
+				roles, err = rolesPepo.FetchList(ctx, &rbac.Filter{ID: ids}, order.Order(), nil)
+			}
 			return gqlmodels.FromRBACRoleModelList(ctx, roles), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
