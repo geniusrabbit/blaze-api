@@ -56,16 +56,19 @@ type Provider struct {
 }
 
 // CreateToken new token for user ID
-func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64) (string, error) {
-	var err error
-	lifetime := provider.TokenLifetime
+func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64) (string, time.Time, error) {
+	var (
+		err      error
+		lifetime = provider.TokenLifetime
+		expireAt = time.Now().Add(lifetime)
+	)
 	if lifetime == 0 {
 		lifetime = time.Hour
 	}
 	//Creating Access Token
 	atClaims := jwt.MapClaims{
 		claimUserID:    userID,
-		claimExpiredAt: time.Now().Add(lifetime).Unix(),
+		claimExpiredAt: expireAt.Unix(),
 	}
 	if accountID > 0 {
 		atClaims[claimAccountID] = accountID
@@ -77,9 +80,9 @@ func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64)
 	at := jwt.NewWithClaims(opt.SigningMethod, atClaims)
 	token, err := at.SignedString([]byte(provider.Secret))
 	if err != nil {
-		return "", err
+		return "", expireAt, err
 	}
-	return token, nil
+	return token, expireAt, nil
 }
 
 // MiddlewareOptions returns the options of middelware

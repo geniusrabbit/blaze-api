@@ -217,6 +217,11 @@ extend type Mutation {
   logout: Boolean!
 
   """
+  Switch the account by ID
+  """
+  switchAccount(id: ID64!): SessionToken!
+
+  """
   Register the new account
   """
   registerAccount(input: AccountCreateInput!): AccountCreatePayload! @hasPermissions(permissions: ["account.register"])

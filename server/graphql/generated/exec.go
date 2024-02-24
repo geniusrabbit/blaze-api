@@ -175,6 +175,7 @@ type ComplexityRoot struct {
 		RejectUser         func(childComplexity int, id uint64, msg *string) int
 		ResetUserPassword  func(childComplexity int, email string) int
 		SetOption          func(childComplexity int, name string, input models.OptionInput) int
+		SwitchAccount      func(childComplexity int, id uint64) int
 		UpdateAccount      func(childComplexity int, id uint64, input models.AccountInput) int
 		UpdateAuthClient   func(childComplexity int, id string, input models.AuthClientInput) int
 		UpdateRole         func(childComplexity int, id uint64, input models.RBACRoleInput) int
@@ -339,6 +340,7 @@ type MutationResolver interface {
 	Poke(ctx context.Context) (string, error)
 	Login(ctx context.Context, login string, password string) (*models.SessionToken, error)
 	Logout(ctx context.Context) (bool, error)
+	SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error)
 	RegisterAccount(ctx context.Context, input models.AccountCreateInput) (*models.AccountCreatePayload, error)
 	UpdateAccount(ctx context.Context, id uint64, input models.AccountInput) (*models.AccountPayload, error)
 	ApproveAccount(ctx context.Context, id uint64, msg string) (*models.AccountPayload, error)
@@ -1049,6 +1051,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.SetOption(childComplexity, args["name"].(string), args["input"].(models.OptionInput)), true
+
+	case "Mutation.switchAccount":
+		if e.complexity.Mutation.SwitchAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_switchAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SwitchAccount(childComplexity, args["id"].(uint64)), true
 
 	case "Mutation.updateAccount":
 		if e.complexity.Mutation.UpdateAccount == nil {
@@ -2186,6 +2200,11 @@ extend type Mutation {
   Logout from the system
   """
   logout: Boolean!
+
+  """
+  Switch the account by ID
+  """
+  switchAccount(id: ID64!): SessionToken!
 
   """
   Register the new account
@@ -3580,6 +3599,21 @@ func (ec *executionContext) field_Mutation_setOption_args(ctx context.Context, r
 		}
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_switchAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -7435,6 +7469,68 @@ func (ec *executionContext) fieldContext_Mutation_logout(ctx context.Context, fi
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_switchAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_switchAccount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SwitchAccount(rctx, fc.Args["id"].(uint64))
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.SessionToken)
+	fc.Result = res
+	return ec.marshalNSessionToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSessionToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_switchAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_SessionToken_token(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_SessionToken_expiresAt(ctx, field)
+			case "isAdmin":
+				return ec.fieldContext_SessionToken_isAdmin(ctx, field)
+			case "roles":
+				return ec.fieldContext_SessionToken_roles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SessionToken", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_switchAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -17249,6 +17345,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "logout":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_logout(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "switchAccount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_switchAccount(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

@@ -12,6 +12,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/jwt"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
 	accountusecase "github.com/geniusrabbit/blaze-api/repository/account/usecase"
@@ -62,7 +63,7 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 		accountID = account.ID
 	}
 
-	token, err := r.provider.CreateToken(user.ID, accountID, 0)
+	token, expiresAt, err := r.provider.CreateToken(user.ID, accountID, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -73,15 +74,44 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 	}
 	return &models.SessionToken{
 		Token:     token,
-		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
+		ExpiresAt: expiresAt,
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
 		Roles:     xtypes.SliceApply[lrbac.Role, string](roles, func(r lrbac.Role) string { return r.Name() }),
 	}, nil
 }
 
-// Logout is the resolver for the logout field.
+// Logout is the resolver for the logout field
 func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 	return true, nil
+}
+
+// SwitchAccount is the resolver for the switchAccount field
+func (r *AuthResolver) SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error) {
+	user := session.User(ctx)
+	if user == nil {
+		return nil, errUserIsNotAuthorized
+	}
+
+	account, err := accountForUser(ctx, r.accountRepo, user, id)
+	if err != nil {
+		return nil, err
+	}
+
+	token, expiresAt, err := r.provider.CreateToken(user.ID, account.ID, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	roles := account.Permissions.ChildRoles()
+	if r, ok := account.Permissions.(lrbac.Role); ok {
+		roles = append(roles, r)
+	}
+	return &models.SessionToken{
+		Token:     token,
+		ExpiresAt: expiresAt,
+		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
+		Roles:     xtypes.SliceApply[lrbac.Role, string](roles, func(r lrbac.Role) string { return r.Name() }),
+	}, nil
 }
 
 // CurrentSession is the resolver for the currentSession field
@@ -135,7 +165,7 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 }
 
 func accountForUser(ctx context.Context, accountRepo account.Repository, user *model.User, accountID uint64) (*model.Account, error) {
-	accounts, err := accountRepo.FetchList(ctx, &account.Filter{UserID: []uint64{user.ID}}, nil)
+	accounts, err := accountRepo.FetchList(ctx, &account.Filter{UserID: []uint64{user.ID}}, &repository.Pagination{Size: 1})
 	if err != nil {
 		return nil, err
 	}

@@ -21,6 +21,11 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 	return r.Resolver.Mutation().Logout(ctx)
 }
 
+// SwitchAccount is the resolver for the switchAccount field.
+func (r *mutationResolver) SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error) {
+	return r.Resolver.Mutation().SwitchAccount(ctx, id)
+}
+
 // RegisterAccount is the resolver for the registerAccount field.
 func (r *mutationResolver) RegisterAccount(ctx context.Context, input models.AccountCreateInput) (*models.AccountCreatePayload, error) {
 	return r.Resolver.Mutation().RegisterAccount(ctx, input)

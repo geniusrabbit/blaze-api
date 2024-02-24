@@ -44,7 +44,7 @@ func (r *Repository) Get(ctx context.Context, id uint64) (*model.User, error) {
 // GetByEmail one object by Email
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	object := new(model.User)
-	if err := r.Slave(ctx).First(object, `email=?`, email).Error; err != nil {
+	if err := r.Slave(ctx).First(object, `lower(email)=?`, strings.ToLower(email)).Error; err != nil {
 		return nil, err
 	}
 	return object, nil

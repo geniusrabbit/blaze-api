@@ -6,6 +6,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
@@ -19,6 +20,11 @@ func (r *mutationResolver) Login(ctx context.Context, login string, password str
 // Logout is the resolver for the logout field.
 func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 	return r.accAuth.Logout(ctx)
+}
+
+// SwitchAccount is the resolver for the switchAccount field.
+func (r *mutationResolver) SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error) {
+	panic(fmt.Errorf("not implemented: SwitchAccount - switchAccount"))
 }
 
 // RegisterAccount is the resolver for the registerAccount field.

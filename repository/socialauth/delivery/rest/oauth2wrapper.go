@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/demdxx/gocast/v2"
 	"go.uber.org/zap"
@@ -111,6 +112,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	var (
 		accSocial *model.AccountSocial
+		expiresAt time.Time
 		ctx       = acl.WithNoPermCheck(r.Context())
 	)
 
@@ -149,7 +151,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	// Create session if provided
 	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
-		sessToken, err = wr.sessProvider.CreateToken(accSocial.UserID, 0, accSocial.ID)
+		sessToken, expiresAt, err = wr.sessProvider.CreateToken(accSocial.UserID, 0, accSocial.ID)
 		if err != nil {
 			wr.Error(w, r, err)
 			return
@@ -169,6 +171,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 		"status":       "ok",
 		"protocol":     wr.wrapper.Protocol(),
 		"provider":     wr.wrapper.Provider(),
+		"expires_at":   expiresAt,
 		"access_token": sessToken,
 	})
 }

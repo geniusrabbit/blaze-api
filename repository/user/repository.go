@@ -3,9 +3,11 @@ package user
 
 import (
 	"context"
+	"strings"
 
 	"gorm.io/gorm"
 
+	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
 )
@@ -41,7 +43,9 @@ func (fl *ListFilter) PrepareQuery(q *gorm.DB) *gorm.DB {
 		q = q.Where(`id IN (?)`, fl.UserID)
 	}
 	if len(fl.Emails) > 0 {
-		q = q.Where(`email IN (?)`, fl.Emails)
+		q = q.Where(`lower(email) IN (?)`, xtypes.SliceApply(fl.Emails, func(v string) string {
+			return strings.ToLower(v)
+		}))
 	}
 	return q
 }
