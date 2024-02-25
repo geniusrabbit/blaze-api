@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/demdxx/gocast/v2"
@@ -160,7 +158,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	// Redirect to the success URL if provided
 	if red := gocast.Or(r.URL.Query().Get("redirect"), wr.successRedirectURL); red != "" {
-		redirectURL := urlSetQueryParams(red, map[string]string{"token": sessToken})
+		redirectURL := urlSetQueryParams(red, map[string]string{"access_token": sessToken})
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -220,19 +218,4 @@ func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.
 	socAcc.Link = gocast.Or(userData.Link, socAcc.Link)
 	socAcc.Scope = gocast.IfThen(len(scopes) > 0, scopes, socAcc.Scope)
 	return wr.socialAuthUsecase.Update(ctx, socAcc.ID, socAcc)
-}
-
-func urlSetQueryParams(sUrl string, params map[string]string) string {
-	if len(params) == 0 {
-		return sUrl
-	}
-	query := url.Values{}
-	baseURL := strings.SplitN(sUrl, "?", 2)
-	if len(baseURL) == 2 {
-		query, _ = url.ParseQuery(baseURL[1])
-	}
-	for k, v := range params {
-		query.Set(k, v)
-	}
-	return baseURL[0] + "?" + query.Encode()
 }

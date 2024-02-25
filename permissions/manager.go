@@ -134,6 +134,9 @@ func (mng *Manager) AsOneRole(ctx context.Context, isAdmin bool, filter func(con
 		return roles[0], nil
 	}
 	if len(roles) == 0 {
+		if len(id) == 0 {
+			return rbac.NewDummyPermission(``, false), nil
+		}
 		return nil, ErrUndefinedRole
 	}
 	return rbac.NewRole(``, rbac.WithChildRoles(roles...))
