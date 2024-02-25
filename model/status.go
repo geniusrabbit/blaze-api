@@ -39,6 +39,10 @@ func (s ApproveStatus) IsApproved() bool {
 	return s == ApprovedApproveStatus
 }
 
+func (s ApproveStatus) IsRejected() bool {
+	return s == DisapprovedApproveStatus
+}
+
 func (s ApproveStatus) IsUndefined() bool {
 	return s == UndefinedApproveStatus
 }

@@ -2,18 +2,30 @@ package directives
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/demdxx/gocast/v2"
 	"github.com/pkg/errors"
 
 	"github.com/geniusrabbit/blaze-api/context/session"
+	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
 )
 
 var (
 	errAuthorizationRequired = errors.New("authorization required")
 	errAccessForbidden       = errors.New("access forbidden")
+)
+
+type (
+	accountOwnerSetter interface {
+		SetAccountOwnerID(uint64)
+	}
+	userOwnerSetter interface {
+		SetUserOwnerID(uint64)
+	}
 )
 
 // HasPermissions for this user to the particular permission of the object
@@ -39,7 +51,7 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 			newObj  any
 		)
 		if objName != `` {
-			newObj = pm.ObjectByName(objName)
+			newObj = ownedObject(ctx, pm.ObjectByName(objName), user, account)
 		}
 		if !account.CheckPermissions(ctx, newObj, perm) {
 			if user.IsAnonymous() {
@@ -50,4 +62,47 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 	}
 
 	return next(ctx)
+}
+
+// here we need to check that object belongs to the user or have manager access
+// as it's the basic level of access to any object
+func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Account) any {
+	switch obj.(type) {
+	case nil:
+		return nil
+	case *model.Account:
+		return &model.Account{ID: acc.ID}
+	case *model.User:
+		return &model.User{ID: user.ID}
+	}
+
+	// Get object struct type value
+	tp := reflect.TypeOf(obj).Elem()
+	for tp.Kind() == reflect.Ptr || tp.Kind() == reflect.Interface {
+		tp = tp.Elem()
+	}
+	if tp.Kind() != reflect.Struct {
+		return obj
+	}
+
+	// Create new object with the same type
+	newObj := reflect.New(tp).Interface()
+
+	// Set account and user owner IDs
+	if setter, ok := newObj.(accountOwnerSetter); ok {
+		setter.SetAccountOwnerID(acc.ID)
+	} else {
+		_ = gocast.SetStructFieldValue(ctx, newObj, `AccountID`, acc.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerAccountID`, acc.ID)
+	}
+
+	// Set user owner ID
+	if setter, ok := newObj.(userOwnerSetter); ok {
+		setter.SetUserOwnerID(user.ID)
+	} else {
+		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, user.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, user.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, user.ID)
+	}
+	return newObj
 }

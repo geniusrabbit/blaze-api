@@ -1,15 +1,19 @@
 package graphql
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/opentracing/opentracing-go"
 
+	"github.com/geniusrabbit/blaze-api/acl"
 	"github.com/geniusrabbit/blaze-api/jwt"
 	"github.com/geniusrabbit/blaze-api/server/graphql/directives"
 	"github.com/geniusrabbit/blaze-api/server/graphql/generated"
@@ -40,9 +44,21 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New(100),
 	})
+	srv.SetRecoverFunc(recoverHandler)
+
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		span, ctx := opentracing.StartSpanFromContext(r.Context(), "graphql.request")
 		defer span.Finish()
 		srv.ServeHTTP(rw, r.WithContext(ctx))
 	})
+}
+
+func recoverHandler(ctx context.Context, err any) error {
+	switch verr := err.(type) {
+	case error:
+		if errors.Is(verr, acl.ErrNoPermissions) {
+			return verr
+		}
+	}
+	return graphql.DefaultRecover(ctx, err)
 }

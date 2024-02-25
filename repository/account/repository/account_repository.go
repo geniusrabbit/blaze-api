@@ -67,7 +67,7 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Acco
 		accountObj.ExtendAdminUsers(userObj.ID)
 	}
 	if len(roles) > 0 || memeber.IsAdmin {
-		if accountObj.Approve.IsApproved() && userObj.Approve.IsApproved() {
+		if !accountObj.Approve.IsRejected() && !userObj.Approve.IsRejected() {
 			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, memeber.IsAdmin, nil, roles...)
 		} else {
 			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(_ context.Context, r rbac.Role) bool {
