@@ -14,7 +14,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/model"
 )
 
-const defaultAdminRole = `account:admin`
+const (
+	DefaultAdminRole     = `account:admin`
+	DefaultRole          = `anonymous`
+	AnonymousDefaultRole = `anonymous`
+)
 
 var (
 	// ErrUndefinedRole if not found
@@ -91,7 +95,8 @@ func NewTestManager(ctx context.Context) *Manager {
 	return &Manager{
 		Manager: rbac.NewManager(nil).RegisterRole(ctx,
 			rbac.NewDummyPermission(`test`, true),
-			rbac.NewDummyPermission(defaultAdminRole, true),
+			rbac.NewDummyPermission(DefaultAdminRole, true),
+			rbac.NewDummyPermission(AnonymousDefaultRole, true),
 		),
 	}
 }
@@ -107,13 +112,18 @@ func (mng *Manager) RoleByID(ctx context.Context, id uint64) (rbac.Role, error) 
 	return nil, ErrUndefinedRole
 }
 
+// DefaultRole returns default role
+func (mng *Manager) DefaultRole(ctx context.Context) rbac.Role {
+	return mng.Role(ctx, DefaultRole)
+}
+
 // AsOneRole returns new role object from one or more IDs
 func (mng *Manager) AsOneRole(ctx context.Context, isAdmin bool, filter func(context.Context, rbac.Role) bool, id ...uint64) (rbac.Role, error) {
 	var roles []rbac.Role
 	if isAdmin {
-		adminRole := mng.Role(ctx, defaultAdminRole)
+		adminRole := mng.Role(ctx, DefaultAdminRole)
 		if adminRole == nil {
-			return nil, errors.Wrap(ErrUndefinedRole, defaultAdminRole)
+			return nil, errors.Wrap(ErrUndefinedRole, DefaultAdminRole)
 		}
 		roles = append(roles, adminRole)
 	}
