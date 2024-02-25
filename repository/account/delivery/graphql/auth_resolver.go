@@ -3,7 +3,6 @@ package graphql
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/demdxx/gocast/v2"
@@ -90,13 +89,11 @@ func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 // SwitchAccount is the resolver for the switchAccount field
 func (r *AuthResolver) SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error) {
 	user := session.User(ctx)
-	fmt.Println(">>>> user", user)
 	if user == nil {
 		return nil, errUserIsNotAuthorized
 	}
 
 	account, err := accountForUser(ctx, r.accountRepo, user, id)
-	fmt.Println(">>>> account, err", account, err)
 	if err != nil {
 		return nil, err
 	}

@@ -73,10 +73,6 @@ func commonPermissionCheck(custCheck ...checkFnk) checkFnk {
 			return customCheck(ctx, resource, perm)
 		}
 
-		if ccu == 0 && coa == 0 {
-			return true
-		}
-
 		// check if this is mode which no belongs to anyone.
 		// Here we are expecting that user have the required permission
 		// and as the object is not belongs to anyone we can allow access

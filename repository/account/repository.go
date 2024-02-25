@@ -19,20 +19,21 @@ type Filter struct {
 }
 
 func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
-	if fl != nil {
-		if len(fl.ID) > 0 {
-			query = query.Where(`id IN (?)`, fl.ID)
-		}
-		if len(fl.UserID) > 0 {
-			query = query.Where(`id IN (SELECT account_id FROM `+
-				(*model.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, fl.UserID)
-		}
-		if len(fl.Title) > 0 {
-			query = query.Where(`title IN (?)`, fl.Title)
-		}
-		if len(fl.Status) > 0 {
-			query = query.Where(`approve_status IN (?)`, fl.Status)
-		}
+	if fl == nil {
+		return query
+	}
+	if len(fl.ID) > 0 {
+		query = query.Where(`id IN (?)`, fl.ID)
+	}
+	if len(fl.UserID) > 0 {
+		query = query.Where(`id IN (SELECT account_id FROM `+
+			(*model.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, fl.UserID)
+	}
+	if len(fl.Title) > 0 {
+		query = query.Where(`title IN (?)`, fl.Title)
+	}
+	if len(fl.Status) > 0 {
+		query = query.Where(`approve_status IN (?)`, fl.Status)
 	}
 	return query
 }

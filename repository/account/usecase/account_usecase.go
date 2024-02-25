@@ -209,13 +209,11 @@ func (a *AccountUsecase) UnlinkMember(ctx context.Context, accountObj *model.Acc
 }
 
 func adjustListFilter(ctx context.Context, filter *account.Filter) (*account.Filter, error) {
-	usr, acc := session.UserAccount(ctx)
+	usr := session.User(ctx)
 	if filter == nil {
 		return &account.Filter{UserID: []uint64{usr.ID}}, nil
 	} else if len(filter.UserID) == 0 {
 		filter.UserID = []uint64{usr.ID}
-	} else if len(filter.ID) == 0 {
-		filter.ID = []uint64{acc.ID}
 	}
 	if len(filter.UserID) != 1 || filter.UserID[0] != usr.ID {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account (too wide filter)")
