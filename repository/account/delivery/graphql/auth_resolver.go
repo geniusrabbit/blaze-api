@@ -3,8 +3,10 @@ package graphql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/demdxx/gocast/v2"
 	lrbac "github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 
@@ -88,11 +90,13 @@ func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
 // SwitchAccount is the resolver for the switchAccount field
 func (r *AuthResolver) SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error) {
 	user := session.User(ctx)
+	fmt.Println(">>>> user", user)
 	if user == nil {
 		return nil, errUserIsNotAuthorized
 	}
 
 	account, err := accountForUser(ctx, r.accountRepo, user, id)
+	fmt.Println(">>>> account, err", account, err)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +169,13 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 }
 
 func accountForUser(ctx context.Context, accountRepo account.Repository, user *model.User, accountID uint64) (*model.Account, error) {
-	accounts, err := accountRepo.FetchList(ctx, &account.Filter{UserID: []uint64{user.ID}}, &repository.Pagination{Size: 1})
+	accounts, err := accountRepo.FetchList(ctx,
+		&account.Filter{
+			ID:     gocast.IfThen(accountID > 0, []uint64{accountID}, nil),
+			UserID: []uint64{user.ID},
+		},
+		&repository.Pagination{Size: 1},
+	)
 	if err != nil {
 		return nil, err
 	}
