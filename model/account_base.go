@@ -103,6 +103,11 @@ func (acc *Account) OwnerAccountID() uint64 {
 	return acc.ID
 }
 
+// IsOwnerUser of the account
+func (acc *Account) IsOwnerUser(userID uint64) bool {
+	return acc.IsAdminUser(userID)
+}
+
 // ExtendPermissions of the account for the user
 func (acc *Account) ExtendPermissions(perm permissionChecker) {
 	if perm == nil {

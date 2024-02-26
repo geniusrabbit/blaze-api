@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/rbac"
 
 	"github.com/geniusrabbit/blaze-api/context/session"
@@ -18,6 +19,10 @@ type owner interface {
 
 type creator interface {
 	CreatorUserID() uint64
+}
+
+type userOwnerChecker interface {
+	IsOwnerUser(userID uint64) bool
 }
 
 // InitModelPermissions for particular models
@@ -86,6 +91,9 @@ func permExtractCover(perm rbac.Permission) string {
 }
 
 func checkOwnerAccount(resource any, ownerID uint64) int {
+	if ownChecker := resource.(userOwnerChecker); ownChecker != nil {
+		return gocast.IfThen(ownChecker.IsOwnerUser(ownerID), 1, -1)
+	}
 	own, _ := resource.(owner)
 	if own == nil || own.OwnerAccountID() == 0 {
 		return 0
@@ -111,34 +119,7 @@ func isEmptyOwner(resource any) bool {
 	if resource == nil {
 		return true
 	}
-	// emptyObject := false
-	// res := reflectTarget(reflect.ValueOf(resource))
-	// // Check if model has been saved
-	// if res.Kind() == reflect.Struct {
-	// 	typ := res.Type()
-	// 	for i := 0; i < typ.NumField(); i++ {
-	// 		if isPKField(typ.Field(i)) {
-	// 			if gocast.IsEmpty(res.Field(i).Interface()) {
-	// 				emptyObject = true
-	// 			}
-	// 			break
-	// 		}
-	// 	}
-	// }
 	own, _ := resource.(owner)
 	crt, _ := resource.(creator)
 	return own == nil && crt == nil
 }
-
-// func reflectTarget(r reflect.Value) reflect.Value {
-// 	for reflect.Ptr == r.Kind() || reflect.Interface == r.Kind() {
-// 		r = r.Elem()
-// 	}
-// 	return r
-// }
-
-// func isPKField(field reflect.StructField) bool {
-// 	return strings.EqualFold(field.Name, "id") ||
-// 		strings.EqualFold(field.Tag.Get(`db`), `id`) ||
-// 		strings.Contains(field.Tag.Get(`gorm`), "primaryKey")
-// }

@@ -70,9 +70,9 @@ func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Acco
 	switch obj.(type) {
 	case nil:
 		return nil
-	case *model.Account:
-		return &model.Account{ID: acc.ID}
-	case *model.User:
+	case *model.Account, model.Account:
+		return &model.Account{ID: acc.ID, Admins: []uint64{user.ID}}
+	case *model.User, model.User:
 		return &model.User{ID: user.ID}
 	}
 

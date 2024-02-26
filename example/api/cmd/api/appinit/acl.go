@@ -9,24 +9,25 @@ import (
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 )
 
 // InitModelPermissions models
 func InitModelPermissions(pm *permissions.Manager) {
 	crudModels := []any{
 		&model.User{},
-		&model.Account{},
 		&model.Role{},
 		&model.AuthClient{},
 	}
 
 	acl.InitModelPermissions(pm,
 		append(crudModels,
-			&model.HistoryAction{},
-			&model.Option{},
+			&model.Account{},
 			&model.AccountMember{},
 			&model.AccountSocialSession{},
 			&model.AccountSocial{},
+			&model.HistoryAction{},
+			&model.Option{},
 		)...,
 	)
 
@@ -34,6 +35,16 @@ func InitModelPermissions(pm *permissions.Manager) {
 	for _, model := range crudModels {
 		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "count", "update", "create"})
 	}
+
+	// Register basic models CRUD permissions for Account with member checks
+	_ = pm.RegisterNewOwningPermissions(&model.Account{},
+		[]string{"view", "list", "count", "update", "create", "delete"},
+		rbac.WithCustomCheck(func(ctx context.Context, resource any, perm rbac.Permission) bool {
+			account, _ := resource.(*model.Account)
+			user := session.User(ctx)
+			return account.IsOwnerUser(user.ID) || repository.New().IsMember(ctx, user, account)
+		}),
+	)
 
 	// Extend user permissions
 	_ = pm.RegisterNewPermissions(&model.User{}, []string{"reset_password"})
