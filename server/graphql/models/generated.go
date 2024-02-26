@@ -431,6 +431,59 @@ type SessionToken struct {
 	Roles     []string  `json:"roles,omitempty"`
 }
 
+type SocialAccount struct {
+	ID        uint64             `json:"ID"`
+	UserID    uint64             `json:"userID"`
+	SocialID  string             `json:"socialID"`
+	Provider  string             `json:"provider"`
+	Email     string             `json:"email"`
+	Username  string             `json:"username"`
+	FirstName string             `json:"firstName"`
+	LastName  string             `json:"lastName"`
+	Avatar    string             `json:"avatar"`
+	Link      string             `json:"link"`
+	Scope     []string           `json:"scope,omitempty"`
+	Data      types.NullableJSON `json:"data"`
+	CreatedAt time.Time          `json:"createdAt"`
+	UpdatedAt time.Time          `json:"updatedAt"`
+	DeletedAt *time.Time         `json:"deletedAt,omitempty"`
+}
+
+type SocialAccountEdge struct {
+	// A cursor for use in pagination.
+	Cursor string `json:"cursor"`
+	// The item at the end of the edge.
+	Node *SocialAccount `json:"node,omitempty"`
+}
+
+type SocialAccountListFilter struct {
+	ID       []uint64 `json:"ID,omitempty"`
+	UserID   []uint64 `json:"userID,omitempty"`
+	Provider []string `json:"provider,omitempty"`
+	Username []string `json:"username,omitempty"`
+	Email    []string `json:"email,omitempty"`
+}
+
+type SocialAccountListOrder struct {
+	ID        *Ordering `json:"ID,omitempty"`
+	UserID    *Ordering `json:"userID,omitempty"`
+	Provider  *Ordering `json:"provider,omitempty"`
+	Email     *Ordering `json:"email,omitempty"`
+	Username  *Ordering `json:"username,omitempty"`
+	FirstName *Ordering `json:"firstName,omitempty"`
+	LastName  *Ordering `json:"lastName,omitempty"`
+}
+
+// SocialAccountPayload wrapper to access of SocialAccount oprtation results
+type SocialAccountPayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationID string `json:"clientMutationID"`
+	// Social Account ID operation result
+	SocialAccountID uint64 `json:"socialAccountID"`
+	// Social Account object accessor
+	SocialAccount *SocialAccount `json:"socialAccount,omitempty"`
+}
+
 // Simple response type for the API
 type StatusResponse struct {
 	// The status of the response

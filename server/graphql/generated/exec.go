@@ -47,6 +47,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	Auth           func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 	HasPermissions func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
 }
 
@@ -242,6 +243,7 @@ type ComplexityRoot struct {
 		CheckPermission                func(childComplexity int, name string, key *string, targetID *string) int
 		CurrentAccount                 func(childComplexity int) int
 		CurrentSession                 func(childComplexity int) int
+		CurrentSocialAccounts          func(childComplexity int, filter *models.SocialAccountListFilter) int
 		CurrentUser                    func(childComplexity int) int
 		ListAccountRolesAndPermissions func(childComplexity int, accountID uint64, order *models.RBACRoleListOrder) int
 		ListAccounts                   func(childComplexity int, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) int
@@ -301,6 +303,42 @@ type ComplexityRoot struct {
 		IsAdmin   func(childComplexity int) int
 		Roles     func(childComplexity int) int
 		Token     func(childComplexity int) int
+	}
+
+	SocialAccount struct {
+		Avatar    func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		Data      func(childComplexity int) int
+		DeletedAt func(childComplexity int) int
+		Email     func(childComplexity int) int
+		FirstName func(childComplexity int) int
+		ID        func(childComplexity int) int
+		LastName  func(childComplexity int) int
+		Link      func(childComplexity int) int
+		Provider  func(childComplexity int) int
+		Scope     func(childComplexity int) int
+		SocialID  func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+		UserID    func(childComplexity int) int
+		Username  func(childComplexity int) int
+	}
+
+	SocialAccountConnection struct {
+		Edges      func(childComplexity int) int
+		List       func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	SocialAccountEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	SocialAccountPayload struct {
+		ClientMutationID func(childComplexity int) int
+		SocialAccount    func(childComplexity int) int
+		SocialAccountID  func(childComplexity int) int
 	}
 
 	StatusResponse struct {
@@ -366,6 +404,7 @@ type QueryResolver interface {
 	Account(ctx context.Context, id uint64) (*models.AccountPayload, error)
 	ListAccounts(ctx context.Context, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.Account, models.AccountEdge], error)
 	ListAccountRolesAndPermissions(ctx context.Context, accountID uint64, order *models.RBACRoleListOrder) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error)
+	CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
 	CurrentUser(ctx context.Context) (*models.UserPayload, error)
 	User(ctx context.Context, id uint64, username string) (*models.UserPayload, error)
 	ListUsers(ctx context.Context, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) (*connectors.CollectionConnection[models.User, models.UserEdge], error)
@@ -1398,6 +1437,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.CurrentSession(childComplexity), true
 
+	case "Query.currentSocialAccounts":
+		if e.complexity.Query.CurrentSocialAccounts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_currentSocialAccounts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CurrentSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter)), true
+
 	case "Query.currentUser":
 		if e.complexity.Query.CurrentUser == nil {
 			break
@@ -1740,6 +1791,174 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SessionToken.Token(childComplexity), true
 
+	case "SocialAccount.avatar":
+		if e.complexity.SocialAccount.Avatar == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Avatar(childComplexity), true
+
+	case "SocialAccount.createdAt":
+		if e.complexity.SocialAccount.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.CreatedAt(childComplexity), true
+
+	case "SocialAccount.data":
+		if e.complexity.SocialAccount.Data == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Data(childComplexity), true
+
+	case "SocialAccount.deletedAt":
+		if e.complexity.SocialAccount.DeletedAt == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.DeletedAt(childComplexity), true
+
+	case "SocialAccount.email":
+		if e.complexity.SocialAccount.Email == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Email(childComplexity), true
+
+	case "SocialAccount.firstName":
+		if e.complexity.SocialAccount.FirstName == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.FirstName(childComplexity), true
+
+	case "SocialAccount.ID":
+		if e.complexity.SocialAccount.ID == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.ID(childComplexity), true
+
+	case "SocialAccount.lastName":
+		if e.complexity.SocialAccount.LastName == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.LastName(childComplexity), true
+
+	case "SocialAccount.link":
+		if e.complexity.SocialAccount.Link == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Link(childComplexity), true
+
+	case "SocialAccount.provider":
+		if e.complexity.SocialAccount.Provider == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Provider(childComplexity), true
+
+	case "SocialAccount.scope":
+		if e.complexity.SocialAccount.Scope == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Scope(childComplexity), true
+
+	case "SocialAccount.socialID":
+		if e.complexity.SocialAccount.SocialID == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.SocialID(childComplexity), true
+
+	case "SocialAccount.updatedAt":
+		if e.complexity.SocialAccount.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.UpdatedAt(childComplexity), true
+
+	case "SocialAccount.userID":
+		if e.complexity.SocialAccount.UserID == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.UserID(childComplexity), true
+
+	case "SocialAccount.username":
+		if e.complexity.SocialAccount.Username == nil {
+			break
+		}
+
+		return e.complexity.SocialAccount.Username(childComplexity), true
+
+	case "SocialAccountConnection.edges":
+		if e.complexity.SocialAccountConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountConnection.Edges(childComplexity), true
+
+	case "SocialAccountConnection.list":
+		if e.complexity.SocialAccountConnection.List == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountConnection.List(childComplexity), true
+
+	case "SocialAccountConnection.pageInfo":
+		if e.complexity.SocialAccountConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountConnection.PageInfo(childComplexity), true
+
+	case "SocialAccountConnection.totalCount":
+		if e.complexity.SocialAccountConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountConnection.TotalCount(childComplexity), true
+
+	case "SocialAccountEdge.cursor":
+		if e.complexity.SocialAccountEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountEdge.Cursor(childComplexity), true
+
+	case "SocialAccountEdge.node":
+		if e.complexity.SocialAccountEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountEdge.Node(childComplexity), true
+
+	case "SocialAccountPayload.clientMutationID":
+		if e.complexity.SocialAccountPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountPayload.ClientMutationID(childComplexity), true
+
+	case "SocialAccountPayload.socialAccount":
+		if e.complexity.SocialAccountPayload.SocialAccount == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountPayload.SocialAccount(childComplexity), true
+
+	case "SocialAccountPayload.socialAccountID":
+		if e.complexity.SocialAccountPayload.SocialAccountID == nil {
+			break
+		}
+
+		return e.complexity.SocialAccountPayload.SocialAccountID(childComplexity), true
+
 	case "StatusResponse.message":
 		if e.complexity.StatusResponse.Message == nil {
 			break
@@ -1883,6 +2102,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRBACRoleInput,
 		ec.unmarshalInputRBACRoleListFilter,
 		ec.unmarshalInputRBACRoleListOrder,
+		ec.unmarshalInputSocialAccountListFilter,
+		ec.unmarshalInputSocialAccountListOrder,
 		ec.unmarshalInputUserInput,
 		ec.unmarshalInputUserListFilter,
 		ec.unmarshalInputUserListOrder,
@@ -2227,6 +2448,111 @@ extend type Mutation {
   rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.reject.*"])
 }
 `, BuiltIn: false},
+	{Name: "../../../protocol/graphql/schemas/account_social.graphql", Input: `type SocialAccount {
+  ID: ID64!
+  userID: ID64!
+
+  socialID: String!
+  provider: String!
+  email: String!
+  username: String!
+
+  firstName: String!
+  lastName: String!
+  avatar: String!
+  link: String!
+
+  scope: [String!]
+  data: NullableJSON!
+
+  createdAt: Time!
+  updatedAt: Time!
+  deletedAt: Time
+}
+
+type SocialAccountEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: SocialAccount
+}
+
+"""
+SocialAccountConnection implements collection accessor interface with pagination
+"""
+type SocialAccountConnection {
+  """
+  The total number of records
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the social account's lists
+  """
+  edges: [SocialAccountEdge!]
+
+  """
+  A list of the social accounts, as a convenience when edges are not needed.
+  """
+  list: [SocialAccount!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+SocialAccountPayload wrapper to access of SocialAccount oprtation results
+"""
+type SocialAccountPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  Social Account ID operation result
+  """
+  socialAccountID: ID64!
+
+  """
+  Social Account object accessor
+  """
+  socialAccount: SocialAccount
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input SocialAccountListFilter {
+  ID: [ID64!]
+  userID: [ID64!]
+  provider: [String!]
+  username: [String!]
+  email: [String!]
+}
+
+input SocialAccountListOrder {
+  ID: Ordering
+  userID: Ordering
+  provider: Ordering
+  email: Ordering
+  username: Ordering
+  firstName: Ordering
+  lastName: Ordering
+}
+
+extend type Query {
+  currentSocialAccounts(filter: SocialAccountListFilter = null): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+}
+`, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/account_users.graphql", Input: `
 """
 User represents a user object of the system
@@ -2432,12 +2758,12 @@ extend type Mutation {
   """
   Reset password of the particular user in case if user forgot it
   """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.reset_password"])
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset"])
 
   """
   Update password of the particular user
   """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.reset_password"])
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/auth_client.graphql", Input: `"""
@@ -2760,7 +3086,9 @@ enum ResponseStatus {
   ERROR
 }
 `, BuiltIn: false},
-	{Name: "../../../protocol/graphql/schemas/directives.graphql", Input: `
+	{Name: "../../../protocol/graphql/schemas/directives.graphql", Input: `"Prevents access to a field if the user is not authenticated"
+directive @auth on FIELD_DEFINITION | FIELD
+
 "Prevents access to a field if the user doesnt have the matching permissions"
 directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 `, BuiltIn: false},
@@ -3824,6 +4152,21 @@ func (ec *executionContext) field_Query_checkPermission_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_currentSocialAccounts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *models.SocialAccountListFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_listAccountRolesAndPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -4171,6 +4514,14 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj interface{
 	fc := graphql.GetFieldContext(ctx)
 	for _, d := range fc.Field.Directives {
 		switch d.Name {
+		case "auth":
+			n := next
+			next = func(ctx context.Context) (interface{}, error) {
+				if ec.directives.Auth == nil {
+					return nil, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, obj, n)
+			}
 		case "hasPermissions":
 			rawArgs := d.ArgumentMap(ec.Variables)
 			args, err := ec.dir_hasPermissions_args(ctx, rawArgs)
@@ -8225,7 +8576,7 @@ func (ec *executionContext) _Mutation_resetUserPassword(ctx context.Context, fie
 			return ec.resolvers.Mutation().ResetUserPassword(rctx, fc.Args["email"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.reset_password"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset"})
 			if err != nil {
 				return nil, err
 			}
@@ -8307,7 +8658,7 @@ func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, fi
 			return ec.resolvers.Mutation().UpdateUserPassword(rctx, fc.Args["token"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.reset_password"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset"})
 			if err != nil {
 				return nil, err
 			}
@@ -10773,6 +11124,92 @@ func (ec *executionContext) fieldContext_Query_listAccountRolesAndPermissions(ct
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_currentSocialAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_currentSocialAccounts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().CurrentSocialAccounts(rctx, fc.Args["filter"].(*models.SocialAccountListFilter))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.list.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/connectors.CollectionConnection[github.com/geniusrabbit/blaze-api/server/graphql/models.SocialAccount, github.com/geniusrabbit/blaze-api/server/graphql/models.SocialAccountEdge]`, tmp)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge])
+	fc.Result = res
+	return ec.marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_currentSocialAccounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
+			case "edges":
+				return ec.fieldContext_SocialAccountConnection_edges(ctx, field)
+			case "list":
+				return ec.fieldContext_SocialAccountConnection_list(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_currentSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_currentUser(ctx, field)
 	if err != nil {
@@ -13110,6 +13547,1090 @@ func (ec *executionContext) fieldContext_SessionToken_roles(ctx context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_ID(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_ID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNID642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_userID(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_userID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNID642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_userID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_socialID(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_socialID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SocialID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_socialID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_provider(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_provider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Provider, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_email(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_username(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_username(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Username, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_username(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_firstName(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_firstName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FirstName, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_firstName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_lastName(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_lastName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastName, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_lastName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_avatar(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_avatar(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Avatar, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_avatar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_link(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_link(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Link, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_link(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_scope(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_scope(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Scope, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_scope(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_data(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_data(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(types.NullableJSON)
+	fc.Result = res
+	return ec.marshalNNullableJSON2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋtypesᚐNullableJSON(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_data(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type NullableJSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_updatedAt(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccount_deletedAt(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccount) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccount_deletedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedAt, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccount_deletedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount(), nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountConnection_edges(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges(), nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*models.SocialAccountEdge)
+	fc.Result = res
+	return ec.marshalOSocialAccountEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_SocialAccountEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_SocialAccountEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountConnection_list(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.List(), nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*models.SocialAccount)
+	fc.Result = res
+	return ec.marshalOSocialAccount2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_SocialAccount_ID(ctx, field)
+			case "userID":
+				return ec.fieldContext_SocialAccount_userID(ctx, field)
+			case "socialID":
+				return ec.fieldContext_SocialAccount_socialID(ctx, field)
+			case "provider":
+				return ec.fieldContext_SocialAccount_provider(ctx, field)
+			case "email":
+				return ec.fieldContext_SocialAccount_email(ctx, field)
+			case "username":
+				return ec.fieldContext_SocialAccount_username(ctx, field)
+			case "firstName":
+				return ec.fieldContext_SocialAccount_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_SocialAccount_lastName(ctx, field)
+			case "avatar":
+				return ec.fieldContext_SocialAccount_avatar(ctx, field)
+			case "link":
+				return ec.fieldContext_SocialAccount_link(ctx, field)
+			case "scope":
+				return ec.fieldContext_SocialAccount_scope(ctx, field)
+			case "data":
+				return ec.fieldContext_SocialAccount_data(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_SocialAccount_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_SocialAccount_updatedAt(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_SocialAccount_deletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccount", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo(), nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "total":
+				return ec.fieldContext_PageInfo_total(ctx, field)
+			case "page":
+				return ec.fieldContext_PageInfo_page(ctx, field)
+			case "count":
+				return ec.fieldContext_PageInfo_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountEdge_node(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.SocialAccount)
+	fc.Result = res
+	return ec.marshalOSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_SocialAccount_ID(ctx, field)
+			case "userID":
+				return ec.fieldContext_SocialAccount_userID(ctx, field)
+			case "socialID":
+				return ec.fieldContext_SocialAccount_socialID(ctx, field)
+			case "provider":
+				return ec.fieldContext_SocialAccount_provider(ctx, field)
+			case "email":
+				return ec.fieldContext_SocialAccount_email(ctx, field)
+			case "username":
+				return ec.fieldContext_SocialAccount_username(ctx, field)
+			case "firstName":
+				return ec.fieldContext_SocialAccount_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_SocialAccount_lastName(ctx, field)
+			case "avatar":
+				return ec.fieldContext_SocialAccount_avatar(ctx, field)
+			case "link":
+				return ec.fieldContext_SocialAccount_link(ctx, field)
+			case "scope":
+				return ec.fieldContext_SocialAccount_scope(ctx, field)
+			case "data":
+				return ec.fieldContext_SocialAccount_data(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_SocialAccount_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_SocialAccount_updatedAt(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_SocialAccount_deletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccount", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountPayload_clientMutationID(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountPayload_clientMutationID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountPayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountPayload_socialAccountID(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountPayload_socialAccountID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SocialAccountID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNID642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccountID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialAccountPayload_socialAccount(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountPayload_socialAccount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SocialAccount, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.SocialAccount)
+	fc.Result = res
+	return ec.marshalOSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialAccountPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_SocialAccount_ID(ctx, field)
+			case "userID":
+				return ec.fieldContext_SocialAccount_userID(ctx, field)
+			case "socialID":
+				return ec.fieldContext_SocialAccount_socialID(ctx, field)
+			case "provider":
+				return ec.fieldContext_SocialAccount_provider(ctx, field)
+			case "email":
+				return ec.fieldContext_SocialAccount_email(ctx, field)
+			case "username":
+				return ec.fieldContext_SocialAccount_username(ctx, field)
+			case "firstName":
+				return ec.fieldContext_SocialAccount_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_SocialAccount_lastName(ctx, field)
+			case "avatar":
+				return ec.fieldContext_SocialAccount_avatar(ctx, field)
+			case "link":
+				return ec.fieldContext_SocialAccount_link(ctx, field)
+			case "scope":
+				return ec.fieldContext_SocialAccount_scope(ctx, field)
+			case "data":
+				return ec.fieldContext_SocialAccount_data(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_SocialAccount_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_SocialAccount_updatedAt(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_SocialAccount_deletedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccount", field.Name)
 		},
 	}
 	return fc, nil
@@ -16406,6 +17927,130 @@ func (ec *executionContext) unmarshalInputRBACRoleListOrder(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSocialAccountListFilter(ctx context.Context, obj interface{}) (models.SocialAccountListFilter, error) {
+	var it models.SocialAccountListFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ID", "userID", "provider", "username", "email"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ID"))
+			data, err := ec.unmarshalOID642ᚕuint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			data, err := ec.unmarshalOID642ᚕuint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "provider":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("provider"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Provider = data
+		case "username":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Username = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSocialAccountListOrder(ctx context.Context, obj interface{}) (models.SocialAccountListOrder, error) {
+	var it models.SocialAccountListOrder
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ID", "userID", "provider", "email", "username", "firstName", "lastName"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ID"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "provider":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("provider"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Provider = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "username":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Username = data
+		case "firstName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstName"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FirstName = data
+		case "lastName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastName"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastName = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj interface{}) (models.UserInput, error) {
 	var it models.UserInput
 	asMap := map[string]interface{}{}
@@ -18032,6 +19677,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "currentSocialAccounts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_currentSocialAccounts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "currentUser":
 			field := field
 
@@ -18594,6 +20261,244 @@ func (ec *executionContext) _SessionToken(ctx context.Context, sel ast.Selection
 			}
 		case "roles":
 			out.Values[i] = ec._SessionToken_roles(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var socialAccountImplementors = []string{"SocialAccount"}
+
+func (ec *executionContext) _SocialAccount(ctx context.Context, sel ast.SelectionSet, obj *models.SocialAccount) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, socialAccountImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SocialAccount")
+		case "ID":
+			out.Values[i] = ec._SocialAccount_ID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userID":
+			out.Values[i] = ec._SocialAccount_userID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "socialID":
+			out.Values[i] = ec._SocialAccount_socialID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "provider":
+			out.Values[i] = ec._SocialAccount_provider(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "email":
+			out.Values[i] = ec._SocialAccount_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._SocialAccount_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "firstName":
+			out.Values[i] = ec._SocialAccount_firstName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastName":
+			out.Values[i] = ec._SocialAccount_lastName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "avatar":
+			out.Values[i] = ec._SocialAccount_avatar(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "link":
+			out.Values[i] = ec._SocialAccount_link(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scope":
+			out.Values[i] = ec._SocialAccount_scope(ctx, field, obj)
+		case "data":
+			out.Values[i] = ec._SocialAccount_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._SocialAccount_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._SocialAccount_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deletedAt":
+			out.Values[i] = ec._SocialAccount_deletedAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var socialAccountConnectionImplementors = []string{"SocialAccountConnection"}
+
+func (ec *executionContext) _SocialAccountConnection(ctx context.Context, sel ast.SelectionSet, obj *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, socialAccountConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SocialAccountConnection")
+		case "totalCount":
+			out.Values[i] = ec._SocialAccountConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._SocialAccountConnection_edges(ctx, field, obj)
+		case "list":
+			out.Values[i] = ec._SocialAccountConnection_list(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._SocialAccountConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var socialAccountEdgeImplementors = []string{"SocialAccountEdge"}
+
+func (ec *executionContext) _SocialAccountEdge(ctx context.Context, sel ast.SelectionSet, obj *models.SocialAccountEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, socialAccountEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SocialAccountEdge")
+		case "cursor":
+			out.Values[i] = ec._SocialAccountEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._SocialAccountEdge_node(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var socialAccountPayloadImplementors = []string{"SocialAccountPayload"}
+
+func (ec *executionContext) _SocialAccountPayload(ctx context.Context, sel ast.SelectionSet, obj *models.SocialAccountPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, socialAccountPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SocialAccountPayload")
+		case "clientMutationID":
+			out.Values[i] = ec._SocialAccountPayload_clientMutationID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "socialAccountID":
+			out.Values[i] = ec._SocialAccountPayload_socialAccountID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "socialAccount":
+			out.Values[i] = ec._SocialAccountPayload_socialAccount(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -19620,6 +21525,40 @@ func (ec *executionContext) marshalNSessionToken2ᚖgithubᚗcomᚋgeniusrabbit�
 		return graphql.Null
 	}
 	return ec._SessionToken(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx context.Context, sel ast.SelectionSet, v *models.SocialAccount) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SocialAccount(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSocialAccountConnection2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx context.Context, sel ast.SelectionSet, v connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) graphql.Marshaler {
+	return ec._SocialAccountConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx context.Context, sel ast.SelectionSet, v *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SocialAccountConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSocialAccountEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdge(ctx context.Context, sel ast.SelectionSet, v *models.SocialAccountEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SocialAccountEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNStatusResponse2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse(ctx context.Context, sel ast.SelectionSet, v models.StatusResponse) graphql.Marshaler {
@@ -20901,6 +22840,115 @@ func (ec *executionContext) unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgenius
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputRBACRoleListOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSocialAccount2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SocialAccount) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx context.Context, sel ast.SelectionSet, v *models.SocialAccount) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SocialAccount(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSocialAccountEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.SocialAccountEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSocialAccountEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx context.Context, v interface{}) (*models.SocialAccountListFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSocialAccountListFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

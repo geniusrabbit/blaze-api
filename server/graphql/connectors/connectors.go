@@ -11,11 +11,12 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
+	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
-// AccountConnection implements collection accessor interface with pagination.
+// AccountConnection implements collection accessor interface with pagination
 type AccountConnection = CollectionConnection[gqlmodels.Account, gqlmodels.AccountEdge]
 
 // NewAccountConnection based on query object
@@ -37,7 +38,29 @@ func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase,
 	}, page)
 }
 
-// RBACRoleConnection implements collection accessor interface with pagination.
+// SocialAccountConnection implements collection accessor interface with pagination
+type SocialAccountConnection = CollectionConnection[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]
+
+// NewSocialAccountConnection based on query object
+func NewSocialAccountConnection(ctx context.Context, accountsAccessor socialaccount.Usecase, filter *gqlmodels.SocialAccountListFilter, order *gqlmodels.SocialAccountListOrder, page *gqlmodels.Page) *SocialAccountConnection {
+	return NewCollectionConnection[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge](ctx, &DataAccessorFunc[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]{
+		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.SocialAccount, error) {
+			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
+			return gqlmodels.FromSocialAccountModelList(accounts), err
+		},
+		CountDataFunc: func(ctx context.Context) (int64, error) {
+			return accountsAccessor.Count(ctx, filter.Filter())
+		},
+		ConvertToEdgeFunc: func(obj *gqlmodels.SocialAccount) *gqlmodels.SocialAccountEdge {
+			return &gqlmodels.SocialAccountEdge{
+				Cursor: gocast.Str(obj.ID),
+				Node:   obj,
+			}
+		},
+	}, page)
+}
+
+// RBACRoleConnection implements collection accessor interface with pagination
 type RBACRoleConnection = CollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]
 
 // NewRBACRoleConnection based on query object
@@ -84,7 +107,7 @@ func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, 
 	}, nil)
 }
 
-// AuthClientConnection implements collection accessor interface with pagination.
+// AuthClientConnection implements collection accessor interface with pagination
 type AuthClientConnection = CollectionConnection[gqlmodels.AuthClient, gqlmodels.AuthClientEdge]
 
 // NewAuthClientConnection based on query object
@@ -106,7 +129,7 @@ func NewAuthClientConnection(ctx context.Context, authClientsAccessor authclient
 	}, page)
 }
 
-// UserConnection implements collection accessor interface with pagination.
+// UserConnection implements collection accessor interface with pagination
 type UserConnection = CollectionConnection[gqlmodels.User, gqlmodels.UserEdge]
 
 // NewUserConnection based on query object
@@ -128,7 +151,7 @@ func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *
 	}, page)
 }
 
-// HistoryActionConnection implements collection accessor interface with pagination.
+// HistoryActionConnection implements collection accessor interface with pagination
 type HistoryActionConnection = CollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]
 
 // NewHistoryActionConnection based on query object
@@ -150,7 +173,7 @@ func NewHistoryActionConnection(ctx context.Context, historyActionsAccessor hist
 	}, page)
 }
 
-// OptionConnection implements collection accessor interface with pagination.
+// OptionConnection implements collection accessor interface with pagination
 type OptionConnection = CollectionConnection[gqlmodels.Option, gqlmodels.OptionEdge]
 
 // NewOptionConnection based on query object

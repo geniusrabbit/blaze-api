@@ -23,6 +23,7 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 			Resolvers: resolvers.NewResolver(provider),
 			Directives: generated.DirectiveRoot{
 				HasPermissions: directives.HasPermissions,
+				Auth:           directives.Auth,
 			},
 		}),
 	)

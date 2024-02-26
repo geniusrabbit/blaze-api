@@ -1,0 +1,104 @@
+type SocialAccount {
+  ID: ID64!
+  userID: ID64!
+
+  socialID: String!
+  provider: String!
+  email: String!
+  username: String!
+
+  firstName: String!
+  lastName: String!
+  avatar: String!
+  link: String!
+
+  scope: [String!]
+  data: NullableJSON!
+
+  createdAt: Time!
+  updatedAt: Time!
+  deletedAt: Time
+}
+
+type SocialAccountEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: SocialAccount
+}
+
+"""
+SocialAccountConnection implements collection accessor interface with pagination
+"""
+type SocialAccountConnection {
+  """
+  The total number of records
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the social account's lists
+  """
+  edges: [SocialAccountEdge!]
+
+  """
+  A list of the social accounts, as a convenience when edges are not needed.
+  """
+  list: [SocialAccount!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+SocialAccountPayload wrapper to access of SocialAccount oprtation results
+"""
+type SocialAccountPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  Social Account ID operation result
+  """
+  socialAccountID: ID64!
+
+  """
+  Social Account object accessor
+  """
+  socialAccount: SocialAccount
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input SocialAccountListFilter {
+  ID: [ID64!]
+  userID: [ID64!]
+  provider: [String!]
+  username: [String!]
+  email: [String!]
+}
+
+input SocialAccountListOrder {
+  ID: Ordering
+  userID: Ordering
+  provider: Ordering
+  email: Ordering
+  username: Ordering
+  firstName: Ordering
+  lastName: Ordering
+}
+
+extend type Query {
+  currentSocialAccounts(filter: SocialAccountListFilter = null): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+}

@@ -82,8 +82,11 @@ func (a *UserUsecase) GetByToken(ctx context.Context, token string) (*model.User
 // FetchList of users by filter
 func (a *UserUsecase) FetchList(ctx context.Context, filter *user.ListFilter, order *user.ListOrder, page *repository.Pagination) ([]*model.User, error) {
 	if !acl.HaveAccessList(ctx, &model.User{}) {
-		if !acl.HaveAccessList(ctx, &model.User{ID: session.User(ctx).ID}) {
+		if !acl.HaveAccessList(ctx, session.User(ctx)) {
 			return nil, acl.ErrNoPermissions
+		}
+		if filter == nil {
+			filter = &user.ListFilter{}
 		}
 		filter.AccountID = []uint64{session.Account(ctx).ID}
 	}
@@ -92,9 +95,12 @@ func (a *UserUsecase) FetchList(ctx context.Context, filter *user.ListFilter, or
 
 // Count of users by filter
 func (a *UserUsecase) Count(ctx context.Context, filter *user.ListFilter) (int64, error) {
-	if !acl.HaveAccessList(ctx, &model.User{}) {
-		if !acl.HaveAccessList(ctx, &model.User{ID: session.User(ctx).ID}) {
+	if !acl.HaveAccessCount(ctx, &model.User{}) {
+		if !acl.HaveAccessCount(ctx, session.User(ctx)) {
 			return 0, acl.ErrNoPermissions
+		}
+		if filter == nil {
+			filter = &user.ListFilter{}
 		}
 		filter.AccountID = []uint64{session.Account(ctx).ID}
 	}
