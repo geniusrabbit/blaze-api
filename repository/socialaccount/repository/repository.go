@@ -34,7 +34,7 @@ func (r *Repository) Get(ctx context.Context, id uint64) (*model.AccountSocial, 
 func (r *Repository) FetchList(ctx context.Context, filter *socialaccount.Filter, order *socialaccount.Order, pagination *repository.Pagination) ([]*model.AccountSocial, error) {
 	var (
 		list  []*model.AccountSocial
-		query = r.Slave(ctx).Model((*model.Role)(nil))
+		query = r.Slave(ctx).Model((*model.AccountSocial)(nil))
 	)
 	query = filter.PrepareQuery(query)
 	query = order.PrepareQuery(query)
@@ -50,7 +50,7 @@ func (r *Repository) FetchList(ctx context.Context, filter *socialaccount.Filter
 func (r *Repository) Count(ctx context.Context, filter *socialaccount.Filter) (int64, error) {
 	var (
 		count int64
-		query = r.Slave(ctx).Model((*model.Role)(nil))
+		query = r.Slave(ctx).Model((*model.AccountSocial)(nil))
 	)
 	query = filter.PrepareQuery(query)
 	err := query.Count(&count).Error

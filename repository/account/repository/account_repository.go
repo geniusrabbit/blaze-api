@@ -157,6 +157,9 @@ func (r *Repository) FetchMemberUsers(ctx context.Context, accountObj *model.Acc
 
 // IsMember check the user if linked to account
 func (r *Repository) IsMember(ctx context.Context, userObj *model.User, accountObj *model.Account) bool {
+	if userObj == nil || userObj.ID == 0 || accountObj == nil || accountObj.ID == 0 {
+		return false
+	}
 	var id []uint64
 	r.Slave(ctx).Model((*model.AccountMember)(nil)).
 		Where(`account_id=? AND user_id=?`, accountObj.ID, userObj.ID).Select(`id`).Limit(1).Find(&id)

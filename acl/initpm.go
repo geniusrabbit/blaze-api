@@ -91,7 +91,7 @@ func permExtractCover(perm rbac.Permission) string {
 }
 
 func checkOwnerAccount(resource any, ownerID uint64) int {
-	if ownChecker := resource.(userOwnerChecker); ownChecker != nil {
+	if ownChecker, _ := resource.(userOwnerChecker); ownChecker != nil {
 		return gocast.IfThen(ownChecker.IsOwnerUser(ownerID), 1, -1)
 	}
 	own, _ := resource.(owner)
