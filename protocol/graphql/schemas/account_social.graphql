@@ -100,5 +100,20 @@ input SocialAccountListOrder {
 }
 
 extend type Query {
-  currentSocialAccounts(filter: SocialAccountListFilter = null): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+  """
+  Get the current user's social accounts
+  """
+  currentSocialAccounts(
+    filter: SocialAccountListFilter = null,
+    order: SocialAccountListOrder = null
+  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+
+  """
+  List all social accounts
+  """
+  listSocialAccounts(
+    filter: SocialAccountListFilter = null
+    order: SocialAccountListOrder = null
+    page: Page = null
+  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
 }

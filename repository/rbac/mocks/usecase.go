@@ -8,10 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	model "github.com/geniusrabbit/blaze-api/model"
 	repository "github.com/geniusrabbit/blaze-api/repository"
 	rbac "github.com/geniusrabbit/blaze-api/repository/rbac"
-	model "github.com/geniusrabbit/blaze-api/model"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockUsecase is a mock of Usecase interface.

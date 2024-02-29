@@ -24,7 +24,7 @@ func NewQueryResolver() *QueryResolver {
 	}
 }
 
-func (r *QueryResolver) CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter) (*connectors.SocialAccountConnection, error) {
+func (r *QueryResolver) ListCurrent(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.SocialAccountConnection, error) {
 	if filter == nil {
 		filter = &models.SocialAccountListFilter{}
 	}
@@ -32,5 +32,9 @@ func (r *QueryResolver) CurrentSocialAccounts(ctx context.Context, filter *model
 		return nil, fmt.Errorf("filter by user id is not allowed for current user")
 	}
 	filter.UserID = append(filter.UserID[:0], session.User(ctx).ID)
-	return connectors.NewSocialAccountConnection(ctx, r.accsounts, filter, nil, nil), nil
+	return connectors.NewSocialAccountConnection(ctx, r.accsounts, filter, order, nil), nil
+}
+
+func (r *QueryResolver) List(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
+	return connectors.NewSocialAccountConnection(ctx, r.accsounts, filter, order, page), nil
 }

@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-	authclient "github.com/geniusrabbit/blaze-api/repository/authclient"
 	model "github.com/geniusrabbit/blaze-api/model"
+	authclient "github.com/geniusrabbit/blaze-api/repository/authclient"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockRepository is a mock of Repository interface.

@@ -8,10 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	model "github.com/geniusrabbit/blaze-api/model"
 	repository "github.com/geniusrabbit/blaze-api/repository"
 	account "github.com/geniusrabbit/blaze-api/repository/account"
-	model "github.com/geniusrabbit/blaze-api/model"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -157,18 +157,32 @@ func (mr *MockRepositoryMockRecorder) GetByTitle(ctx, title interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTitle", reflect.TypeOf((*MockRepository)(nil).GetByTitle), ctx, title)
 }
 
-// IsMember mocks base method.
-func (m *MockRepository) IsMember(ctx context.Context, user *model.User, account *model.Account) bool {
+// IsAdmin mocks base method.
+func (m *MockRepository) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsMember", ctx, user, account)
+	ret := m.ctrl.Call(m, "IsAdmin", ctx, userID, accountID)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsAdmin indicates an expected call of IsAdmin.
+func (mr *MockRepositoryMockRecorder) IsAdmin(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAdmin", reflect.TypeOf((*MockRepository)(nil).IsAdmin), ctx, userID, accountID)
+}
+
+// IsMember mocks base method.
+func (m *MockRepository) IsMember(ctx context.Context, userID, accountID uint64) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMember", ctx, userID, accountID)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // IsMember indicates an expected call of IsMember.
-func (mr *MockRepositoryMockRecorder) IsMember(ctx, user, account interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) IsMember(ctx, userID, accountID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMember", reflect.TypeOf((*MockRepository)(nil).IsMember), ctx, user, account)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMember", reflect.TypeOf((*MockRepository)(nil).IsMember), ctx, userID, accountID)
 }
 
 // LinkMember mocks base method.
@@ -202,6 +216,21 @@ func (m *MockRepository) LoadPermissions(ctx context.Context, account *model.Acc
 func (mr *MockRepositoryMockRecorder) LoadPermissions(ctx, account, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPermissions", reflect.TypeOf((*MockRepository)(nil).LoadPermissions), ctx, account, user)
+}
+
+// Member mocks base method.
+func (m *MockRepository) Member(ctx context.Context, userID, accountID uint64) (*model.AccountMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Member", ctx, userID, accountID)
+	ret0, _ := ret[0].(*model.AccountMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Member indicates an expected call of Member.
+func (mr *MockRepositoryMockRecorder) Member(ctx, userID, accountID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Member", reflect.TypeOf((*MockRepository)(nil).Member), ctx, userID, accountID)
 }
 
 // UnlinkMember mocks base method.

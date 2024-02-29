@@ -46,6 +46,7 @@ func (u *Usecase) FetchList(ctx context.Context, filter *socialaccount.Filter, o
 	return u.repo.FetchList(ctx, filter, order, page)
 }
 
+// Count social accounts
 func (u *Usecase) Count(ctx context.Context, filter *socialaccount.Filter) (int64, error) {
 	if !acl.HaveAccessCount(ctx, &model.AccountSocial{}) {
 		if !acl.HaveAccessCount(ctx, &model.AccountSocial{UserID: session.User(ctx).ID}) {

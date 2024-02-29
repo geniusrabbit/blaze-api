@@ -8,10 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	model "github.com/geniusrabbit/blaze-api/model"
 	repository "github.com/geniusrabbit/blaze-api/repository"
 	option "github.com/geniusrabbit/blaze-api/repository/option"
-	model "github.com/geniusrabbit/blaze-api/model"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockRepository is a mock of Repository interface.

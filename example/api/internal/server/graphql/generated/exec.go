@@ -243,7 +243,7 @@ type ComplexityRoot struct {
 		CheckPermission                func(childComplexity int, name string, key *string, targetID *string) int
 		CurrentAccount                 func(childComplexity int) int
 		CurrentSession                 func(childComplexity int) int
-		CurrentSocialAccounts          func(childComplexity int, filter *models.SocialAccountListFilter) int
+		CurrentSocialAccounts          func(childComplexity int, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) int
 		CurrentUser                    func(childComplexity int) int
 		ListAccountRolesAndPermissions func(childComplexity int, accountID uint64, order *models.RBACRoleListOrder) int
 		ListAccounts                   func(childComplexity int, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) int
@@ -252,6 +252,7 @@ type ComplexityRoot struct {
 		ListOptions                    func(childComplexity int, filter *models.OptionListFilter, order *models.OptionListOrder, page *models.Page) int
 		ListPermissions                func(childComplexity int, patterns []string) int
 		ListRoles                      func(childComplexity int, filter *models.RBACRoleListFilter, order *models.RBACRoleListOrder, page *models.Page) int
+		ListSocialAccounts             func(childComplexity int, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) int
 		ListUsers                      func(childComplexity int, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) int
 		Option                         func(childComplexity int, name string, optionType models.OptionType, targetID uint64) int
 		Role                           func(childComplexity int, id uint64) int
@@ -404,7 +405,8 @@ type QueryResolver interface {
 	Account(ctx context.Context, id uint64) (*models.AccountPayload, error)
 	ListAccounts(ctx context.Context, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.Account, models.AccountEdge], error)
 	ListAccountRolesAndPermissions(ctx context.Context, accountID uint64, order *models.RBACRoleListOrder) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error)
-	CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
+	CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
+	ListSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
 	CurrentUser(ctx context.Context) (*models.UserPayload, error)
 	User(ctx context.Context, id uint64, username string) (*models.UserPayload, error)
 	ListUsers(ctx context.Context, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) (*connectors.CollectionConnection[models.User, models.UserEdge], error)
@@ -1447,7 +1449,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.CurrentSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter)), true
+		return e.complexity.Query.CurrentSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter), args["order"].(*models.SocialAccountListOrder)), true
 
 	case "Query.currentUser":
 		if e.complexity.Query.CurrentUser == nil {
@@ -1539,6 +1541,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ListRoles(childComplexity, args["filter"].(*models.RBACRoleListFilter), args["order"].(*models.RBACRoleListOrder), args["page"].(*models.Page)), true
+
+	case "Query.listSocialAccounts":
+		if e.complexity.Query.ListSocialAccounts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_listSocialAccounts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ListSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter), args["order"].(*models.SocialAccountListOrder), args["page"].(*models.Page)), true
 
 	case "Query.listUsers":
 		if e.complexity.Query.ListUsers == nil {
@@ -2550,7 +2564,22 @@ input SocialAccountListOrder {
 }
 
 extend type Query {
-  currentSocialAccounts(filter: SocialAccountListFilter = null): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+  """
+  Get the current user's social accounts
+  """
+  currentSocialAccounts(
+    filter: SocialAccountListFilter = null,
+    order: SocialAccountListOrder = null
+  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+
+  """
+  List all social accounts
+  """
+  listSocialAccounts(
+    filter: SocialAccountListFilter = null
+    order: SocialAccountListOrder = null
+    page: Page = null
+  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../../../../protocol/graphql/schemas/account_users.graphql", Input: `
@@ -4164,6 +4193,15 @@ func (ec *executionContext) field_Query_currentSocialAccounts_args(ctx context.C
 		}
 	}
 	args["filter"] = arg0
+	var arg1 *models.SocialAccountListOrder
+	if tmp, ok := rawArgs["order"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+		arg1, err = ec.unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order"] = arg1
 	return args, nil
 }
 
@@ -4354,6 +4392,39 @@ func (ec *executionContext) field_Query_listRoles_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["order"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
 		arg1, err = ec.unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order"] = arg1
+	var arg2 *models.Page
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_listSocialAccounts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *models.SocialAccountListFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
+	var arg1 *models.SocialAccountListOrder
+	if tmp, ok := rawArgs["order"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+		arg1, err = ec.unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -11139,7 +11210,7 @@ func (ec *executionContext) _Query_currentSocialAccounts(ctx context.Context, fi
 	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().CurrentSocialAccounts(rctx, fc.Args["filter"].(*models.SocialAccountListFilter))
+			return ec.resolvers.Query().CurrentSocialAccounts(rctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.list.*"})
@@ -11204,6 +11275,92 @@ func (ec *executionContext) fieldContext_Query_currentSocialAccounts(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_currentSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_listSocialAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_listSocialAccounts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().ListSocialAccounts(rctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder), fc.Args["page"].(*models.Page))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.list.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/connectors.CollectionConnection[github.com/geniusrabbit/blaze-api/server/graphql/models.SocialAccount, github.com/geniusrabbit/blaze-api/server/graphql/models.SocialAccountEdge]`, tmp)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge])
+	fc.Result = res
+	return ec.marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_listSocialAccounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
+			case "edges":
+				return ec.fieldContext_SocialAccountConnection_edges(ctx, field)
+			case "list":
+				return ec.fieldContext_SocialAccountConnection_list(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_listSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19699,6 +19856,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "listSocialAccounts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_listSocialAccounts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "currentUser":
 			field := field
 
@@ -22949,6 +23128,14 @@ func (ec *executionContext) unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputSocialAccountListFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx context.Context, v interface{}) (*models.SocialAccountListOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSocialAccountListOrder(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

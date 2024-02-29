@@ -12,6 +12,11 @@ import (
 )
 
 // CurrentSocialAccounts is the resolver for the currentSocialAccounts field.
-func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
-	return r.Resolver.Query().CurrentSocialAccounts(ctx, filter)
+func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
+	return r.Resolver.Query().CurrentSocialAccounts(ctx, filter, order)
+}
+
+// ListSocialAccounts is the resolver for the listSocialAccounts field.
+func (r *queryResolver) ListSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
+	return r.Resolver.Query().ListSocialAccounts(ctx, filter, order, page)
 }

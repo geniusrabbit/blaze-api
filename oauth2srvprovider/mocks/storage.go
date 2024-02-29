@@ -9,8 +9,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	gomock "github.com/golang/mock/gomock"
 	model "github.com/geniusrabbit/blaze-api/model"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // Mockcacher is a mock of cacher interface.
