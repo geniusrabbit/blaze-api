@@ -146,7 +146,18 @@ func (s *testSuite) TestIsMember() {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(uint64(1)))
 	account := &model.Account{ID: 202}
 	user := &model.User{ID: 101}
-	ok := s.accountRepo.IsMember(ctx, user, account)
+	ok := s.accountRepo.IsMember(ctx, user.ID, account.ID)
+	s.True(ok)
+}
+
+func (s *testSuite) TestIsAdmin() {
+	ctx := s.Ctx
+	s.Mock.ExpectQuery("SELECT").
+		WithArgs(uint64(202), uint64(101)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "is_admin"}).AddRow(uint64(1), true))
+	account := &model.Account{ID: 202}
+	user := &model.User{ID: 101}
+	ok := s.accountRepo.IsAdmin(ctx, user.ID, account.ID)
 	s.True(ok)
 }
 

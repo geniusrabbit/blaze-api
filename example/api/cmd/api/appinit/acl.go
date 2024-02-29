@@ -33,17 +33,13 @@ func InitModelPermissions(pm *permissions.Manager) {
 
 	// Register basic models CRUD permissions
 	for _, model := range crudModels {
-		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "count", "update", "create"})
+		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "count", "update", "create", "delete"})
 	}
 
 	// Register basic models CRUD permissions for Account with member checks
 	_ = pm.RegisterNewOwningPermissions(&model.Account{},
 		[]string{"view", "list", "count", "update", "create", "delete"},
-		rbac.WithCustomCheck(func(ctx context.Context, resource any, perm rbac.Permission) bool {
-			account, _ := resource.(*model.Account)
-			user := session.User(ctx)
-			return account.IsOwnerUser(user.ID) || repository.New().IsMember(ctx, user, account)
-		}),
+		rbac.WithCustomCheck(accountCustomCheck),
 	)
 
 	// Extend user permissions
@@ -55,7 +51,7 @@ func InitModelPermissions(pm *permissions.Manager) {
 	_ = pm.RegisterNewPermission(nil, "account.register", rbac.WithoutCustomCheck)
 
 	// Register basic permissions for the Option model
-	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{"get", "set", "list"})
+	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{"get", "set", "list", "count"})
 
 	// Register RBAC permissions
 	_ = pm.RegisterNewPermission(nil, "permission.list")
@@ -67,4 +63,17 @@ func InitModelPermissions(pm *permissions.Manager) {
 			`account.view.owner`, `account.register`,
 		)),
 	)
+}
+
+func accountCustomCheck(ctx context.Context, resource any, perm rbac.Permission) bool {
+	account, _ := resource.(*model.Account)
+	user := session.User(ctx)
+	if account.IsOwnerUser(user.ID) {
+		return true
+	}
+	repo := repository.New()
+	if ok, _ := rbac.MatchName(`*.(view|list|count).*`, perm.Name()); ok {
+		return repo.IsMember(ctx, user.ID, account.ID)
+	}
+	return repo.IsAdmin(ctx, user.ID, account.ID)
 }

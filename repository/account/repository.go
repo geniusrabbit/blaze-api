@@ -52,7 +52,9 @@ type Repository interface {
 	Delete(ctx context.Context, id uint64) error
 	FetchMembers(ctx context.Context, account *model.Account) ([]*model.AccountMember, error)
 	FetchMemberUsers(ctx context.Context, account *model.Account) ([]*model.AccountMember, []*model.User, error)
-	IsMember(ctx context.Context, user *model.User, account *model.Account) bool
+	Member(ctx context.Context, userID, accountID uint64) (*model.AccountMember, error)
+	IsMember(ctx context.Context, userID, accountID uint64) bool
+	IsAdmin(ctx context.Context, userID, accountID uint64) bool
 	LinkMember(ctx context.Context, account *model.Account, isAdmin bool, members ...*model.User) error
 	UnlinkMember(ctx context.Context, account *model.Account, members ...*model.User) error
 }

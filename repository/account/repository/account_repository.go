@@ -155,15 +155,29 @@ func (r *Repository) FetchMemberUsers(ctx context.Context, accountObj *model.Acc
 	return members, users, err
 }
 
-// IsMember check the user if linked to account
-func (r *Repository) IsMember(ctx context.Context, userObj *model.User, accountObj *model.Account) bool {
-	if userObj == nil || userObj.ID == 0 || accountObj == nil || accountObj.ID == 0 {
-		return false
+// Member returns the member object by account and user
+func (r *Repository) Member(ctx context.Context, userID, accountID uint64) (*model.AccountMember, error) {
+	if accountID == 0 || userID == 0 {
+		return nil, nil
 	}
-	var id []uint64
-	r.Slave(ctx).Model((*model.AccountMember)(nil)).
-		Where(`account_id=? AND user_id=?`, accountObj.ID, userObj.ID).Select(`id`).Limit(1).Find(&id)
-	return len(id) > 0
+	var member model.AccountMember
+	err := r.Slave(ctx).Find(&member, `account_id=? AND user_id=?`, accountID, userID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &member, err
+}
+
+// IsMember check the user if linked to account
+func (r *Repository) IsMember(ctx context.Context, userID, accountID uint64) bool {
+	member, err := r.Member(ctx, userID, accountID)
+	return err == nil && member != nil
+}
+
+// IsAdmin check the user if linked to account as admin
+func (r *Repository) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
+	member, err := r.Member(ctx, userID, accountID)
+	return err == nil && member != nil && member.IsAdmin
 }
 
 // LinkMember into account
