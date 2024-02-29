@@ -200,7 +200,7 @@ func userAccountByID(ctx context.Context, uid, accid uint64, preUser *model.User
 		}
 	}
 	if account != nil {
-		if !accounts.IsMember(ctx, userObj, account) {
+		if userObj != nil && !accounts.IsMember(ctx, userObj.ID, account.ID) {
 			return nil, nil, errAuthUserIsNotMemberOfAccount
 		}
 		if prevAccount != nil && prevAccount.ID != account.ID &&
