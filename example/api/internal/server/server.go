@@ -63,6 +63,7 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	h = middleware.HTTPSession(h, s.SessionManager)
 	h = middleware.RealIP(h)
 	h = middleware.AllowCORS(h)
+	h = middleware.RequestID(h)
 	h = nethttp.Middleware(opentracing.GlobalTracer(), h)
 
 	srv := &http.Server{Addr: address, Handler: h}

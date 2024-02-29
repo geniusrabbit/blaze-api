@@ -11,6 +11,7 @@ import (
 type AccountSocial struct {
 	ID     uint64 `db:"id"`
 	UserID uint64 `db:"user_id"`
+	User   *User  `db:"-" gorm:"foreignKey:UserID"`
 
 	SocialID  string                    `db:"social_id"` // social network user id
 	Provider  string                    `db:"provider"`  // facebook, google, twitter, github, etc
