@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func deletedAt(t gorm.DeletedAt) *time.Time {
+func DeletedAt(t gorm.DeletedAt) *time.Time {
 	if t.Valid {
 		return &t.Time
 	}

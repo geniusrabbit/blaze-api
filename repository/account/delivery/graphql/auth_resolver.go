@@ -77,7 +77,7 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 		Token:     token,
 		ExpiresAt: expiresAt,
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
-		Roles:     xtypes.SliceApply[lrbac.Role, string](roles, func(r lrbac.Role) string { return r.Name() }),
+		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func (r *AuthResolver) SwitchAccount(ctx context.Context, id uint64) (*models.Se
 		Token:     token,
 		ExpiresAt: expiresAt,
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
-		Roles:     xtypes.SliceApply[lrbac.Role, string](roles, func(r lrbac.Role) string { return r.Name() }),
+		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
 	}, nil
 }
 
@@ -126,7 +126,7 @@ func (r *AuthResolver) CurrentSession(ctx context.Context) (*models.SessionToken
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
-		Roles:     xtypes.SliceApply[lrbac.Role, string](roles, func(r lrbac.Role) string { return r.Name() }),
+		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
 	}, nil
 }
 
@@ -153,7 +153,7 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 		if r, ok := account.Permissions.(lrbac.Role); ok {
 			childRoles = append(childRoles, r)
 		}
-		permIDs = xtypes.SliceApply[lrbac.Role](childRoles, func(r lrbac.Role) uint64 {
+		permIDs = xtypes.SliceApply(childRoles, func(r lrbac.Role) uint64 {
 			switch ext := r.Ext().(type) {
 			case *permissions.ExtData:
 				return ext.ID

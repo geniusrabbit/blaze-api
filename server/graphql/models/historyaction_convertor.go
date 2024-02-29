@@ -27,5 +27,5 @@ func FromHistoryAction(action *model.HistoryAction) *HistoryAction {
 
 // FromHistoryActionModelList converts list of HistoryAction to list of HistoryAction
 func FromHistoryActionModelList(list []*model.HistoryAction) []*HistoryAction {
-	return xtypes.SliceApply[*model.HistoryAction, *HistoryAction](list, FromHistoryAction)
+	return xtypes.SliceApply(list, FromHistoryAction)
 }

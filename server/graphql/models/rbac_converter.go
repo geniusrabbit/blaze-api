@@ -42,7 +42,7 @@ func FromRBACPermissionModel(perm mrbac.Permission) *RBACPermission {
 
 // FromRBACPermissionModelList converts model list to local model list
 func FromRBACPermissionModelList(perms []mrbac.Permission) []*RBACPermission {
-	return xtypes.SliceApply[mrbac.Permission, *RBACPermission](perms, FromRBACPermissionModel).
+	return xtypes.SliceApply(perms, FromRBACPermissionModel).
 		Sort(func(a, b *RBACPermission) bool {
 			if a.Object < b.Object {
 				return true
@@ -71,13 +71,13 @@ func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
 
 		CreatedAt: role.CreatedAt,
 		UpdatedAt: role.UpdatedAt,
-		DeletedAt: deletedAt(role.DeletedAt),
+		DeletedAt: DeletedAt(role.DeletedAt),
 	}
 }
 
 // FromRBACRoleModelList converts model list to local model list
 func FromRBACRoleModelList(ctx context.Context, list []*model.Role) []*RBACRole {
-	return xtypes.SliceApply[*model.Role, *RBACRole](list, func(val *model.Role) *RBACRole {
+	return xtypes.SliceApply(list, func(val *model.Role) *RBACRole {
 		return FromRBACRoleModel(ctx, val)
 	})
 }

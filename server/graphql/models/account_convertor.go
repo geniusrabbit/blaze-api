@@ -26,7 +26,7 @@ func FromAccountModel(acc *model.Account) *Account {
 
 // FromAccountModelList converts model list to local model list
 func FromAccountModelList(list []*model.Account) []*Account {
-	return xtypes.SliceApply[*model.Account, *Account](list, FromAccountModel)
+	return xtypes.SliceApply(list, FromAccountModel)
 }
 
 // Filter converts local graphql model to filter
@@ -38,7 +38,7 @@ func (fl *AccountListFilter) Filter() *account.Filter {
 		ID:     fl.ID,
 		UserID: fl.UserID,
 		Title:  fl.Title,
-		Status: xtypes.SliceApply[ApproveStatus](fl.Status, func(st ApproveStatus) model.ApproveStatus {
+		Status: xtypes.SliceApply(fl.Status, func(st ApproveStatus) model.ApproveStatus {
 			return st.ModelStatus()
 		}),
 	}

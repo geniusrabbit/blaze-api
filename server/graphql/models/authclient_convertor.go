@@ -23,11 +23,11 @@ func FromAuthClientModel(acc *model.AuthClient) *AuthClient {
 		Public:             acc.Public,
 		CreatedAt:          acc.CreatedAt,
 		UpdatedAt:          acc.UpdatedAt,
-		DeletedAt:          deletedAt(acc.DeletedAt),
+		DeletedAt:          DeletedAt(acc.DeletedAt),
 	}
 }
 
 // FromAuthClientModelList converts model list to local model list
 func FromAuthClientModelList(list []*model.AuthClient) []*AuthClient {
-	return xtypes.SliceApply[*model.AuthClient, *AuthClient](list, FromAuthClientModel)
+	return xtypes.SliceApply(list, FromAuthClientModel)
 }

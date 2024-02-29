@@ -149,7 +149,7 @@ func (r *Repository) FetchMemberUsers(ctx context.Context, accountObj *model.Acc
 		return nil, nil, err
 	}
 
-	userIDs = xtypes.SliceApply[*model.AccountMember, uint64](members, func(m *model.AccountMember) uint64 { return m.UserID })
+	userIDs = xtypes.SliceApply(members, func(m *model.AccountMember) uint64 { return m.UserID })
 	err = r.Slave(ctx).Model((*model.User)(nil)).Where(`id IN (?)`, userIDs).Find(&users).Error
 
 	return members, users, err

@@ -20,7 +20,7 @@ func FromUserModel(u *model.User) *User {
 
 // FromUserModelList converts model list to local model list
 func FromUserModelList(list []*model.User) []*User {
-	return xtypes.SliceApply[*model.User, *User](list, FromUserModel)
+	return xtypes.SliceApply(list, FromUserModel)
 }
 
 // Filter converts local graphql model to filter

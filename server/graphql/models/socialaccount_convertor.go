@@ -26,12 +26,12 @@ func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
 
 		CreatedAt: acc.CreatedAt,
 		UpdatedAt: acc.UpdatedAt,
-		DeletedAt: deletedAt(acc.DeletedAt),
+		DeletedAt: DeletedAt(acc.DeletedAt),
 	}
 }
 
 func FromSocialAccountModelList(list []*model.AccountSocial) []*SocialAccount {
-	return xtypes.SliceApply[*model.AccountSocial, *SocialAccount](list, FromSocialAccountModel)
+	return xtypes.SliceApply(list, FromSocialAccountModel)
 }
 
 func (fl *SocialAccountListFilter) Filter() *socialaccount.Filter {

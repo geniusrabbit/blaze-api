@@ -67,5 +67,5 @@ func FromOption(opt *model.Option) *Option {
 }
 
 func FromOptionModelList(opts []*model.Option) []*Option {
-	return xtypes.SliceApply[*model.Option, *Option](opts, FromOption)
+	return xtypes.SliceApply(opts, FromOption)
 }
