@@ -10,20 +10,21 @@ import (
 
 // HistoryAction model used for store history of actions.
 type HistoryAction struct {
-	ID uuid.UUID `gorm:"type:uuid;primaryKey;"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;"`
+	RequestID string    `gorm:"type:varchar(255);not null;index:idx_history_actions_request_id;"`
 
-	UserID    uint64 `json:"user_id"`
-	AccountID uint64 `json:"account_id"`
+	UserID    uint64 `json:"user_id" gorm:"index:idx_history_actions_user_id;not null;"`
+	AccountID uint64 `json:"account_id" gorm:"index:idx_history_actions_account_id;not null;"`
 
-	Name    string `gorm:"type:varchar(255);not null;index:idx_name;"`
+	Name    string `gorm:"type:varchar(255);not null;index:idx_history_actions_name;"`
 	Message string `gorm:"type:text;not null;"`
 
-	ObjectType string                             `gorm:"type:varchar(255);not null;index:idx_model;"`
-	ObjectID   uint64                             `gorm:"type:bigint;not null;index:idx_object_id;"`
-	ObjectIDs  string                             `gorm:"type:varchar(255);not null;index:idx_object_ids;"`
+	ObjectType string                             `gorm:"type:varchar(255);not null;index:idx_history_actions_object_type;"`
+	ObjectID   uint64                             `gorm:"type:bigint;not null;index:idx_history_actions_object_id;"`
+	ObjectIDs  string                             `gorm:"type:varchar(255);not null;index:idx_history_actions_object_ids;"`
 	Data       gosql.NullableJSON[map[string]any] `gorm:"type:jsonb;not null;"`
 
-	ActionAt time.Time `gorm:"type:timestamp;not null;index:idx_action_at;"`
+	ActionAt time.Time `gorm:"type:timestamp;not null;index:idx_history_actions_at;"`
 }
 
 // TableName returns name of table.

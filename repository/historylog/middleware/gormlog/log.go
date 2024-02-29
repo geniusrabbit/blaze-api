@@ -7,6 +7,7 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/gosql/v2"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
@@ -64,6 +65,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 		}
 		err := db.Create(&model.HistoryAction{
 			ID:         uuid.New(),
+			RequestID:  requestid.Get(ctx),
 			Name:       name,
 			Message:    "",
 			UserID:     user.ID,
