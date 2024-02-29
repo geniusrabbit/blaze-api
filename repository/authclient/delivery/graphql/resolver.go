@@ -8,6 +8,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/repository"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/usecase"
+	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -31,8 +32,9 @@ func (r *QueryResolver) AuthClient(ctx context.Context, id string) (*models.Auth
 		return nil, err
 	}
 	return &models.AuthClientPayload{
-		AuthClientID: client.ID,
-		AuthClient:   models.FromAuthClientModel(client),
+		ClientMutationID: requestid.Get(ctx),
+		AuthClientID:     client.ID,
+		AuthClient:       models.FromAuthClientModel(client),
 	}, nil
 }
 
@@ -69,8 +71,9 @@ func (r *QueryResolver) CreateAuthClient(ctx context.Context, input *models.Auth
 		return nil, err
 	}
 	return &models.AuthClientPayload{
-		AuthClientID: client.ID,
-		AuthClient:   models.FromAuthClientModel(client),
+		ClientMutationID: requestid.Get(ctx),
+		AuthClientID:     client.ID,
+		AuthClient:       models.FromAuthClientModel(client),
 	}, nil
 }
 
@@ -99,8 +102,9 @@ func (r *QueryResolver) UpdateAuthClient(ctx context.Context, id string, input *
 		return nil, err
 	}
 	return &models.AuthClientPayload{
-		AuthClientID: client.ID,
-		AuthClient:   models.FromAuthClientModel(client),
+		ClientMutationID: requestid.Get(ctx),
+		AuthClientID:     client.ID,
+		AuthClient:       models.FromAuthClientModel(client),
 	}, nil
 }
 
@@ -110,7 +114,8 @@ func (r *QueryResolver) DeleteAuthClient(ctx context.Context, id string, msg *st
 		return nil, err
 	}
 	return &models.AuthClientPayload{
-		AuthClientID: id,
+		ClientMutationID: requestid.Get(ctx),
+		AuthClientID:     id,
 	}, nil
 }
 

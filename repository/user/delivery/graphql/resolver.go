@@ -15,6 +15,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user/usecase"
+	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -39,8 +40,9 @@ func NewQueryResolver() *QueryResolver {
 func (r *QueryResolver) CurrentUser(ctx context.Context) (*gqlmodels.UserPayload, error) {
 	user := session.User(ctx)
 	return &gqlmodels.UserPayload{
-		UserID: user.ID,
-		User:   gqlmodels.FromUserModel(user),
+		ClientMutationID: requestid.Get(ctx),
+		UserID:           user.ID,
+		User:             gqlmodels.FromUserModel(user),
 	}, nil
 }
 
@@ -58,8 +60,9 @@ func (r *QueryResolver) CreateUser(ctx context.Context, input *gqlmodels.UserInp
 		return nil, err
 	}
 	return &gqlmodels.UserPayload{
-		UserID: user.ID,
-		User:   gqlmodels.FromUserModel(user),
+		ClientMutationID: requestid.Get(ctx),
+		UserID:           user.ID,
+		User:             gqlmodels.FromUserModel(user),
 	}, nil
 }
 
@@ -79,8 +82,9 @@ func (r *QueryResolver) UpdateUser(ctx context.Context, id uint64, input *gqlmod
 		return nil, err
 	}
 	return &gqlmodels.UserPayload{
-		UserID: user.ID,
-		User:   gqlmodels.FromUserModel(user),
+		ClientMutationID: requestid.Get(ctx),
+		UserID:           user.ID,
+		User:             gqlmodels.FromUserModel(user),
 	}, nil
 }
 
@@ -119,8 +123,9 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		}
 	}
 	return &gqlmodels.UserPayload{
-		UserID: id,
-		User:   gqlmodels.FromUserModel(user),
+		ClientMutationID: requestid.Get(ctx),
+		UserID:           id,
+		User:             gqlmodels.FromUserModel(user),
 	}, nil
 }
 
@@ -209,8 +214,9 @@ func (r *QueryResolver) User(ctx context.Context, id uint64, username string) (*
 		return nil, err
 	}
 	return &gqlmodels.UserPayload{
-		UserID: user.ID,
-		User:   gqlmodels.FromUserModel(user),
+		ClientMutationID: requestid.Get(ctx),
+		UserID:           user.ID,
+		User:             gqlmodels.FromUserModel(user),
 	}, nil
 }
 

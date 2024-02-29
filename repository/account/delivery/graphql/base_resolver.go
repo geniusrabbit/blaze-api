@@ -15,6 +15,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
+	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"go.uber.org/zap"
@@ -41,8 +42,9 @@ func NewQueryResolver() *QueryResolver {
 func (r *QueryResolver) CurrentAccount(ctx context.Context) (*gqlmodels.AccountPayload, error) {
 	account := session.Account(ctx)
 	return &gqlmodels.AccountPayload{
-		AccountID: account.ID,
-		Account:   gqlmodels.FromAccountModel(account),
+		ClientMutationID: requestid.Get(ctx),
+		AccountID:        account.ID,
+		Account:          gqlmodels.FromAccountModel(account),
 	}, nil
 }
 
@@ -53,8 +55,9 @@ func (r *QueryResolver) Account(ctx context.Context, id uint64) (*gqlmodels.Acco
 		return nil, err
 	}
 	return &gqlmodels.AccountPayload{
-		AccountID: id,
-		Account:   gqlmodels.FromAccountModel(acc),
+		ClientMutationID: requestid.Get(ctx),
+		AccountID:        id,
+		Account:          gqlmodels.FromAccountModel(acc),
 	}, nil
 }
 
@@ -107,8 +110,9 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 	}
 
 	return &gqlmodels.AccountCreatePayload{
-		Account: gqlmodels.FromAccountModel(accObj),
-		Owner:   gqlmodels.FromUserModel(userObj),
+		ClientMutationID: requestid.Get(ctx),
+		Account:          gqlmodels.FromAccountModel(accObj),
+		Owner:            gqlmodels.FromUserModel(userObj),
 	}, nil
 }
 
@@ -132,8 +136,9 @@ func (r *QueryResolver) createUpdateAccount(ctx context.Context, id uint64, inpu
 		return nil, err
 	}
 	return &gqlmodels.AccountPayload{
-		AccountID: id,
-		Account:   gqlmodels.FromAccountModel(acc),
+		ClientMutationID: requestid.Get(ctx),
+		AccountID:        id,
+		Account:          gqlmodels.FromAccountModel(acc),
 	}, nil
 }
 
@@ -189,8 +194,9 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		}
 	}
 	return &gqlmodels.AccountPayload{
-		AccountID: id,
-		Account:   gqlmodels.FromAccountModel(acc),
+		ClientMutationID: requestid.Get(ctx),
+		AccountID:        id,
+		Account:          gqlmodels.FromAccountModel(acc),
 	}, nil
 }
 

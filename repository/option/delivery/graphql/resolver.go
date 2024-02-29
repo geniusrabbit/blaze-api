@@ -9,6 +9,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/repository/option/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
+	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -40,8 +41,9 @@ func (r *QueryResolver) Set(ctx context.Context, name string, input *models.Opti
 		return nil, err
 	}
 	return &models.OptionPayload{
-		OptionName: name,
-		Option:     models.FromOption(&opt),
+		ClientMutationID: requestid.Get(ctx),
+		OptionName:       name,
+		Option:           models.FromOption(&opt),
 	}, nil
 }
 
@@ -52,8 +54,9 @@ func (r *QueryResolver) Get(ctx context.Context, name string, otype models.Optio
 		return nil, err
 	}
 	return &models.OptionPayload{
-		OptionName: name,
-		Option:     models.FromOption(opt),
+		ClientMutationID: requestid.Get(ctx),
+		OptionName:       name,
+		Option:           models.FromOption(opt),
 	}, nil
 }
 

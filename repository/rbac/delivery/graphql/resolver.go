@@ -13,6 +13,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
+	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
@@ -42,8 +43,9 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
-		RoleID: role.ID,
-		Role:   gqlmodels.FromRBACRoleModel(ctx, role),
+		ClientMutationID: requestid.Get(ctx),
+		RoleID:           role.ID,
+		Role:             gqlmodels.FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
@@ -120,8 +122,9 @@ func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRol
 	// 	return nil, err
 	// }
 	return &gqlmodels.RBACRolePayload{
-		RoleID: id,
-		Role:   gqlmodels.FromRBACRoleModel(ctx, roleObj),
+		ClientMutationID: requestid.Get(ctx),
+		RoleID:           id,
+		Role:             gqlmodels.FromRBACRoleModel(ctx, roleObj),
 	}, nil
 }
 
@@ -143,8 +146,9 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
-		RoleID: id,
-		Role:   gqlmodels.FromRBACRoleModel(ctx, role),
+		ClientMutationID: requestid.Get(ctx),
+		RoleID:           id,
+		Role:             gqlmodels.FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
@@ -159,8 +163,9 @@ func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) 
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
-		RoleID: id,
-		Role:   gqlmodels.FromRBACRoleModel(ctx, role),
+		ClientMutationID: requestid.Get(ctx),
+		RoleID:           id,
+		Role:             gqlmodels.FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
