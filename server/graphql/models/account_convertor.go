@@ -9,6 +9,9 @@ import (
 
 // FromAccountModel to local graphql model
 func FromAccountModel(acc *model.Account) *Account {
+	if acc == nil {
+		return nil
+	}
 	return &Account{
 		ID:                acc.ID,
 		Status:            ApproveStatusFrom(acc.Approve),

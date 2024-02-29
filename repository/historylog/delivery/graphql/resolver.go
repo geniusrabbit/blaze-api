@@ -24,39 +24,5 @@ func NewQueryResolver() *QueryResolver {
 
 // List changelogs is the resolver for the listChangelogs field.
 func (r *QueryResolver) List(ctx context.Context, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) (*connectors.HistoryActionConnection, error) {
-	return connectors.NewHistoryActionConnection(
-		ctx, r.uc,
-		filterFrom(filter),
-		orderFrom(order),
-		page), nil
-}
-
-func filterFrom(filter *models.HistoryActionListFilter) *historylog.Filter {
-	if filter == nil {
-		return nil
-	}
-	return &historylog.Filter{
-		ID:          filter.ID,
-		UserID:      filter.UserID,
-		AccountID:   filter.AccountID,
-		ObjectID:    filter.ObjectID,
-		ObjectIDStr: filter.ObjectIDs,
-		ObjectType:  filter.ObjectType,
-	}
-}
-
-func orderFrom(order *models.HistoryActionListOrder) *historylog.Order {
-	if order == nil {
-		return nil
-	}
-	return &historylog.Order{
-		ID:          order.ID.Int8(),
-		Name:        order.Name.Int8(),
-		UserID:      order.UserID.Int8(),
-		AccountID:   order.AccountID.Int8(),
-		ObjectID:    order.ObjectID.Int8(),
-		ObjectIDStr: order.ObjectIDs.Int8(),
-		ObjectType:  order.ObjectType.Int8(),
-		ActionAt:    order.ActionAt.Int8(),
-	}
+	return connectors.NewHistoryActionConnection(ctx, r.uc, filter, order, page), nil
 }

@@ -72,7 +72,7 @@ func accountCustomCheck(ctx context.Context, resource any, perm rbac.Permission)
 		return true
 	}
 	repo := repository.New()
-	if ok, _ := rbac.MatchName(`*.(view|list|count).*`, perm.Name()); ok {
+	if perm.MatchPermissionPattern(`*.{view|list|count}.*`) {
 		return repo.IsMember(ctx, user.ID, account.ID)
 	}
 	return repo.IsAdmin(ctx, user.ID, account.ID)

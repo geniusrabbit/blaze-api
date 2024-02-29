@@ -14,6 +14,7 @@ import (
 // Filter of the objects list
 type Filter struct {
 	ID          []uuid.UUID
+	RequestID   []string
 	Name        []string
 	UserID      []uint64
 	AccountID   []uint64
@@ -28,6 +29,9 @@ func (filter *Filter) Query(query *gorm.DB) *gorm.DB {
 	}
 	if len(filter.ID) > 0 {
 		query = query.Where(`id IN (?)`, filter.ID)
+	}
+	if len(filter.RequestID) > 0 {
+		query = query.Where(`request_id IN (?)`, filter.RequestID)
 	}
 	if len(filter.Name) > 0 {
 		query = query.Where(`name IN (?)`, filter.Name)
@@ -51,37 +55,30 @@ func (filter *Filter) Query(query *gorm.DB) *gorm.DB {
 }
 
 type Order struct {
-	ID          int8
-	Name        int8
-	UserID      int8
-	AccountID   int8
-	ObjectID    int8
-	ObjectIDStr int8
-	ObjectType  int8
-	ActionAt    int8
+	ID          model.Order
+	RequestID   model.Order
+	Name        model.Order
+	UserID      model.Order
+	AccountID   model.Order
+	ObjectID    model.Order
+	ObjectIDStr model.Order
+	ObjectType  model.Order
+	ActionAt    model.Order
 }
 
 func (o *Order) Query(query *gorm.DB) *gorm.DB {
 	if o == nil {
 		return query
 	}
-	query = orderS(query, `id`, o.ID)
-	query = orderS(query, `name`, o.Name)
-	query = orderS(query, `user_id`, o.UserID)
-	query = orderS(query, `account_id`, o.AccountID)
-	query = orderS(query, `object_id`, o.ObjectID)
-	query = orderS(query, `object_ids`, o.ObjectIDStr)
-	query = orderS(query, `object_type`, o.ObjectType)
-	query = orderS(query, `action_at`, o.ActionAt)
-	return query
-}
-
-func orderS(query *gorm.DB, n string, o int8) *gorm.DB {
-	if o > 0 {
-		return query.Order(n + ` ASC`)
-	} else if o < 0 {
-		return query.Order(n + ` DESC`)
-	}
+	query = o.ID.PrepareQuery(query, `id`)
+	query = o.RequestID.PrepareQuery(query, `request_id`)
+	query = o.Name.PrepareQuery(query, `name`)
+	query = o.UserID.PrepareQuery(query, `user_id`)
+	query = o.AccountID.PrepareQuery(query, `account_id`)
+	query = o.ObjectID.PrepareQuery(query, `object_id`)
+	query = o.ObjectIDStr.PrepareQuery(query, `object_ids`)
+	query = o.ObjectType.PrepareQuery(query, `object_type`)
+	query = o.ActionAt.PrepareQuery(query, `action_at`)
 	return query
 }
 

@@ -3,6 +3,7 @@ HistoryAction is the model for history actions.
 """
 type HistoryAction {
   ID:         UUID!
+  RequestID:  String!
 
   name:       String!
   message:    String!
@@ -86,6 +87,11 @@ input HistoryActionListFilter {
   ID: [UUID!]
 
   """
+  The request ID of the action
+  """
+  RequestID: [String!]
+
+  """
   The name of the action
   """
   name: [String!]
@@ -121,6 +127,7 @@ HistoryActionListOptions contains the options for listing history actions orderi
 """
 input HistoryActionListOrder {
   ID: Ordering
+  RequestID: Ordering
   name: Ordering
   userID: Ordering
   accountID: Ordering

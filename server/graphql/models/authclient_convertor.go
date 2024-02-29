@@ -7,6 +7,9 @@ import (
 
 // FromAuthClientModel to local graphql model
 func FromAuthClientModel(acc *model.AuthClient) *AuthClient {
+	if acc == nil {
+		return nil
+	}
 	return &AuthClient{
 		ID:                 acc.ID,
 		AccountID:          acc.AccountID,

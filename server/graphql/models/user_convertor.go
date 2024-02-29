@@ -9,6 +9,9 @@ import (
 
 // FromUserModel to local graphql model
 func FromUserModel(u *model.User) *User {
+	if u == nil {
+		return nil
+	}
 	return &User{
 		ID:        u.ID,
 		Username:  u.Email,

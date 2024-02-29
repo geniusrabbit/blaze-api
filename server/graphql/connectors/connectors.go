@@ -155,14 +155,14 @@ func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *
 type HistoryActionConnection = CollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]
 
 // NewHistoryActionConnection based on query object
-func NewHistoryActionConnection(ctx context.Context, historyActionsAccessor historylog.Usecase, filter *historylog.Filter, order *historylog.Order, page *gqlmodels.Page) *HistoryActionConnection {
+func NewHistoryActionConnection(ctx context.Context, historyActionsAccessor historylog.Usecase, filter *gqlmodels.HistoryActionListFilter, order *gqlmodels.HistoryActionListOrder, page *gqlmodels.Page) *HistoryActionConnection {
 	return NewCollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge](ctx, &DataAccessorFunc[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.HistoryAction, error) {
-			historyActions, err := historyActionsAccessor.FetchList(ctx, filter, order, page.Pagination())
+			historyActions, err := historyActionsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromHistoryActionModelList(historyActions), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return historyActionsAccessor.Count(ctx, filter)
+			return historyActionsAccessor.Count(ctx, filter.Filter())
 		},
 		ConvertToEdgeFunc: func(obj *gqlmodels.HistoryAction) *gqlmodels.HistoryActionEdge {
 			return &gqlmodels.HistoryActionEdge{

@@ -203,6 +203,7 @@ type AuthClientPayload struct {
 // HistoryAction is the model for history actions.
 type HistoryAction struct {
 	ID         uuid.UUID          `json:"ID"`
+	RequestID  string             `json:"RequestID"`
 	Name       string             `json:"name"`
 	Message    string             `json:"message"`
 	UserID     uint64             `json:"userID"`
@@ -224,6 +225,8 @@ type HistoryActionEdge struct {
 
 type HistoryActionListFilter struct {
 	ID []uuid.UUID `json:"ID,omitempty"`
+	// The request ID of the action
+	RequestID []string `json:"RequestID,omitempty"`
 	// The name of the action
 	Name []string `json:"name,omitempty"`
 	// List of users who made the action
@@ -241,6 +244,7 @@ type HistoryActionListFilter struct {
 // HistoryActionListOptions contains the options for listing history actions ordering.
 type HistoryActionListOrder struct {
 	ID         *Ordering `json:"ID,omitempty"`
+	RequestID  *Ordering `json:"RequestID,omitempty"`
 	Name       *Ordering `json:"name,omitempty"`
 	UserID     *Ordering `json:"userID,omitempty"`
 	AccountID  *Ordering `json:"accountID,omitempty"`
