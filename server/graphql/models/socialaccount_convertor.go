@@ -8,6 +8,9 @@ import (
 )
 
 func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
+	if acc == nil {
+		return nil
+	}
 	return &SocialAccount{
 		ID:     acc.ID,
 		UserID: acc.UserID,

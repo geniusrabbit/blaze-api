@@ -165,6 +165,9 @@ func (r *Repository) Member(ctx context.Context, userID, accountID uint64) (*mod
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
+	if err != nil {
+		return nil, err
+	}
 	return &member, err
 }
 
