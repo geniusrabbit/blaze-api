@@ -27,7 +27,7 @@ func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
 		Link:      acc.Link,
 
 		Data:     *types.MustNullableJSONFrom(acc.Data.Data),
-		Sessions: FromSocialAccountSessionModelList2(acc.Sessions),
+		Sessions: FromSocialAccountSessionModelList(acc.Sessions),
 
 		CreatedAt: acc.CreatedAt,
 		UpdatedAt: acc.UpdatedAt,
@@ -56,12 +56,6 @@ func FromSocialAccountSessionModel(sess *model.AccountSocialSession) *SocialAcco
 		UpdatedAt: sess.UpdatedAt,
 		DeletedAt: DeletedAt(sess.DeletedAt),
 	}
-}
-
-func FromSocialAccountSessionModelList2(list []model.AccountSocialSession) []*SocialAccountSession {
-	return xtypes.SliceApply(list, func(m model.AccountSocialSession) *SocialAccountSession {
-		return FromSocialAccountSessionModel(&m)
-	})
 }
 
 func FromSocialAccountSessionModelList(list []*model.AccountSocialSession) []*SocialAccountSession {

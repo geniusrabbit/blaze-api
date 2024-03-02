@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/geniusrabbit/blaze-api/context/database"
 	"github.com/geniusrabbit/blaze-api/model"
@@ -41,7 +42,7 @@ func (r *Repository) FetchList(ctx context.Context, filter *socialaccount.Filter
 	query = filter.PrepareQuery(query)
 	query = order.PrepareQuery(query)
 	query = pagination.PrepareQuery(query)
-	query = query.Joins("Sessions")
+	query = query.Preload(clause.Associations)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil

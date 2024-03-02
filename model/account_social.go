@@ -26,7 +26,7 @@ type AccountSocial struct {
 	Data gosql.NullableJSON[map[string]any] `db:"data" gorm:"type:jsonb"`
 
 	// Sessions list linked to the account
-	Sessions []AccountSocialSession `db:"-" gorm:"foreignKey:AccountSocialID:references:ID"`
+	Sessions []*AccountSocialSession `db:"-" gorm:"foreignKey:AccountSocialID;references:ID"`
 
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
