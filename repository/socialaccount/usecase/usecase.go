@@ -59,3 +59,20 @@ func (u *Usecase) Count(ctx context.Context, filter *socialaccount.Filter) (int6
 	}
 	return u.repo.Count(ctx, filter)
 }
+
+// Disconnect social account
+func (u *Usecase) Disconnect(ctx context.Context, id uint64) (*model.AccountSocial, error) {
+	obj, err := u.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !acl.HaveAccessDelete(ctx, obj) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "disconnect social account")
+	}
+	return obj, u.repo.Disconnect(ctx, id)
+}
+
+// FetchSessionList of social accounts
+func (u *Usecase) FetchSessionList(ctx context.Context, socialAccountID []uint64) ([]*model.AccountSocialSession, error) {
+	return u.repo.FetchSessionList(ctx, socialAccountID)
+}

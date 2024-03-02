@@ -60,11 +60,11 @@ func (r *Repository) Update(ctx context.Context, id uint64, account *model.Accou
 }
 
 // Token returns the token by social account ID
-func (r *Repository) Token(ctx context.Context, id uint64) (*elogin.Token, error) {
+func (r *Repository) Token(ctx context.Context, name string, id uint64) (*elogin.Token, error) {
 	var (
 		sess model.AccountSocialSession
 		err  = r.Slave(ctx).Model((*model.AccountSocialSession)(nil)).
-			Where("account_social_id = ?", id).
+			Where("account_social_id=? AND name=?", id, name).
 			First(&sess).Error
 	)
 	if err != nil {
@@ -78,18 +78,21 @@ func (r *Repository) Token(ctx context.Context, id uint64) (*elogin.Token, error
 		AccessToken:  sess.AccessToken,
 		RefreshToken: sess.RefreshToken,
 		ExpiresAt:    sess.ExpiresAt.Time,
+		Scopes:       sess.Scopes,
 	}, nil
 }
 
 // SetToken saves the token to the social account
-func (r *Repository) SetToken(ctx context.Context, id uint64, token *elogin.Token) error {
+func (r *Repository) SetToken(ctx context.Context, name string, id uint64, token *elogin.Token) error {
 	return r.Master(ctx).Model((*model.AccountSocialSession)(nil)).
-		Where("account_social_id = ?", id).
-		Updates(model.AccountSocialSession{
+		Where("account_social_id=? AND name=?", id, name).
+		Save(&model.AccountSocialSession{
 			AccountSocialID: id,
+			Name:            name,
 			TokenType:       token.TokenType,
 			AccessToken:     token.AccessToken,
 			RefreshToken:    token.RefreshToken,
+			Scopes:          token.Scopes,
 			ExpiresAt:       null.NewTime(token.ExpiresAt, !token.ExpiresAt.IsZero()),
 		}).Error
 }

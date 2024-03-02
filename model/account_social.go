@@ -13,18 +13,20 @@ type AccountSocial struct {
 	UserID uint64 `db:"user_id"`
 	User   *User  `db:"-" gorm:"foreignKey:UserID"`
 
-	SocialID  string                    `db:"social_id"` // social network user id
-	Provider  string                    `db:"provider"`  // facebook, google, twitter, github, etc
-	Email     string                    `db:"email"`
-	FirstName string                    `db:"first_name"`
-	LastName  string                    `db:"last_name"`
-	Username  string                    `db:"username"`
-	Avatar    string                    `db:"avatar"`
-	Link      string                    `db:"link"`
-	Scope     gosql.NullableStringArray `db:"scope" gorm:"type:text[]"` // requested scope
+	SocialID  string `db:"social_id"` // social network user id
+	Provider  string `db:"provider"`  // facebook, google, twitter, github, etc
+	Email     string `db:"email"`
+	FirstName string `db:"first_name"`
+	LastName  string `db:"last_name"`
+	Username  string `db:"username"`
+	Avatar    string `db:"avatar"`
+	Link      string `db:"link"`
 
 	// Data is a JSON object with additional data
 	Data gosql.NullableJSON[map[string]any] `db:"data" gorm:"type:jsonb"`
+
+	// Sessions list linked to the account
+	Sessions []*AccountSocialSession `db:"-" gorm:"foreignKey:SocialAccountID"`
 
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`

@@ -11,6 +11,16 @@ import (
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
+// DisconnectSocialAccount is the resolver for the disconnectSocialAccount field.
+func (r *mutationResolver) DisconnectSocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error) {
+	return r.socAccounts.Disconnect(ctx, id)
+}
+
+// SocialAccount is the resolver for the socialAccount field.
+func (r *queryResolver) SocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error) {
+	return r.socAccounts.Get(ctx, id)
+}
+
 // CurrentSocialAccounts is the resolver for the currentSocialAccounts field.
 func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
 	return r.socAccounts.ListCurrent(ctx, filter, order)

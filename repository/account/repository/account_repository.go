@@ -162,7 +162,7 @@ func (r *Repository) Member(ctx context.Context, userID, accountID uint64) (*mod
 	}
 	var member model.AccountMember
 	err := r.Slave(ctx).Find(&member, `account_id=? AND user_id=?`, accountID, userID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) || member.ID == 0 {
 		return nil, nil
 	}
 	if err != nil {

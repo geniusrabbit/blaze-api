@@ -446,11 +446,12 @@ type SocialAccount struct {
 	LastName  string             `json:"lastName"`
 	Avatar    string             `json:"avatar"`
 	Link      string             `json:"link"`
-	Scope     []string           `json:"scope,omitempty"`
 	Data      types.NullableJSON `json:"data"`
-	CreatedAt time.Time          `json:"createdAt"`
-	UpdatedAt time.Time          `json:"updatedAt"`
-	DeletedAt *time.Time         `json:"deletedAt,omitempty"`
+	// Social Account session object accessor
+	Sessions  []*SocialAccountSession `json:"sessions,omitempty"`
+	CreatedAt time.Time               `json:"createdAt"`
+	UpdatedAt time.Time               `json:"updatedAt"`
+	DeletedAt *time.Time              `json:"deletedAt,omitempty"`
 }
 
 type SocialAccountEdge struct {
@@ -486,6 +487,20 @@ type SocialAccountPayload struct {
 	SocialAccountID uint64 `json:"socialAccountID"`
 	// Social Account object accessor
 	SocialAccount *SocialAccount `json:"socialAccount,omitempty"`
+}
+
+type SocialAccountSession struct {
+	// The unique name of the session to destinguish between different sessions with different scopes
+	Name            string     `json:"Name"`
+	SocialAccountID uint64     `json:"socialAccountID"`
+	TokenType       string     `json:"tokenType"`
+	AccessToken     string     `json:"accessToken"`
+	RefreshToken    string     `json:"refreshToken"`
+	Scope           []string   `json:"scope,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
+	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
+	DeletedAt       *time.Time `json:"deletedAt,omitempty"`
 }
 
 // Simple response type for the API

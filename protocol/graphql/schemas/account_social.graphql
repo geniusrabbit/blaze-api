@@ -1,3 +1,21 @@
+type SocialAccountSession {
+  """
+  The unique name of the session to destinguish between different sessions with different scopes
+  """
+  Name: String!
+  socialAccountID: ID64!
+
+  tokenType: String!
+  accessToken: String!
+  refreshToken: String!
+  scope: [String!]
+
+  createdAt: Time!
+  updatedAt: Time!
+  expiresAt: Time
+  deletedAt: Time
+}
+
 type SocialAccount {
   ID: ID64!
   userID: ID64!
@@ -12,8 +30,12 @@ type SocialAccount {
   avatar: String!
   link: String!
 
-  scope: [String!]
   data: NullableJSON!
+
+  """
+  Social Account session object accessor
+  """
+  sessions: [SocialAccountSession!]
 
   createdAt: Time!
   updatedAt: Time!
@@ -101,6 +123,16 @@ input SocialAccountListOrder {
 
 extend type Query {
   """
+  Get a social account by its unique identifier
+  """
+  socialAccount(
+    """
+    The unique identifier of the social account
+    """
+    id: ID64!
+  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.view.*"])
+
+  """
   Get the current user's social accounts
   """
   currentSocialAccounts(
@@ -112,8 +144,20 @@ extend type Query {
   List all social accounts
   """
   listSocialAccounts(
-    filter: SocialAccountListFilter = null
-    order: SocialAccountListOrder = null
+    filter: SocialAccountListFilter = null,
+    order: SocialAccountListOrder = null,
     page: Page = null
   ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+}
+
+extend type Mutation {
+  """
+  Disconnect a social account
+  """
+  disconnectSocialAccount(
+    """
+    The unique identifier of the social account to disconnect
+    """
+    id: ID64!
+  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.disconnect.*"])
 }

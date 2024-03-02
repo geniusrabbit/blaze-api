@@ -22,7 +22,10 @@ type facebookUserDetails struct {
 	Email   string `json:"email"`
 	Picture struct {
 		Data struct {
-			URL string `json:"url"`
+			URL          string `json:"url"`
+			Width        int    `json:"width"`
+			Height       int    `json:"height"`
+			IsSilhouette bool   `json:"is_silhouette"`
 		} `json:"data"`
 	} `json:"picture"`
 }
@@ -64,6 +67,7 @@ func FacebookUserData(ctx context.Context, token *oauth2.Token, oauth2conf *oaut
 		LastName:   fbUserDetails.LastName(),
 		AvatarURL:  fbUserDetails.Picture.Data.URL,
 		OAuth2conf: oauth2conf,
+		Ext:        map[string]any{"scope": token.Extra("scope")},
 	}, nil
 }
 

@@ -89,11 +89,11 @@ func (u *Usecase) Update(ctx context.Context, id uint64, account *model.AccountS
 }
 
 // Token returns social account token by id
-func (u *Usecase) Token(ctx context.Context, id uint64) (*elogin.Token, error) {
-	return u.socAccountRepo.Token(ctx, id)
+func (u *Usecase) Token(ctx context.Context, name string, accountSocialID uint64) (*elogin.Token, error) {
+	return u.socAccountRepo.Token(ctx, name, accountSocialID)
 }
 
 // SetToken sets social account token by id
-func (u *Usecase) SetToken(ctx context.Context, id uint64, token *elogin.Token) error {
-	return u.socAccountRepo.SetToken(ctx, id, token)
+func (u *Usecase) SetToken(ctx context.Context, name string, accountSocialID uint64, token *elogin.Token) error {
+	return u.socAccountRepo.SetToken(ctx, name, accountSocialID, token)
 }

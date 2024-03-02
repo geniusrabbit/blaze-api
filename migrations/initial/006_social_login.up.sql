@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS account_social
 , username                VARCHAR(128)                NOT NULL
 , avatar                  VARCHAR(512)                NOT NULL
 , link                    VARCHAR(1024)               NOT NULL -- Link to the social profile
-, scope                   TEXT[]                      NOT NULL
 
 -- Additional info data from the social network
 , data                    JSONB                       NOT NULL
@@ -39,14 +38,20 @@ CREATE TABLE IF NOT EXISTS account_social_session
 ( account_social_id      BIGINT                      NOT NULL      REFERENCES account_social (id) MATCH SIMPLE
                                                                         ON UPDATE NO ACTION
                                                                         ON DELETE RESTRICT
+-- Session name destinguish the session for the same social account with different scopes
+, name                  VARCHAR(128)                NOT NULL
+
 , token_type            VARCHAR(128)                NOT NULL
 , access_token          VARCHAR(512)                NOT NULL
 , refresh_token         VARCHAR(512)                NOT NULL
+, scopes                TEXT[]                      NOT NULL
 
 , expires_at            TIMESTAMP                   NOT NULL
 , created_at            TIMESTAMP                   NOT NULL      DEFAULT NOW()
 , updated_at            TIMESTAMP                   NOT NULL      DEFAULT NOW()
 , deleted_at            TIMESTAMP
+
+, PRIMARY KEY (account_social_id, name)
 );
 
 CREATE TRIGGER updated_at_triger BEFORE UPDATE

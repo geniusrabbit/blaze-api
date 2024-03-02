@@ -28,6 +28,7 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 			Directives: generated.DirectiveRoot{
 				HasPermissions: directives.HasPermissions,
 				Auth:           directives.Auth,
+				Acl:            directives.HasPermissions,
 			},
 		}),
 	)
@@ -38,6 +39,8 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
 	srv.AddTransport(transport.MultipartForm{})
+	srv.AddTransport(transport.UrlEncodedForm{})
+	srv.AddTransport(transport.GRAPHQL{})
 
 	srv.SetQueryCache(lru.New(1000))
 

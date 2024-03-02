@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/demdxx/gocast/v2"
+	"github.com/demdxx/xtypes"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -62,11 +64,24 @@ func (wr *Oauth2Wrapper) HandleWrapper(prefix string) http.Handler {
 // RedirectParams returns the redirect parameters for the oauth2 authentication default redirect URL
 func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) []elogin.URLParam {
 	var (
-		redirectURL = r.URL.Query().Get("redirect")
-		res         []elogin.URLParam
+		connectionName = r.URL.Query().Get("connect_name")
+		redirectURL    = r.URL.Query().Get("redirect")
+		scopes         = strings.Join(
+			xtypes.Slice[string](strings.Split(r.URL.Query().Get("scope"), ",")).
+				Apply(func(s string) string { return strings.TrimSpace(s) }).
+				Filter(func(s string) bool { return s != "" }).
+				Sort(func(a, b string) bool { return a < b }),
+			",")
+		res []elogin.URLParam
 	)
 	if redirectURL != "" {
 		res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
+	}
+	if scopes != "" {
+		res = append(res, elogin.URLParam{Key: "scope", Value: scopes})
+	}
+	if connectionName != "" {
+		res = append(res, elogin.URLParam{Key: "connect_name", Value: connectionName})
 	}
 	if isLogin {
 		if token := session.Token(r.Context()); token != "" {
@@ -82,9 +97,11 @@ func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, 
 
 // Error handles the error occurred during the oauth2 authentication
 func (wr *Oauth2Wrapper) Error(w http.ResponseWriter, r *http.Request, err error) {
+	connectName := gocast.Or(r.URL.Query().Get("connect_name"), "default")
 	ctxlogger.Get(r.Context()).Error("Auth error",
 		zap.String(`protocol`, wr.wrapper.Protocol()),
 		zap.String(`provider`, wr.wrapper.Provider()),
+		zap.String(`connect_name`, connectName),
 		zap.Error(err))
 	if wr.errorRedirectURL != "" {
 		http.Redirect(w, r, wr.errorRedirectURL, http.StatusTemporaryRedirect)
@@ -94,10 +111,11 @@ func (wr *Oauth2Wrapper) Error(w http.ResponseWriter, r *http.Request, err error
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"status":   "error",
-		"protocol": wr.wrapper.Protocol(),
-		"provider": wr.wrapper.Provider(),
-		"error":    err.Error(),
+		"status":       "error",
+		"connect_name": connectName,
+		"protocol":     wr.wrapper.Protocol(),
+		"provider":     wr.wrapper.Provider(),
+		"error":        err.Error(),
 	})
 }
 
@@ -114,6 +132,9 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 		ctx       = acl.WithNoPermCheck(r.Context())
 	)
 
+	// Get session connection name
+	connectName := gocast.Or(r.URL.Query().Get("connect_name"), "default")
+
 	// Check if user already exists (awoid permission check)
 	list, err := wr.socialAuthUsecase.List(ctx, &socialauth.Filter{
 		SocialID: []string{userData.ID},
@@ -127,27 +148,27 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	// If user already exists, update the token
 	if len(list) > 0 {
 		accSocial = list[0]
-		if err := wr.updateSocialAccount(ctx, list[0], token, userData); err != nil {
+		if err := wr.updateSocialAccount(ctx, list[0], userData); err != nil {
 			wr.Error(w, r, err)
 			return
 		}
-	} else if accSocial, err = wr.createSocialAccountAndUser(r.Context(), token, userData); err != nil {
+	} else if accSocial, err = wr.createSocialAccountAndUser(r.Context(), userData); err != nil {
 		wr.Error(w, r, err)
 		return
 	}
 
 	// Update token if provided
 	if accSocial != nil && token != nil {
-		if err := wr.socialAuthUsecase.SetToken(ctx, accSocial.ID, token); err != nil {
+		if err := wr.socialAuthUsecase.SetToken(ctx, connectName, accSocial.ID, token); err != nil {
 			wr.Error(w, r, err)
 			return
 		}
 	}
 
-	// Session token initialization
+	// Internal session token initialization
 	sessToken := session.Token(ctx)
 
-	// Create session if provided
+	// Create internal session if provided
 	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
 		sessToken, expiresAt, err = wr.sessProvider.CreateToken(accSocial.UserID, 0, accSocial.ID)
 		if err != nil {
@@ -169,24 +190,21 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 		"status":       "ok",
 		"protocol":     wr.wrapper.Protocol(),
 		"provider":     wr.wrapper.Provider(),
+		"connect_name": connectName,
 		"expires_at":   expiresAt,
 		"access_token": sessToken,
 	})
 }
 
-func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, token *elogin.Token, userData *elogin.UserData) (*model.AccountSocial, error) {
+func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, userData *elogin.UserData) (*model.AccountSocial, error) {
 	user := session.User(ctx)
+
 	// Create new user or connect to the existing one
 	if user.IsAnonymous() {
 		user = &model.User{
 			Email:   userData.Email,
 			Approve: model.ApprovedApproveStatus,
 		}
-	}
-
-	var scopes []string
-	if userData.OAuth2conf != nil {
-		scopes = userData.OAuth2conf.Scopes
 	}
 
 	// Connect user to the social account
@@ -198,7 +216,6 @@ func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, token *
 		LastName:  userData.LastName,
 		Avatar:    userData.AvatarURL,
 		Link:      userData.Link,
-		Scope:     scopes,
 	}
 
 	// Execute all operations in transaction
@@ -206,16 +223,13 @@ func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, token *
 	return socAcc, err
 }
 
-func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.AccountSocial, token *elogin.Token, userData *elogin.UserData) error {
-	var scopes []string
-	if userData.OAuth2conf != nil {
-		scopes = userData.OAuth2conf.Scopes
-	}
+func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.AccountSocial, userData *elogin.UserData) error {
 	socAcc.Email = gocast.Or(userData.Email, socAcc.Email)
 	socAcc.FirstName = gocast.Or(userData.FirstName, socAcc.FirstName)
 	socAcc.LastName = gocast.Or(userData.LastName, socAcc.LastName)
 	socAcc.Avatar = gocast.Or(userData.AvatarURL, socAcc.Avatar)
 	socAcc.Link = gocast.Or(userData.Link, socAcc.Link)
-	socAcc.Scope = gocast.IfThen(len(scopes) > 0, scopes, socAcc.Scope)
+
+	// Update social account
 	return wr.socialAuthUsecase.Update(ctx, socAcc.ID, socAcc)
 }

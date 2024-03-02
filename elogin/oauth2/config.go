@@ -51,6 +51,7 @@ func (c *Config) OAuth2Config() *oauth2.Config {
 // UserData returns the user data from the oauth2 token
 func (c *Config) UserData(ctx context.Context, values url.Values, params []elogin.URLParam) (*elogin.Token, *elogin.UserData, error) {
 	code := values.Get("code")
+	scopes := c.OAuth2.Scopes
 
 	// Check state code if it is set
 	if c.StateCode != "" && c.StateCode != values.Get("state") {
@@ -60,6 +61,14 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 	var opts []oauth2.AuthCodeOption
 	if params != nil {
 		opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
+	}
+
+	// Extract scopes from the params
+	for _, param := range params {
+		if param.Key == "scope" {
+			scopes = strings.Split(param.Value, ",")
+			break
+		}
 	}
 
 	// Exchange code for token
@@ -73,13 +82,14 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 		AccessToken:  oa2token.AccessToken,
 		RefreshToken: oa2token.RefreshToken,
 		ExpiresAt:    oa2token.Expiry,
+		Scopes:       scopes,
 	}
 	if c.Extractor == nil {
 		return token, nil, nil
 	}
 
 	// Extract user data if extractor is set
-	data, err := c.Extractor(ctx, oa2token, c.OAuth2)
+	data, err := c.Extractor(ctx, oa2token.WithExtra(map[string]any{"scope": scopes, "newToken": token}), c.OAuth2)
 	if err != nil {
 		return nil, nil, err
 	}

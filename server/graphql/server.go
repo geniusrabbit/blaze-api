@@ -24,6 +24,7 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 			Directives: generated.DirectiveRoot{
 				HasPermissions: directives.HasPermissions,
 				Auth:           directives.Auth,
+				Acl:            directives.HasPermissions,
 			},
 		}),
 	)

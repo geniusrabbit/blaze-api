@@ -1,7 +1,9 @@
 package models
 
 import (
+	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
+
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -23,9 +25,9 @@ func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
 		LastName:  acc.LastName,
 		Avatar:    acc.Avatar,
 		Link:      acc.Link,
-		Scope:     acc.Scope,
 
-		Data: *types.MustNullableJSONFrom(acc.Data.Data),
+		Data:     *types.MustNullableJSONFrom(acc.Data.Data),
+		Sessions: FromSocialAccountSessionModelList(acc.Sessions),
 
 		CreatedAt: acc.CreatedAt,
 		UpdatedAt: acc.UpdatedAt,
@@ -35,6 +37,29 @@ func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
 
 func FromSocialAccountModelList(list []*model.AccountSocial) []*SocialAccount {
 	return xtypes.SliceApply(list, FromSocialAccountModel)
+}
+
+func FromSocialAccountSessionModel(sess *model.AccountSocialSession) *SocialAccountSession {
+	if sess == nil {
+		return nil
+	}
+	return &SocialAccountSession{
+		Name:            sess.Name,
+		SocialAccountID: sess.AccountSocialID,
+
+		AccessToken:  sess.AccessToken,
+		RefreshToken: sess.RefreshToken,
+		Scope:        sess.Scopes,
+
+		ExpiresAt: gocast.IfThen(sess.ExpiresAt.Valid, &sess.ExpiresAt.Time, nil),
+		CreatedAt: sess.CreatedAt,
+		UpdatedAt: sess.UpdatedAt,
+		DeletedAt: DeletedAt(sess.DeletedAt),
+	}
+}
+
+func FromSocialAccountSessionModelList(list []*model.AccountSocialSession) []*SocialAccountSession {
+	return xtypes.SliceApply(list, FromSocialAccountSessionModel)
 }
 
 func (fl *SocialAccountListFilter) Filter() *socialaccount.Filter {

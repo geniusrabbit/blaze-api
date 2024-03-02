@@ -21,7 +21,7 @@ type AccountConnection = CollectionConnection[gqlmodels.Account, gqlmodels.Accou
 
 // NewAccountConnection based on query object
 func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase, filter *gqlmodels.AccountListFilter, order *gqlmodels.AccountListOrder, page *gqlmodels.Page) *AccountConnection {
-	return NewCollectionConnection[gqlmodels.Account, gqlmodels.AccountEdge](ctx, &DataAccessorFunc[gqlmodels.Account, gqlmodels.AccountEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.Account, gqlmodels.AccountEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Account, error) {
 			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), page.Pagination())
 			return gqlmodels.FromAccountModelList(accounts), err
@@ -43,7 +43,7 @@ type SocialAccountConnection = CollectionConnection[gqlmodels.SocialAccount, gql
 
 // NewSocialAccountConnection based on query object
 func NewSocialAccountConnection(ctx context.Context, accountsAccessor socialaccount.Usecase, filter *gqlmodels.SocialAccountListFilter, order *gqlmodels.SocialAccountListOrder, page *gqlmodels.Page) *SocialAccountConnection {
-	return NewCollectionConnection[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge](ctx, &DataAccessorFunc[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.SocialAccount, error) {
 			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromSocialAccountModelList(accounts), err
@@ -65,7 +65,7 @@ type RBACRoleConnection = CollectionConnection[gqlmodels.RBACRole, gqlmodels.RBA
 
 // NewRBACRoleConnection based on query object
 func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filter *gqlmodels.RBACRoleListFilter, order *gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) *RBACRoleConnection {
-	return NewCollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge](ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
 			roles, err := rolesAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromRBACRoleModelList(ctx, roles), err
@@ -84,7 +84,7 @@ func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filt
 
 // NewRBACRoleConnectionByIDs based on query object
 func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, ids []uint64, order *gqlmodels.RBACRoleListOrder) *RBACRoleConnection {
-	return NewCollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge](ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
 			var (
 				roles []*model.Role
@@ -112,7 +112,7 @@ type AuthClientConnection = CollectionConnection[gqlmodels.AuthClient, gqlmodels
 
 // NewAuthClientConnection based on query object
 func NewAuthClientConnection(ctx context.Context, authClientsAccessor authclient.Usecase, page *gqlmodels.Page) *AuthClientConnection {
-	return NewCollectionConnection[gqlmodels.AuthClient, gqlmodels.AuthClientEdge](ctx, &DataAccessorFunc[gqlmodels.AuthClient, gqlmodels.AuthClientEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.AuthClient, gqlmodels.AuthClientEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.AuthClient, error) {
 			clients, err := authClientsAccessor.FetchList(ctx, nil)
 			return gqlmodels.FromAuthClientModelList(clients), err
@@ -134,7 +134,7 @@ type UserConnection = CollectionConnection[gqlmodels.User, gqlmodels.UserEdge]
 
 // NewUserConnection based on query object
 func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *gqlmodels.UserListFilter, order *gqlmodels.UserListOrder, page *gqlmodels.Page) *UserConnection {
-	return NewCollectionConnection[gqlmodels.User, gqlmodels.UserEdge](ctx, &DataAccessorFunc[gqlmodels.User, gqlmodels.UserEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.User, gqlmodels.UserEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.User, error) {
 			users, err := usersAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromUserModelList(users), err
@@ -156,7 +156,7 @@ type HistoryActionConnection = CollectionConnection[gqlmodels.HistoryAction, gql
 
 // NewHistoryActionConnection based on query object
 func NewHistoryActionConnection(ctx context.Context, historyActionsAccessor historylog.Usecase, filter *gqlmodels.HistoryActionListFilter, order *gqlmodels.HistoryActionListOrder, page *gqlmodels.Page) *HistoryActionConnection {
-	return NewCollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge](ctx, &DataAccessorFunc[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.HistoryAction, error) {
 			historyActions, err := historyActionsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromHistoryActionModelList(historyActions), err
@@ -178,7 +178,7 @@ type OptionConnection = CollectionConnection[gqlmodels.Option, gqlmodels.OptionE
 
 // NewOptionConnection based on query object
 func NewOptionConnection(ctx context.Context, optionsAccessor option.Usecase, filter *gqlmodels.OptionListFilter, order *gqlmodels.OptionListOrder, page *gqlmodels.Page) *OptionConnection {
-	return NewCollectionConnection[gqlmodels.Option, gqlmodels.OptionEdge](ctx, &DataAccessorFunc[gqlmodels.Option, gqlmodels.OptionEdge]{
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.Option, gqlmodels.OptionEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Option, error) {
 			options, err := optionsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromOptionModelList(options), err

@@ -1,5 +1,8 @@
 "Prevents access to a field if the user is not authenticated"
 directive @auth on FIELD_DEFINITION | FIELD
 
-"Prevents access to a field if the user doesnt have the matching permissions"
+"Prevents access to a field/method if the user doesnt have the matching permissions"
 directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+
+"Prevents access to a field/method if the user doesnt have the matching permissions"
+directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
