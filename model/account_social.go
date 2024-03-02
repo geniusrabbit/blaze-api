@@ -26,7 +26,7 @@ type AccountSocial struct {
 	Data gosql.NullableJSON[map[string]any] `db:"data" gorm:"type:jsonb"`
 
 	// Sessions list linked to the account
-	Sessions []*AccountSocialSession `db:"-" gorm:"foreignKey:SocialAccountID"`
+	Sessions []AccountSocialSession `db:"-" gorm:"foreignKey:AccountSocialID:references:ID"`
 
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
@@ -41,4 +41,12 @@ func (m *AccountSocial) TableName() string {
 // RBACResourceName returns the name of the resource for the RBAC
 func (m *AccountSocial) RBACResourceName() string {
 	return `account_social`
+}
+
+// CreatorUserID returns the ID of the owner of the resource
+func (m *AccountSocial) CreatorUserID() uint64 {
+	if m == nil {
+		return 0
+	}
+	return m.UserID
 }
