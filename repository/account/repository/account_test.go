@@ -75,7 +75,7 @@ func (s *testSuite) TestFetchList() {
 				AddRow(2, 1, "title2", "description2", time.Now()),
 		)
 	accounts, err := s.accountRepo.FetchList(s.Ctx, &account.Filter{
-		UserID: []uint64{1}, ID: []uint64{1, 2}}, nil)
+		UserID: []uint64{1}, ID: []uint64{1, 2}}, nil, nil)
 	s.NoError(err)
 	s.Equal(2, len(accounts))
 }

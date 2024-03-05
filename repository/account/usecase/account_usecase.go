@@ -64,7 +64,7 @@ func (a *AccountUsecase) GetByTitle(ctx context.Context, title string) (*model.A
 }
 
 // FetchList of accounts by filter
-func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
+func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter, order *account.ListOrder, pagination *repository.Pagination) ([]*model.Account, error) {
 	var err error
 	if !acl.HaveAccessList(ctx, session.Account(ctx)) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
@@ -75,7 +75,7 @@ func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter, 
 			return nil, err
 		}
 	}
-	return a.accountRepo.FetchList(ctx, filter, pagination)
+	return a.accountRepo.FetchList(ctx, filter, order, pagination)
 }
 
 // Count of accounts by filter

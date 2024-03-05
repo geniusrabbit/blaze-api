@@ -491,7 +491,7 @@ type SocialAccountPayload struct {
 
 type SocialAccountSession struct {
 	// The unique name of the session to destinguish between different sessions with different scopes
-	Name            string     `json:"Name"`
+	Name            string     `json:"name"`
 	SocialAccountID uint64     `json:"socialAccountID"`
 	TokenType       string     `json:"tokenType"`
 	AccessToken     string     `json:"accessToken"`

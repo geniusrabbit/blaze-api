@@ -80,12 +80,13 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Acco
 }
 
 // FetchList returns list of accounts by filter
-func (r *Repository) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
+func (r *Repository) FetchList(ctx context.Context, filter *account.Filter, order *account.ListOrder, pagination *repository.Pagination) ([]*model.Account, error) {
 	var (
 		list  []*model.Account
 		query = r.Slave(ctx).Model((*model.Account)(nil))
 	)
 	query = filter.PrepareQuery(query)
+	query = order.PrepareQuery(query)
 	query = pagination.PrepareQuery(query)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

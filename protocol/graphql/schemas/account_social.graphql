@@ -2,7 +2,7 @@ type SocialAccountSession {
   """
   The unique name of the session to destinguish between different sessions with different scopes
   """
-  Name: String!
+  name: String!
   socialAccountID: ID64!
 
   tokenType: String!

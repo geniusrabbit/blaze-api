@@ -38,6 +38,26 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	return query
 }
 
+type ListOrder struct {
+	ID        model.Order
+	Title     model.Order
+	Status    model.Order
+	CreatedAt model.Order
+	UpdatedAt model.Order
+}
+
+func (ord *ListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
+	if ord == nil {
+		return query
+	}
+	query = ord.ID.PrepareQuery(query, `id`)
+	query = ord.Title.PrepareQuery(query, `title`)
+	query = ord.Status.PrepareQuery(query, `approve_status`)
+	query = ord.CreatedAt.PrepareQuery(query, `created_at`)
+	query = ord.UpdatedAt.PrepareQuery(query, `updated_at`)
+	return query
+}
+
 // Repository of access to the account
 //
 //go:generate mockgen -source $GOFILE -package mocks -destination mocks/repository.go
@@ -45,7 +65,7 @@ type Repository interface {
 	Get(ctx context.Context, id uint64) (*model.Account, error)
 	GetByTitle(ctx context.Context, title string) (*model.Account, error)
 	LoadPermissions(ctx context.Context, account *model.Account, user *model.User) error
-	FetchList(ctx context.Context, filter *Filter, pagination *repository.Pagination) ([]*model.Account, error)
+	FetchList(ctx context.Context, filter *Filter, order *ListOrder, pagination *repository.Pagination) ([]*model.Account, error)
 	Count(ctx context.Context, filter *Filter) (int64, error)
 	Create(ctx context.Context, account *model.Account) (uint64, error)
 	Update(ctx context.Context, id uint64, account *model.Account) error

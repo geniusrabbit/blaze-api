@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/blaze-api/elogin"
 	"golang.org/x/oauth2"
 )
@@ -37,8 +38,14 @@ func (c *Config) LoginURL(params []elogin.URLParam) string {
 	// reauthenticate - always as user to confirm password
 	opts := make([]oauth2.AuthCodeOption, 0, 1+len(params))
 	opts = append(opts, oauth2.SetAuthURLParam("auth_type", "rerequest"))
-	if params != nil {
+	if len(params) > 0 {
 		opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
+	}
+	for _, param := range params {
+		if param.Key == "scope" {
+			opts = append(opts, oauth2.SetAuthURLParam("scope", param.Value))
+			break
+		}
 	}
 	return c.OAuth2.AuthCodeURL(c.StateCode, opts...)
 }
@@ -66,7 +73,10 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 	// Extract scopes from the params
 	for _, param := range params {
 		if param.Key == "scope" {
-			scopes = strings.Split(param.Value, ",")
+			scopes = xtypes.Slice[string](strings.Split(strings.ReplaceAll(param.Value, " ", ","), ",")).
+				Apply(func(s string) string { return strings.TrimSpace(s) }).
+				Filter(func(s string) bool { return s != "" }).
+				Sort(func(a, b string) bool { return a < b })
 			break
 		}
 	}

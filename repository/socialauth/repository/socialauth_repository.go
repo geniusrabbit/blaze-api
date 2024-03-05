@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/blaze-api/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
@@ -84,15 +85,23 @@ func (r *Repository) Token(ctx context.Context, name string, id uint64) (*elogin
 
 // SetToken saves the token to the social account
 func (r *Repository) SetToken(ctx context.Context, name string, id uint64, token *elogin.Token) error {
-	return r.Master(ctx).Model((*model.AccountSocialSession)(nil)).
-		Where("account_social_id=? AND name=?", id, name).
+	var (
+		oldSess model.AccountSocialSession
+		db      = r.Master(ctx).Model((*model.AccountSocialSession)(nil))
+		err     = db.Find(&oldSess, "account_social_id=? AND name=?", id, name).Error
+	)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	return db.Where("account_social_id=? AND name=?", id, name).
 		Save(&model.AccountSocialSession{
 			AccountSocialID: id,
 			Name:            name,
 			TokenType:       token.TokenType,
 			AccessToken:     token.AccessToken,
 			RefreshToken:    token.RefreshToken,
-			Scopes:          token.Scopes,
+			Scopes:          xtypes.SliceUnique(append(token.Scopes, oldSess.Scopes...)),
 			ExpiresAt:       null.NewTime(token.ExpiresAt, !token.ExpiresAt.IsZero()),
 		}).Error
 }

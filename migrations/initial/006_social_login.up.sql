@@ -35,11 +35,11 @@ CREATE UNIQUE INDEX idx_account_social_uniq_social_id
 
 -- Social account session
 CREATE TABLE IF NOT EXISTS account_social_session
-( account_social_id      BIGINT                      NOT NULL      REFERENCES account_social (id) MATCH SIMPLE
+( account_social_id      BIGINT                      NOT NULL       REFERENCES account_social (id) MATCH SIMPLE
                                                                         ON UPDATE NO ACTION
                                                                         ON DELETE RESTRICT
 -- Session name destinguish the session for the same social account with different scopes
-, name                  VARCHAR(128)                NOT NULL
+, name                  VARCHAR(128)                NOT NULL        DEFAULT 'default'
 
 , token_type            VARCHAR(128)                NOT NULL
 , access_token          VARCHAR(512)                NOT NULL
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS account_social_session
 , scopes                TEXT[]                      NOT NULL
 
 , expires_at            TIMESTAMP                   NOT NULL
-, created_at            TIMESTAMP                   NOT NULL      DEFAULT NOW()
-, updated_at            TIMESTAMP                   NOT NULL      DEFAULT NOW()
+, created_at            TIMESTAMP                   NOT NULL        DEFAULT NOW()
+, updated_at            TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , deleted_at            TIMESTAMP
 
 , PRIMARY KEY (account_social_id, name)

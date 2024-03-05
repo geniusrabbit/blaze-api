@@ -13,7 +13,7 @@ import (
 type Usecase interface {
 	Get(ctx context.Context, id uint64) (*model.Account, error)
 	GetByTitle(ctx context.Context, title string) (*model.Account, error)
-	FetchList(ctx context.Context, filter *Filter, pagination *repository.Pagination) ([]*model.Account, error)
+	FetchList(ctx context.Context, filter *Filter, order *ListOrder, pagination *repository.Pagination) ([]*model.Account, error)
 	Count(ctx context.Context, filter *Filter) (int64, error)
 	Store(ctx context.Context, account *model.Account) (uint64, error)
 	Register(ctx context.Context, ownerObj *model.User, accountObj *model.Account, password string) (uint64, error)

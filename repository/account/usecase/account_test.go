@@ -74,11 +74,11 @@ func (s *testSuite) TestGetGetError() {
 
 func (s *testSuite) TestFetchList() {
 	s.accountRepo.EXPECT().
-		FetchList(s.ctx, gomock.AssignableToTypeOf(&account.Filter{}), nil).
+		FetchList(s.ctx, gomock.AssignableToTypeOf(&account.Filter{}), nil, nil).
 		Return([]*model.Account{{ID: 1}, {ID: 2}}, nil)
 
 	accounts, err := s.accountUsecase.FetchList(s.ctx, &account.Filter{
-		UserID: []uint64{1}, ID: []uint64{1, 2}}, nil)
+		UserID: []uint64{1}, ID: []uint64{1, 2}}, nil, nil)
 	s.NoError(err)
 	s.Equal(2, len(accounts))
 }

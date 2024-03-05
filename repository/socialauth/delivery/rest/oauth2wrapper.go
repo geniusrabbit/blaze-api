@@ -20,6 +20,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/elogin"
 	"github.com/geniusrabbit/blaze-api/jwt"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	accrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/usecase"
@@ -67,11 +69,12 @@ func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, 
 		connectionName = r.URL.Query().Get("connect_name")
 		redirectURL    = r.URL.Query().Get("redirect")
 		scopes         = strings.Join(
-			xtypes.Slice[string](strings.Split(r.URL.Query().Get("scope"), ",")).
+			xtypes.Slice[string](
+				strings.Split(strings.ReplaceAll(r.URL.Query().Get("scope"), " ", ","), ",")).
 				Apply(func(s string) string { return strings.TrimSpace(s) }).
 				Filter(func(s string) bool { return s != "" }).
 				Sort(func(a, b string) bool { return a < b }),
-			",")
+			" ")
 		res []elogin.URLParam
 	)
 	if redirectURL != "" {
@@ -170,7 +173,26 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	// Create internal session if provided
 	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
-		sessToken, expiresAt, err = wr.sessProvider.CreateToken(accSocial.UserID, 0, accSocial.ID)
+		// Get preoritized user account
+		accountID := uint64(0)
+		acclist, err := accrepo.New().FetchList(ctx, &account.Filter{
+			UserID: []uint64{accSocial.UserID},
+			Status: []model.ApproveStatus{model.ApprovedApproveStatus, model.PendingApproveStatus},
+		}, nil, nil)
+		if err == nil && len(acclist) > 0 {
+			for _, acc := range acclist {
+				if acc.Approve.IsApproved() {
+					accountID = acc.ID
+					break
+				}
+				if accountID == 0 {
+					accountID = acc.ID
+				}
+			}
+		}
+
+		// Create new session token for the user and social account connection
+		sessToken, expiresAt, err = wr.sessProvider.CreateToken(accSocial.UserID, accountID, accSocial.ID)
 		if err != nil {
 			wr.Error(w, r, err)
 			return

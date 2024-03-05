@@ -67,18 +67,18 @@ func (mr *MockUsecaseMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 }
 
 // FetchList mocks base method.
-func (m *MockUsecase) FetchList(ctx context.Context, filter *account.Filter, pagination *repository.Pagination) ([]*model.Account, error) {
+func (m *MockUsecase) FetchList(ctx context.Context, filter *account.Filter, order *account.ListOrder, pagination *repository.Pagination) ([]*model.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchList", ctx, filter, pagination)
+	ret := m.ctrl.Call(m, "FetchList", ctx, filter, order, pagination)
 	ret0, _ := ret[0].([]*model.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter, pagination interface{}) *gomock.Call {
+func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter, order, pagination interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter, pagination)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter, order, pagination)
 }
 
 // FetchMemberUsers mocks base method.

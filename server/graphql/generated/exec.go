@@ -2051,7 +2051,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SocialAccountSession.ExpiresAt(childComplexity), true
 
-	case "SocialAccountSession.Name":
+	case "SocialAccountSession.name":
 		if e.complexity.SocialAccountSession.Name == nil {
 			break
 		}
@@ -2586,7 +2586,7 @@ extend type Mutation {
   """
   The unique name of the session to destinguish between different sessions with different scopes
   """
-  Name: String!
+  name: String!
   socialAccountID: ID64!
 
   tokenType: String!
@@ -14641,8 +14641,8 @@ func (ec *executionContext) fieldContext_SocialAccount_sessions(ctx context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "Name":
-				return ec.fieldContext_SocialAccountSession_Name(ctx, field)
+			case "name":
+				return ec.fieldContext_SocialAccountSession_name(ctx, field)
 			case "socialAccountID":
 				return ec.fieldContext_SocialAccountSession_socialAccountID(ctx, field)
 			case "tokenType":
@@ -15263,8 +15263,8 @@ func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccount(ctx 
 	return fc, nil
 }
 
-func (ec *executionContext) _SocialAccountSession_Name(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountSession) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SocialAccountSession_Name(ctx, field)
+func (ec *executionContext) _SocialAccountSession_name(ctx context.Context, field graphql.CollectedField, obj *models.SocialAccountSession) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialAccountSession_name(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -15291,7 +15291,7 @@ func (ec *executionContext) _SocialAccountSession_Name(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_Name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -21631,8 +21631,8 @@ func (ec *executionContext) _SocialAccountSession(ctx context.Context, sel ast.S
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SocialAccountSession")
-		case "Name":
-			out.Values[i] = ec._SocialAccountSession_Name(ctx, field, obj)
+		case "name":
+			out.Values[i] = ec._SocialAccountSession_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
