@@ -26,7 +26,9 @@ func New() *Repository {
 // Get social account by ID
 func (r *Repository) Get(ctx context.Context, id uint64) (*model.AccountSocial, error) {
 	object := &model.AccountSocial{}
-	res := r.Slave(ctx).Model(object).Where(`id=?`, id).Find(object)
+	res := r.Slave(ctx).Model(object).
+		Preload(clause.Associations).
+		Where(`id=?`, id).Find(object)
 	if err := res.Error; err != nil {
 		return nil, err
 	}
