@@ -23,7 +23,7 @@ type AccountConnection = CollectionConnection[gqlmodels.Account, gqlmodels.Accou
 func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase, filter *gqlmodels.AccountListFilter, order *gqlmodels.AccountListOrder, page *gqlmodels.Page) *AccountConnection {
 	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.Account, gqlmodels.AccountEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Account, error) {
-			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), page.Pagination())
+			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
 			return gqlmodels.FromAccountModelList(accounts), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {

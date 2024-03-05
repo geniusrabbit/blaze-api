@@ -171,6 +171,7 @@ func accountForUser(ctx context.Context, accountRepo account.Repository, user *m
 			ID:     gocast.IfThen(accountID > 0, []uint64{accountID}, nil),
 			UserID: []uint64{user.ID},
 		},
+		nil,
 		&repository.Pagination{Size: 1},
 	)
 	if err != nil {

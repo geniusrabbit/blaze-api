@@ -66,3 +66,17 @@ func (acc *AccountInput) Model(appStatus ...model.ApproveStatus) *model.Account 
 		Contacts:          append([]string{}, acc.Contacts...),
 	}
 }
+
+func (ord *AccountListOrder) Order() *account.ListOrder {
+	if ord == nil {
+		return nil
+	}
+	return &account.ListOrder{
+		// UserID:    ord.UserID.AsOrder(),
+		ID:     ord.ID.AsOrder(),
+		Title:  ord.Title.AsOrder(),
+		Status: ord.Status.AsOrder(),
+		// CreatedAt: ord.CreatedAt.AsOrder(),
+		// UpdatedAt: ord.UpdatedAt.AsOrder(),
+	}
+}
