@@ -10,10 +10,11 @@ import (
 )
 
 type Filter struct {
-	UserID   []uint64
-	SocialID []string
-	Provider []string
-	Email    []string
+	UserID          []uint64
+	SocialID        []string
+	Provider        []string
+	Email           []string
+	RetrieveDeleted bool
 }
 
 func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -31,6 +32,9 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	}
 	if len(fl.Email) > 0 {
 		query = query.Where(`email IN (?)`, fl.Email)
+	}
+	if !fl.RetrieveDeleted {
+		query = query.Unscoped()
 	}
 	return query
 }

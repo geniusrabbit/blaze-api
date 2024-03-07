@@ -111,6 +111,13 @@ func (wr *Oauth2Wrapper) Error(w http.ResponseWriter, r *http.Request, err error
 		return
 	}
 
+	// Redirect to the error URL if provided
+	if red := gocast.Or(r.URL.Query().Get("redirect"), wr.successRedirectURL); red != "" {
+		redirectURL := urlSetQueryParams(red, map[string]string{"error": err.Error()})
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
 	_ = json.NewEncoder(w).Encode(map[string]any{
@@ -140,8 +147,9 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	// Check if user already exists (awoid permission check)
 	list, err := wr.socialAuthUsecase.List(ctx, &socialauth.Filter{
-		SocialID: []string{userData.ID},
-		Provider: []string{wr.Provider()},
+		SocialID:        []string{userData.ID},
+		Provider:        []string{wr.Provider()},
+		RetrieveDeleted: true,
 	})
 	if err != nil && !(errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows)) {
 		wr.Error(w, r, err)
@@ -251,6 +259,7 @@ func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.
 	socAcc.LastName = gocast.Or(userData.LastName, socAcc.LastName)
 	socAcc.Avatar = gocast.Or(userData.AvatarURL, socAcc.Avatar)
 	socAcc.Link = gocast.Or(userData.Link, socAcc.Link)
+	socAcc.DeletedAt = gorm.DeletedAt{Valid: false}
 
 	// Update social account
 	return wr.socialAuthUsecase.Update(ctx, socAcc.ID, socAcc)
