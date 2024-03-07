@@ -33,7 +33,7 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if len(fl.Email) > 0 {
 		query = query.Where(`email IN (?)`, fl.Email)
 	}
-	if !fl.RetrieveDeleted {
+	if fl.RetrieveDeleted {
 		query = query.Unscoped()
 	}
 	return query
