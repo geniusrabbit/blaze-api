@@ -9,7 +9,7 @@ import (
 
 // AccountSocial object represents a social network account
 type AccountSocial struct {
-	ID     uint64 `db:"id"`
+	ID     uint64 `db:"id" gorm:"primaryKey"`
 	UserID uint64 `db:"user_id"`
 	User   *User  `db:"-" gorm:"foreignKey:UserID"`
 

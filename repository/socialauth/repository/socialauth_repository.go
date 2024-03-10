@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/demdxx/xtypes"
+	"github.com/guregu/null"
+	"gorm.io/gorm"
+
 	"github.com/geniusrabbit/blaze-api/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
-	"github.com/guregu/null"
-	"gorm.io/gorm"
 )
 
 type Repository struct {
@@ -57,6 +57,7 @@ func (r *Repository) Update(ctx context.Context, id uint64, account *model.Accou
 	return r.Master(ctx).
 		Model((*model.AccountSocial)(nil)).
 		Where("id = ?", id).
+		Unscoped().
 		Updates(account).Error
 }
 
@@ -88,20 +89,21 @@ func (r *Repository) SetToken(ctx context.Context, name string, id uint64, token
 	var (
 		oldSess model.AccountSocialSession
 		db      = r.Master(ctx).Model((*model.AccountSocialSession)(nil))
-		err     = db.Find(&oldSess, "account_social_id=? AND name=?", id, name).Error
+		err     = db.Unscoped().Find(&oldSess, "account_social_id=? AND name=?", id, name).Error
 	)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 
-	return db.Where("account_social_id=? AND name=?", id, name).
+	return r.Master(ctx).Unscoped().
 		Save(&model.AccountSocialSession{
 			AccountSocialID: id,
 			Name:            name,
 			TokenType:       token.TokenType,
 			AccessToken:     token.AccessToken,
 			RefreshToken:    token.RefreshToken,
-			Scopes:          xtypes.SliceUnique(append(token.Scopes, oldSess.Scopes...)),
+			Scopes:          token.Scopes,
 			ExpiresAt:       null.NewTime(token.ExpiresAt, !token.ExpiresAt.IsZero()),
+			DeletedAt:       gorm.DeletedAt{Valid: false},
 		}).Error
 }

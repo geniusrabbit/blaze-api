@@ -259,7 +259,7 @@ func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.
 	socAcc.LastName = gocast.Or(userData.LastName, socAcc.LastName)
 	socAcc.Avatar = gocast.Or(userData.AvatarURL, socAcc.Avatar)
 	socAcc.Link = gocast.Or(userData.Link, socAcc.Link)
-	socAcc.DeletedAt = gorm.DeletedAt{Valid: false}
+	socAcc.DeletedAt = gorm.DeletedAt{Valid: false, Time: time.Now()}
 
 	// Update social account
 	return wr.socialAuthUsecase.Update(ctx, socAcc.ID, socAcc)

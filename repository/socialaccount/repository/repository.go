@@ -66,10 +66,10 @@ func (r *Repository) Count(ctx context.Context, filter *socialaccount.Filter) (i
 // Disconnect social account by ID
 func (r *Repository) Disconnect(ctx context.Context, id uint64) error {
 	return database.ContextTransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
-		if err := tx.Model((*model.AccountSocialSession)(nil)).Delete(`account_social_id=?`, id).Error; err != nil {
+		if err := tx.Delete(&model.AccountSocialSession{}, `account_social_id=?`, id).Error; err != nil {
 			return err
 		}
-		if err := tx.Model((*model.AccountSocial)(nil)).Delete(`id=?`, id).Error; err != nil {
+		if err := tx.Delete(&model.AccountSocial{}, `id=?`, id).Error; err != nil {
 			return err
 		}
 		return nil
