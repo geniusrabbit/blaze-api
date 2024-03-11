@@ -14,6 +14,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
@@ -158,7 +159,7 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		return nil, err
 	}
 	acc.Approve = status
-	if _, err = r.accounts.Store(ctx, acc); err != nil {
+	if _, err = r.accounts.Store(historylog.WithMessage(ctx, msg), acc); err != nil {
 		return nil, err
 	}
 	// Send message to the account owner

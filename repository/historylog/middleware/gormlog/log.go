@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/demdxx/gocast/v2"
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/gosql/v2"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
@@ -16,6 +14,9 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
+	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	"github.com/geniusrabbit/blaze-api/requestid"
 )
 
 // Register gorm callbacks for history log
@@ -67,7 +68,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			ID:         uuid.New(),
 			RequestID:  requestid.Get(ctx),
 			Name:       name,
-			Message:    "",
+			Message:    historylog.MessageFromContext(ctx),
 			UserID:     user.ID,
 			AccountID:  acc.ID,
 			ObjectType: cdb.Statement.Schema.Name,

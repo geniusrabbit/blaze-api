@@ -36,16 +36,15 @@ func InitModelPermissions(pm *permissions.Manager) {
 		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "count", "update", "create", "delete"})
 	}
 
+	// Extend user permissions
+	_ = pm.RegisterNewPermissions(&model.User{}, []string{"reset_password", "password.reset"})
+	_ = pm.RegisterNewOwningPermissions(&model.User{}, []string{"reset_password"})
+
 	// Register basic models CRUD permissions for Account with member checks
 	_ = pm.RegisterNewOwningPermissions(&model.Account{},
-		[]string{"view", "list", "count", "update", "create", "delete"},
+		[]string{"view", "list", "count", "update", "create", "delete", "approve", "reject"},
 		rbac.WithCustomCheck(accountCustomCheck),
 	)
-
-	// Extend user permissions
-	_ = pm.RegisterNewPermissions(&model.User{}, []string{"reset_password"})
-	_ = pm.RegisterNewPermissions(&model.User{}, []string{"password.reset"})
-	_ = pm.RegisterNewOwningPermissions(&model.User{}, []string{"reset_password"})
 
 	// Extend account permissions
 	_ = pm.RegisterNewPermission(nil, "account.register", rbac.WithoutCustomCheck)

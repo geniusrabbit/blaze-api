@@ -47,9 +47,15 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 		nil,
 	)
 	jwtProvider := &jwt.Provider{
-		TokenLifetime:  conf.OAuth2.AccessTokenLifespan,
-		Secret:         conf.OAuth2.Secret,
-		MiddlewareOpts: &jwtmiddleware.Options{Debug: conf.IsDebug()},
+		TokenLifetime: conf.OAuth2.AccessTokenLifespan,
+		Secret:        conf.OAuth2.Secret,
+		MiddlewareOpts: &jwtmiddleware.Options{
+			Debug: conf.IsDebug(),
+			Extractor: jwtmiddleware.FromFirst(
+				jwtmiddleware.FromAuthHeader,
+				jwtmiddleware.FromParameter("access_token"),
+			),
+		},
 	}
 	return oauth2provider, jwtProvider
 }

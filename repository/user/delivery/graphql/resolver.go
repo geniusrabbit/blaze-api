@@ -12,6 +12,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/messanger"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user/usecase"
@@ -104,7 +105,9 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		return nil, err
 	}
 	user.Approve = status
-	// user.ApproveMessage = msg
+	if msg != nil {
+		ctx = historylog.WithMessage(ctx, *msg)
+	}
 	err = r.users.Update(ctx, user)
 	if err != nil {
 		return nil, err
