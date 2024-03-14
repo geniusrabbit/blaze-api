@@ -1,4 +1,4 @@
-package oauth2srvprovider
+package serverprovider
 
 import (
 	"context"
@@ -267,7 +267,7 @@ func (s *DatabaseStorage) Authenticate(ctx context.Context, email string, secret
 	if err == sql.ErrNoRows {
 		return fosite.ErrNotFound
 	}
-	if user != nil {
+	if user == nil {
 		return nil
 	}
 	SetContextTargetUserID(ctx, user.ID)
@@ -308,9 +308,6 @@ func (s *DatabaseStorage) newSession(ctx context.Context, token string, request 
 	)
 	if err != nil {
 		return errors.Wrap(err, "create session")
-	}
-	if err != nil {
-		return errors.Wrap(err, "scan session record")
 	}
 	if err = s.cache.Set(ctx, s.sessCacheKey(token), sessionObj, s.cacheLifetime); err != nil {
 		ctxlogger.Get(ctx).Error("put session to cache", zap.Error(err))

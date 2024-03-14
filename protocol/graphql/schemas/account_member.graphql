@@ -1,0 +1,240 @@
+"""
+Account Member represents a member of the account
+"""
+type Member {
+  """
+  The primary key of the Member
+  """
+  ID: ID64!
+
+  """
+  Status of Member active
+  """
+  status: ApproveStatus!
+
+  """
+  User object accessor
+  """
+  user: User!
+
+  """
+  Account object accessor
+  """
+  account: Account!
+
+  """
+  Is the user an admin of the account
+  """
+  isAdmin: Boolean!
+
+  """
+  Roles of the member
+  """
+  roles: [RBACRole!]
+
+  createdAt: Time!
+  updatedAt: Time!
+  deletedAt: Time
+}
+
+type MemberEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: Member
+}
+
+type MemberConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the members's lists
+  """
+  edges: [MemberEdge!]
+
+  """
+  A list of the members, as a convenience when edges are not needed.
+  """
+  list: [Member!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+type MemberPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  Member ID operation result
+  """
+  memberID: ID64!
+
+  """
+  Member object accessor
+  """
+  member: Member
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input MemberListFilter {
+  ID: [ID64!]
+  status: [ApproveStatus!]
+  userID: [ID64!]
+  accountID: [ID64!]
+  isAdmin: Boolean
+}
+
+input MemberListOrder {
+  ID: Ordering
+  status: Ordering
+  userID: Ordering
+  accountID: Ordering
+  isAdmin: Ordering
+  createdAt: Ordering
+  updatedAt: Ordering
+}
+
+input InviteMemberInput {
+  """
+  The email of the member to invite
+  """
+  email: String!
+
+  """
+  The roles to assign to the member
+  """
+  roles: [String!]!
+
+  """
+  Is the user an admin of the account
+  """
+  isAdmin: Boolean! = false
+}
+
+input MemberInput {
+  """
+  The user ID of the member to invite
+  """
+  userID: String!
+
+  """
+  The roles to assign to the member
+  """
+  roles: [String!]!
+
+  """
+  Is the user an admin of the account
+  """
+  isAdmin: Boolean! = false
+}
+
+###############################################################################
+# Query declarations
+###############################################################################
+
+extend type Query {
+  listMembers(
+    """
+    The filter to apply to the list
+    """
+    filter: MemberListFilter = null,
+
+    """
+    The order to apply to the list
+    """
+    order: MemberListOrder = null,
+
+    """
+    The pagination to apply to the list
+    """
+    page: Page = null
+  ): MemberConnection @acl(permissions: ["account.member.list.*"])
+}
+
+extend type Mutation {
+  """
+  Invite a new member to the account
+  """
+  inviteAccountMember(
+    """
+    The account ID to invite the member to
+    """
+    accountID: ID64!,
+
+    """
+    The new member to invite to the account
+    """
+    member: InviteMemberInput!
+  ): MemberPayload! @acl(permissions: ["account.member.invite.*"])
+
+  """
+  Update the member data
+  """
+  updateAccountMember(
+    """
+    The member ID to update
+    """
+    memberID: ID64!,
+
+    """
+    The new member data to update
+    """
+    member: MemberInput!
+  ): MemberPayload! @acl(permissions: ["account.member.update.*"])
+
+  """
+  Remove the member from the account
+  """
+  removeAccountMember(
+    """
+    The member ID to remove
+    """
+    memberID: ID64!
+  ): MemberPayload! @acl(permissions: ["account.member.delete.*"])
+
+  """
+  Approve the member to join the account
+  """
+  approveAccountMember(
+    """
+    The member ID to approve
+    """
+    memberID: ID64!
+
+    """
+    Reason message for the approval
+    """
+    msg: String! = ""
+  ): MemberPayload! @acl(permissions: ["account.member.approve.*"])
+
+  """
+  Reject the member to join the account
+  """
+  rejectAccountMember(
+    """
+    The member ID to reject
+    """
+    memberID: ID64!
+
+    """
+    Reason message for the rejection
+    """
+    msg: String! = ""
+  ): MemberPayload! @acl(permissions: ["account.member.reject.*"])
+}

@@ -1,7 +1,7 @@
 package resolvers
 
 import (
-	"github.com/geniusrabbit/blaze-api/jwt"
+	"github.com/geniusrabbit/blaze-api/auth/jwt"
 	account_graphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
 	authclient_graphql "github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql"
 	historylog_graphql "github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql"
@@ -20,6 +20,7 @@ type Resolver struct {
 	users       *user_graphql.QueryResolver
 	accAuth     *account_graphql.AuthResolver
 	accounts    *account_graphql.QueryResolver
+	members     *account_graphql.MemberQueryResolver
 	socAccounts *socialaccount_graphql.QueryResolver
 	roles       *rbac_graphql.QueryResolver
 	authclients *authclient_graphql.QueryResolver
@@ -32,6 +33,7 @@ func NewResolver(provider *jwt.Provider) *Resolver {
 		users:       user_graphql.NewQueryResolver(),
 		accAuth:     account_graphql.NewAuthResolver(provider, rbac.New()),
 		accounts:    account_graphql.NewQueryResolver(),
+		members:     account_graphql.NewMemberQueryResolver(),
 		socAccounts: socialaccount_graphql.NewQueryResolver(),
 		roles:       rbac_graphql.NewQueryResolver(),
 		authclients: authclient_graphql.NewQueryResolver(),

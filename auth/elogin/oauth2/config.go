@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/demdxx/xtypes"
-	"github.com/geniusrabbit/blaze-api/elogin"
+	"github.com/geniusrabbit/blaze-api/auth/elogin"
 	"golang.org/x/oauth2"
 )
 

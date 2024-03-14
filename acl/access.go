@@ -27,6 +27,10 @@ const (
 	PermList      = `list`
 	PermAuthCross = session.PermAuthCross
 	PermCount     = `count`
+	PermApprove   = `approve`
+	PermReject    = `reject`
+	PermGet       = `get`
+	PermSet       = `set`
 )
 
 // HavePermissions returns `true` if the `user` have all permissions from the list

@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"github.com/geniusrabbit/blaze-api/elogin"
-	oa2 "github.com/geniusrabbit/blaze-api/elogin/oauth2"
+	"github.com/geniusrabbit/blaze-api/auth/elogin"
+	oa2 "github.com/geniusrabbit/blaze-api/auth/elogin/oauth2"
 )
 
 const facebookMeURL = "https://graph.facebook.com/v19.0/me?fields=id,name,email,picture&access_token="

@@ -16,16 +16,21 @@ import (
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	prbac "github.com/geniusrabbit/blaze-api/repository/rbac"
+	reporbac "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 )
 
 // Repository DAO which provides functionality of working with accounts
 type Repository struct {
 	repository.Repository
+	rbacRepo prbac.Repository
 }
 
 // New account repository
 func New() *Repository {
-	return &Repository{}
+	return &Repository{
+		rbacRepo: reporbac.New(),
+	}
 }
 
 // Get returns account model by ID
@@ -126,43 +131,46 @@ func (r *Repository) Delete(ctx context.Context, id uint64) error {
 	return r.Master(ctx).Model((*model.Account)(nil)).Delete(`id=?`, id).Error
 }
 
-// FetchMembers returns the list of members from account
-func (r *Repository) FetchMembers(ctx context.Context, accountObj *model.Account) ([]*model.AccountMember, error) {
+// FetchListMembers returns the list of members from account
+func (r *Repository) FetchListMembers(ctx context.Context, filter *account.MemberFilter, order *account.MemberListOrder, pagination *repository.Pagination) ([]*model.AccountMember, error) {
 	var (
 		list  []*model.AccountMember
 		query = r.Slave(ctx).Model((*model.AccountMember)(nil))
 	)
-	if accountObj != nil {
-		query = query.Where(`id=?`, accountObj.ID)
-	}
+	query = filter.PrepareQuery(query)
+	query = order.PrepareQuery(query)
+	query = pagination.PrepareQuery(query)
+	query = query.Preload(clause.Associations)
 	err := query.Find(&list).Error
 	return list, err
 }
 
-// FetchMemberUsers returns the list of members from account
-func (r *Repository) FetchMemberUsers(ctx context.Context, accountObj *model.Account) ([]*model.AccountMember, []*model.User, error) {
+// CountMembers returns the count of members from account
+func (r *Repository) CountMembers(ctx context.Context, filter *account.MemberFilter) (int64, error) {
 	var (
-		userIDs      []uint64
-		users        []*model.User
-		members, err = r.FetchMembers(ctx, accountObj)
+		count int64
+		err   = filter.PrepareQuery(
+			r.Slave(ctx).Model((*model.AccountMember)(nil)),
+		).Count(&count).Error
 	)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	userIDs = xtypes.SliceApply(members, func(m *model.AccountMember) uint64 { return m.UserID })
-	err = r.Slave(ctx).Model((*model.User)(nil)).Where(`id IN (?)`, userIDs).Find(&users).Error
-
-	return members, users, err
+	return count, err
 }
 
 // Member returns the member object by account and user
 func (r *Repository) Member(ctx context.Context, userID, accountID uint64) (*model.AccountMember, error) {
-	if accountID == 0 || userID == 0 {
-		return nil, nil
-	}
+	return r.memberByQuery(ctx, `account_id=? AND user_id=?`, accountID, userID)
+}
+
+// MemberByID returns the member object by ID
+func (r *Repository) MemberByID(ctx context.Context, id uint64) (*model.AccountMember, error) {
+	return r.memberByQuery(ctx, `id=?`, id)
+}
+
+func (r *Repository) memberByQuery(ctx context.Context, query ...any) (*model.AccountMember, error) {
 	var member model.AccountMember
-	err := r.Slave(ctx).Find(&member, `account_id=? AND user_id=?`, accountID, userID).Error
+	err := r.Slave(ctx).
+		Preload(clause.Associations).
+		Find(&member, query...).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) || member.ID == 0 {
 		return nil, nil
 	}
@@ -174,14 +182,25 @@ func (r *Repository) Member(ctx context.Context, userID, accountID uint64) (*mod
 
 // IsMember check the user if linked to account
 func (r *Repository) IsMember(ctx context.Context, userID, accountID uint64) bool {
-	member, err := r.Member(ctx, userID, accountID)
-	return err == nil && member != nil
+	count, _ := r.CountMembers(ctx, &account.MemberFilter{
+		UserID:    []uint64{userID},
+		AccountID: []uint64{accountID},
+	})
+	return count > 0
 }
 
 // IsAdmin check the user if linked to account as admin
 func (r *Repository) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
-	member, err := r.Member(ctx, userID, accountID)
-	return err == nil && member != nil && member.IsAdmin
+	if accountID == 0 || userID == 0 {
+		return false
+	}
+	var member model.AccountMember
+	err := r.Slave(ctx).
+		Find(&member, `account_id=? AND user_id=?`, accountID, userID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) || member.ID == 0 {
+		return false
+	}
+	return err == nil && member.IsAdmin
 }
 
 // LinkMember into account
@@ -213,4 +232,23 @@ func (r *Repository) UnlinkMember(ctx context.Context, accountObj *model.Account
 		ids = append(ids, user.ID)
 	}
 	return r.Master(ctx).Model((*model.AccountMember)(nil)).Delete(`id=ANY(?)`, ids).Error
+}
+
+// SetMemberRoles into account
+func (r *Repository) SetMemberRoles(ctx context.Context, accountObj *model.Account, member *model.User, roles ...string) error {
+	var (
+		listRoles      []*model.Role
+		memberObj, err = r.Member(ctx, member.ID, accountObj.ID)
+	)
+	if err != nil {
+		return err
+	}
+	if len(roles) > 0 {
+		if listRoles, err = r.rbacRepo.FetchList(ctx, &prbac.Filter{Names: roles}, nil, nil); err != nil {
+			return err
+		}
+	}
+	memberObj.IsAdmin = xtypes.Slice[string](roles).Has(func(v string) bool { return v == "admin" })
+	memberObj.Roles = listRoles
+	return r.Master(ctx).Save(memberObj).Error
 }

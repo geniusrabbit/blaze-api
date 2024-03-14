@@ -15,11 +15,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	"github.com/geniusrabbit/blaze-api/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/auth/oauth2/serverprovider"
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
-	"github.com/geniusrabbit/blaze-api/jwt"
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/oauth2srvprovider"
 	accountRepository "github.com/geniusrabbit/blaze-api/repository/account/repository"
 	userRepository "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
@@ -131,7 +131,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 	}()
 
 	if !testMode {
-		oauth2Ctx := oauth2srvprovider.NewContext(ctx)
+		oauth2Ctx := serverprovider.NewContext(ctx)
 		tokenType, accessReq, errToken := oauth2provider.IntrospectToken(
 			oauth2Ctx, token, fosite.AccessToken,
 			&fosite.DefaultSession{})
@@ -141,7 +141,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 		if tokenType != fosite.AccessToken {
 			return nil, errAccessTokensOnlyAllows
 		}
-		session := accessReq.GetSession().(*oauth2srvprovider.Session)
+		session := accessReq.GetSession().(*serverprovider.Session)
 		users := userRepository.New()
 		userObj, accountObj, err = users.GetByToken(ctx, session.AccessToken)
 	} else {

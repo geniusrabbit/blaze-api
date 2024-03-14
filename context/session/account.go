@@ -47,7 +47,7 @@ func WithAnonymousUserAccount(ctx context.Context) context.Context {
 // nolint:unused // ...
 func WithUserAccountDevelop(ctx context.Context) context.Context {
 	manager := permissions.NewTestManager(ctx)
-	role, _ := manager.RoleByID(ctx, 1) // INFO: Assume that there is no error because of this is the test manager
+	role := manager.Role(ctx, `test`) // INFO: Assume that there is no error because of this is the test manager
 	ctx = WithUserAccount(ctx,
 		&model.User{ID: 1},
 		&model.Account{ID: 1, Permissions: role, Admins: []uint64{1}},

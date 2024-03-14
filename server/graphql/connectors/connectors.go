@@ -151,6 +151,29 @@ func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *
 	}, page)
 }
 
+// MemberConnection implements collection accessor interface with pagination
+type MemberConnection = CollectionConnection[gqlmodels.Member, gqlmodels.MemberEdge]
+
+// NewMemberConnection based on query object
+func NewMemberConnection(ctx context.Context, accountsAccessor account.Usecase, filter *gqlmodels.MemberListFilter, order *gqlmodels.MemberListOrder, page *gqlmodels.Page) *MemberConnection {
+	return NewCollectionConnection(ctx, &DataAccessorFunc[gqlmodels.Member, gqlmodels.MemberEdge]{
+		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Member, error) {
+			members, err := accountsAccessor.FetchListMembers(ctx,
+				filter.Filter(), order.Order(), page.Pagination())
+			return gqlmodels.FromMemberModelList(members), err
+		},
+		CountDataFunc: func(ctx context.Context) (int64, error) {
+			return accountsAccessor.CountMembers(ctx, filter.Filter())
+		},
+		ConvertToEdgeFunc: func(obj *gqlmodels.Member) *gqlmodels.MemberEdge {
+			return &gqlmodels.MemberEdge{
+				Cursor: gocast.Str(obj.ID),
+				Node:   obj,
+			}
+		},
+	}, page)
+}
+
 // HistoryActionConnection implements collection accessor interface with pagination
 type HistoryActionConnection = CollectionConnection[gqlmodels.HistoryAction, gqlmodels.HistoryActionEdge]
 

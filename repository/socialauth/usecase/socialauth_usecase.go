@@ -7,8 +7,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/acl"
+	"github.com/geniusrabbit/blaze-api/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/context/database"
-	"github.com/geniusrabbit/blaze-api/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 	"github.com/geniusrabbit/blaze-api/repository/user"

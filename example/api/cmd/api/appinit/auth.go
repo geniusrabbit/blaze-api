@@ -10,13 +10,13 @@ import (
 	"github.com/ory/fosite/compose"
 	"gorm.io/gorm"
 
+	"github.com/geniusrabbit/blaze-api/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/auth/oauth2/serverprovider"
 	"github.com/geniusrabbit/blaze-api/cache"
 	"github.com/geniusrabbit/blaze-api/cache/dummy"
 	"github.com/geniusrabbit/blaze-api/cache/memory"
 	"github.com/geniusrabbit/blaze-api/cache/redis"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
-	"github.com/geniusrabbit/blaze-api/jwt"
-	"github.com/geniusrabbit/blaze-api/oauth2srvprovider"
 	user_repository "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
 
@@ -32,13 +32,13 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 	}
 	sessionCache := newCache(ctx, conf.OAuth2.CacheConnect, conf.OAuth2.CacheLifetime)
 	userRepository := user_repository.New()
-	oauth2storage := oauth2srvprovider.NewDatabaseStorage(
+	oauth2storage := serverprovider.NewDatabaseStorage(
 		masterDatabase,
 		userRepository,
 		sessionCache,
 		conf.OAuth2.CacheLifetime,
 	)
-	oauth2provider := oauth2srvprovider.NewProvider(
+	oauth2provider := serverprovider.NewProvider(
 		oauth2config,
 		oauth2storage,
 		&compose.CommonStrategy{

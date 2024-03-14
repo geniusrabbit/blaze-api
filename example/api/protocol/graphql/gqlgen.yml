@@ -80,6 +80,8 @@ models:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.UserConnection
   AccountConnection:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AccountConnection
+  MemberConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.MemberConnection
   SocialAccountConnection:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.SocialAccountConnection
   RBACRoleConnection:

@@ -15,10 +15,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/acl"
+	"github.com/geniusrabbit/blaze-api/auth/elogin"
+	"github.com/geniusrabbit/blaze-api/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
-	"github.com/geniusrabbit/blaze-api/elogin"
-	"github.com/geniusrabbit/blaze-api/jwt"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"

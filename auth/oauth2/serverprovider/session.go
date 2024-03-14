@@ -1,4 +1,4 @@
-package oauth2srvprovider
+package serverprovider
 
 import (
 	"context"

@@ -125,16 +125,35 @@ func (s *testSuite) TestDelete() {
 	s.NoError(err)
 }
 
-func (s *testSuite) TestFetchMembers() {
-	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(1).
+func (s *testSuite) TestFetchListMembers() {
+	s.Mock.ExpectQuery(`SELECT \* FROM "account_member"`).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "user_id", "account_id", "created_at"}).
 				AddRow(1, 1, 101, 1, time.Now()).
 				AddRow(2, 1, 102, 1, time.Now()),
 		)
-	account := &model.Account{ID: 1}
-	members, err := s.accountRepo.FetchMembers(s.Ctx, account)
+	s.Mock.ExpectQuery(`SELECT \* FROM "account_base"`).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "approve_status", "title", "description", "updated_at", "created_at"}).
+				AddRow(1, 1, "title", "desc", time.Now(), time.Now()),
+		)
+	s.Mock.ExpectQuery(`SELECT \* FROM "m2m_account_member_role"`).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"member_id", "role_id", "created_at"}).
+				AddRow(1, 1, time.Now()),
+		)
+	s.Mock.ExpectQuery(`SELECT \* FROM "rbac_role"`).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "name", "created_at"}).
+				AddRow(1, `test`, time.Now()),
+		)
+	s.Mock.ExpectQuery(`SELECT \* FROM "account_user"`).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "approve_status", "email", "created_at"}).
+				AddRow(101, 1, "mail@", time.Now()).
+				AddRow(102, 1, "mail@", time.Now()),
+		)
+	members, err := s.accountRepo.FetchListMembers(s.Ctx, nil, nil, nil)
 	s.NoError(err)
 	s.Equal(2, len(members))
 }

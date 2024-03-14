@@ -104,7 +104,7 @@ func (s *testSuite) TestStore() {
 	s.Equal(id, uint64(101))
 }
 
-func (s *testSuite) Test_Update() {
+func (s *testSuite) TestUpdate() {
 	s.accountRepo.EXPECT().
 		Update(s.ctx, uint64(101), gomock.AssignableToTypeOf(&model.Account{})).
 		Return(nil)
@@ -123,16 +123,23 @@ func (s *testSuite) TestDelete() {
 }
 
 func (s *testSuite) TestDeleteNotFound() {
+	s.accountRepo.EXPECT().
+		Get(s.ctx, uint64(9999)).
+		Return(nil, sql.ErrNoRows)
 	err := s.accountUsecase.Delete(s.ctx, 9999)
 	s.EqualError(err, sql.ErrNoRows.Error())
 }
 
-func (s *testSuite) TestFetchMembers() {
+func (s *testSuite) TestFetchListMembers() {
 	s.accountRepo.EXPECT().
-		FetchMembers(s.ctx, gomock.AssignableToTypeOf(&model.Account{})).
+		FetchListMembers(s.ctx, gomock.AssignableToTypeOf(account.MemberListOption(nil)), nil, nil).
 		Return([]*model.AccountMember{{ID: 1}, {ID: 2}}, nil)
 
-	members, err := s.accountUsecase.FetchMembers(s.ctx, &model.Account{ID: 101})
+	members, err := s.accountUsecase.FetchListMembers(s.ctx,
+		&account.MemberFilter{AccountID: []uint64{1}, UserID: []uint64{1, 2}},
+		nil, nil,
+	)
+
 	s.NoError(err)
 	s.Equal(2, len(members))
 }

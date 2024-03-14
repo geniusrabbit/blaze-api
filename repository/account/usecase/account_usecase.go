@@ -3,7 +3,7 @@ package usecase
 
 import (
 	"context"
-	"database/sql"
+	"slices"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -141,7 +141,7 @@ func (a *AccountUsecase) Register(ctx context.Context, ownerObj *model.User, acc
 
 // Delete delites record by ID
 func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
-	accountObj, err := a.getAccountByID(ctx, id)
+	accountObj, err := a.Get(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -151,34 +151,24 @@ func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
 	return a.accountRepo.Delete(ctx, id)
 }
 
-func (a *AccountUsecase) getAccountByID(ctx context.Context, id uint64) (*model.Account, error) {
-	_, currentAccount := session.UserAccount(ctx)
-	if currentAccount.ID == id {
-		return currentAccount, nil
+// FetchListMembers returns the list of members from account
+func (a *AccountUsecase) FetchListMembers(ctx context.Context, filter *account.MemberFilter, order *account.MemberListOrder, pagination *repository.Pagination) (_ []*model.AccountMember, err error) {
+	if !acl.HaveAccessList(ctx, &model.AccountMember{}) {
+		if filter, err = adjustMemberListFilter(ctx, "list", filter); err != nil {
+			return nil, err
+		}
 	}
-	return nil, sql.ErrNoRows
+	return a.accountRepo.FetchListMembers(ctx, filter, order, pagination)
 }
 
-// FetchMembers returns the list of members from account
-func (a *AccountUsecase) FetchMembers(ctx context.Context, accountObj *model.Account) ([]*model.AccountMember, error) {
-	if !acl.HaveAccessView(ctx, accountObj) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view account")
+// CountMembers returns the count of members from account
+func (a *AccountUsecase) CountMembers(ctx context.Context, filter *account.MemberFilter) (_ int64, err error) {
+	if !acl.HaveAccessCount(ctx, &model.AccountMember{}) {
+		if filter, err = adjustMemberListFilter(ctx, "count", filter); err != nil {
+			return 0, err
+		}
 	}
-	if !acl.HaveAccessList(ctx, &model.AccountMember{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list member account")
-	}
-	return a.accountRepo.FetchMembers(ctx, accountObj)
-}
-
-// FetchMemberUsers returns the list of members from account
-func (a *AccountUsecase) FetchMemberUsers(ctx context.Context, accountObj *model.Account) ([]*model.AccountMember, []*model.User, error) {
-	if !acl.HaveAccessView(ctx, accountObj) {
-		return nil, nil, errors.Wrap(acl.ErrNoPermissions, "view account")
-	}
-	if !acl.HaveAccessList(ctx, &model.AccountMember{}) {
-		return nil, nil, errors.Wrap(acl.ErrNoPermissions, "list member account")
-	}
-	return a.accountRepo.FetchMemberUsers(ctx, accountObj)
+	return a.accountRepo.CountMembers(ctx, filter)
 }
 
 // LinkMember into account
@@ -197,15 +187,81 @@ func (a *AccountUsecase) UnlinkMember(ctx context.Context, accountObj *model.Acc
 	if len(members) == 0 {
 		return nil
 	}
-	if !acl.HaveAccessView(ctx, accountObj) {
-		return errors.Wrap(acl.ErrNoPermissions, "view member account")
-	}
 	for _, member := range members {
-		if !acl.HaveAccessDelete(ctx, member) {
+		if !acl.HaveAccessDelete(ctx, &model.AccountMember{AccountID: accountObj.ID, UserID: member.ID}) {
 			return errors.Wrap(acl.ErrNoPermissions, "delete member account")
 		}
 	}
 	return a.accountRepo.UnlinkMember(ctx, accountObj, members...)
+}
+
+// UnlinkAccountMember from the account
+func (a *AccountUsecase) UnlinkAccountMember(ctx context.Context, memberID uint64) error {
+	member, err := a.accountRepo.MemberByID(ctx, memberID)
+	if err != nil {
+		return err
+	}
+	return a.accountRepo.UnlinkMember(ctx, member.Account, member.User)
+}
+
+// InviteMember into account by email
+func (a *AccountUsecase) InviteMember(ctx context.Context, accountID uint64, email string, roles ...string) (*model.AccountMember, error) {
+	// Check permissions for the account object `invite`
+	if !acl.HaveObjectPermissions(ctx, &model.AccountMember{AccountID: accountID}, `invite`) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "invite member account")
+	}
+	// Get account by ID
+	account, err := a.Get(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	// Get user by email
+	usr, err := a.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	// Link the user to the account as member
+	if err = a.accountRepo.LinkMember(ctx, account, slices.Contains(roles, "admin"), usr); err != nil {
+		return nil, err
+	}
+	// Set roles for the member
+	if err = a.accountRepo.SetMemberRoles(ctx, account, usr, roles...); err != nil {
+		return nil, err
+	}
+	// Return the member object
+	member, err := a.accountRepo.Member(ctx, usr.ID, account.ID)
+	if err != nil {
+		return nil, err
+	}
+	// Check permissions for the member object `view`
+	if !acl.HaveAccessView(ctx, member) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "view member account")
+	}
+	return member, nil
+}
+
+// SetAccountMemeberRoles into account
+func (a *AccountUsecase) SetAccountMemeberRoles(ctx context.Context, accountID, userID uint64, roles ...string) (*model.AccountMember, error) {
+	memeber, err := a.accountRepo.Member(ctx, userID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set`) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
+	}
+	return memeber, a.accountRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
+}
+
+// SetMemberRoles into account
+func (a *AccountUsecase) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*model.AccountMember, error) {
+	memeber, err := a.accountRepo.MemberByID(ctx, memberID)
+	if err != nil {
+		return nil, err
+	}
+	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set`) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
+	}
+	return memeber, a.accountRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
 }
 
 func adjustListFilter(ctx context.Context, filter *account.Filter) (*account.Filter, error) {
@@ -217,6 +273,20 @@ func adjustListFilter(ctx context.Context, filter *account.Filter) (*account.Fil
 	}
 	if len(filter.UserID) != 1 || filter.UserID[0] != usr.ID {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account (too wide filter)")
+	}
+	return filter, nil
+}
+
+func adjustMemberListFilter(ctx context.Context, action string, filter *account.MemberFilter) (*account.MemberFilter, error) {
+	if filter == nil {
+		filter = &account.MemberFilter{
+			AccountID: []uint64{session.Account(ctx).ID},
+		}
+	} else {
+		if l := len(filter.AccountID); l > 1 || (l == 1 && filter.AccountID[0] != session.Account(ctx).ID) {
+			return nil, errors.Wrap(acl.ErrNoPermissions, action+" member account for that account")
+		}
+		filter.AccountID = append(filter.AccountID[:0], session.Account(ctx).ID)
 	}
 	return filter, nil
 }

@@ -20,11 +20,13 @@ func (member *M2MAccountMemberRole) TableName() string {
 
 // AccountMember contains reference from user to account as memeber
 type AccountMember struct {
-	ID      uint64        `db:"id"`
+	ID      uint64        `db:"id" gorm:"primaryKey"`
 	Approve ApproveStatus `db:"approve_status" gorm:"column:approve_status"`
 
-	AccountID uint64 `db:"account_id"`
-	UserID    uint64 `db:"user_id"`
+	AccountID uint64   `db:"account_id"`
+	Account   *Account `db:"-" gorm:"foreignKey:AccountID;references:ID"`
+	UserID    uint64   `db:"user_id"`
+	User      *User    `db:"-" gorm:"foreignKey:UserID;references:ID"`
 
 	// Superuser permissions for the current account
 	// Despite of that optinion that better to use roles as the only way of permission issue
@@ -32,6 +34,9 @@ type AccountMember struct {
 	//   permission updates.
 	// Admin permission restricted by some limits which available only to superusers and managers.
 	IsAdmin bool `db:"is_admin"`
+
+	// Roles of the member
+	Roles []*Role `gorm:"many2many:m2m_account_member_role;foreignKey:ID;joinForeignKey:MemberID;references:ID;joinReferences:RoleID"`
 
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`
@@ -43,15 +48,11 @@ func (member *AccountMember) TableName() string {
 	return `account_member`
 }
 
-func (member *AccountMember) CreatorUserID() uint64 {
-	return member.UserID
-}
-
 func (member *AccountMember) OwnerAccountID() uint64 {
 	return member.AccountID
 }
 
 // RBACResourceName returns the name of the resource for the RBAC
 func (member *AccountMember) RBACResourceName() string {
-	return "accmember"
+	return "account.member"
 }

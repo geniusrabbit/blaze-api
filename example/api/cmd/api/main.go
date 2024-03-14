@@ -13,10 +13,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
+	"github.com/geniusrabbit/blaze-api/auth/elogin/facebook"
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/version"
 	"github.com/geniusrabbit/blaze-api/database"
-	"github.com/geniusrabbit/blaze-api/elogin/facebook"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/migratedb"

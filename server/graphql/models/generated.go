@@ -264,6 +264,77 @@ type HistoryActionPayload struct {
 	Action *HistoryAction `json:"action"`
 }
 
+type InviteMemberInput struct {
+	// The email of the member to invite
+	Email string `json:"email"`
+	// The roles to assign to the member
+	Roles []string `json:"roles"`
+	// Is the user an admin of the account
+	IsAdmin bool `json:"isAdmin"`
+}
+
+// Account Member represents a member of the account
+type Member struct {
+	// The primary key of the Member
+	ID uint64 `json:"ID"`
+	// Status of Member active
+	Status ApproveStatus `json:"status"`
+	// User object accessor
+	User *User `json:"user"`
+	// Account object accessor
+	Account *Account `json:"account"`
+	// Is the user an admin of the account
+	IsAdmin bool `json:"isAdmin"`
+	// Roles of the member
+	Roles     []*RBACRole `json:"roles,omitempty"`
+	CreatedAt time.Time   `json:"createdAt"`
+	UpdatedAt time.Time   `json:"updatedAt"`
+	DeletedAt *time.Time  `json:"deletedAt,omitempty"`
+}
+
+type MemberEdge struct {
+	// A cursor for use in pagination.
+	Cursor string `json:"cursor"`
+	// The item at the end of the edge.
+	Node *Member `json:"node,omitempty"`
+}
+
+type MemberInput struct {
+	// The user ID of the member to invite
+	UserID string `json:"userID"`
+	// The roles to assign to the member
+	Roles []string `json:"roles"`
+	// Is the user an admin of the account
+	IsAdmin bool `json:"isAdmin"`
+}
+
+type MemberListFilter struct {
+	ID        []uint64        `json:"ID,omitempty"`
+	Status    []ApproveStatus `json:"status,omitempty"`
+	UserID    []uint64        `json:"userID,omitempty"`
+	AccountID []uint64        `json:"accountID,omitempty"`
+	IsAdmin   *bool           `json:"isAdmin,omitempty"`
+}
+
+type MemberListOrder struct {
+	ID        *Ordering `json:"ID,omitempty"`
+	Status    *Ordering `json:"status,omitempty"`
+	UserID    *Ordering `json:"userID,omitempty"`
+	AccountID *Ordering `json:"accountID,omitempty"`
+	IsAdmin   *Ordering `json:"isAdmin,omitempty"`
+	CreatedAt *Ordering `json:"createdAt,omitempty"`
+	UpdatedAt *Ordering `json:"updatedAt,omitempty"`
+}
+
+type MemberPayload struct {
+	// A unique identifier for the client performing the mutation.
+	ClientMutationID string `json:"clientMutationID"`
+	// Member ID operation result
+	MemberID uint64 `json:"memberID"`
+	// Member object accessor
+	Member *Member `json:"member,omitempty"`
+}
+
 type Mutation struct {
 }
 

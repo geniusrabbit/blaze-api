@@ -2,14 +2,14 @@ package graphql
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"os"
 	"strings"
 
-	"github.com/demdxx/sendmsg"
+	"go.uber.org/zap"
+
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
+	"github.com/geniusrabbit/blaze-api/messanger"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
@@ -19,7 +19,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
-	"go.uber.org/zap"
 )
 
 var (
@@ -28,8 +27,7 @@ var (
 
 // QueryResolver implements GQL API methods
 type QueryResolver struct {
-	accounts  account.Usecase
-	messanger sendmsg.Messanger
+	accounts account.Usecase
 }
 
 // NewQueryResolver returns new API resolver
@@ -84,30 +82,25 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 			userObj = &model.User{ID: *input.OwnerID}
 		}
 	}
-	json.NewEncoder(os.Stdout).Encode(input)
-	json.NewEncoder(os.Stdout).Encode(userObj)
-	json.NewEncoder(os.Stdout).Encode(accObj)
 
 	if _, err := r.accounts.Register(ctx, userObj, accObj, input.Password); err != nil {
 		return nil, err
 	}
 
 	// Send message to the account owner about the account creation (welcome message)
-	if r.messanger != nil {
-		err := r.messanger.Send(ctx,
-			sendmsg.WithTemplate("account.register"),
-			sendmsg.WithRecipients([]string{userObj.Email}, nil, nil),
-			sendmsg.WithVars(map[string]any{
-				"id":      accObj.ID,
-				"account": accObj,
-				"owner":   userObj,
-			}))
-		if err != nil {
-			ctxlogger.Get(ctx).Error("Failed to send message",
-				zap.String("template", "account.created"),
-				zap.Error(err))
-			return nil, err
-		}
+	err := messanger.Get(ctx).Send(ctx,
+		"account.register",
+		[]string{userObj.Email},
+		map[string]any{
+			"id":      accObj.ID,
+			"account": accObj,
+			"owner":   userObj,
+		})
+	if err != nil {
+		ctxlogger.Get(ctx).Error("Failed to send message",
+			zap.String("template", "account.created"),
+			zap.Error(err))
+		return nil, err
 	}
 
 	return &gqlmodels.AccountCreatePayload{
@@ -159,34 +152,35 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		return nil, err
 	}
 	acc.Approve = status
-	if _, err = r.accounts.Store(historylog.WithMessage(ctx, msg), acc); err != nil {
+	saveCtx := historylog.WithMessage(ctx, msg)
+	saveCtx = historylog.WithAction(saveCtx, strings.ToLower(status.String()))
+	if _, err = r.accounts.Store(saveCtx, acc); err != nil {
 		return nil, err
 	}
+
 	// Send message to the account owner
-	if r.messanger != nil {
+	if true {
 		// Get account owner
-		members, users, err := r.accounts.FetchMemberUsers(ctx, acc)
+		members, err := r.accounts.FetchListMembers(ctx,
+			&account.MemberFilter{AccountID: []uint64{acc.ID}}, nil, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		recipients := make([]string, 0, len(members))
-		for i, member := range members {
+		for _, member := range members {
 			if member.IsAdmin {
-				recipients = append(recipients, users[i].Email)
+				recipients = append(recipients, member.User.Email)
 			}
 		}
 
 		// Send message to the account owner about the account creation (welcome message)
 		tmplName := "account." + strings.ToLower(status.String())
-		err = r.messanger.Send(ctx,
-			sendmsg.WithTemplate(tmplName),
-			sendmsg.WithRecipients(recipients, nil, nil),
-			sendmsg.WithVars(map[string]any{
-				"id":      id,
-				"account": acc,
-				"status":  status,
-			}))
+		err = messanger.Get(ctx).Send(ctx, tmplName, recipients, map[string]any{
+			"id":      id,
+			"account": acc,
+			"status":  status,
+		})
 		if err != nil {
 			ctxlogger.Get(ctx).Error("Failed to send message",
 				zap.String("template", tmplName),

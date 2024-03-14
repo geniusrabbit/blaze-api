@@ -12,54 +12,65 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 )
 
+var (
+	crudPermissions = []string{
+		acl.PermView, acl.PermList, acl.PermCount, acl.PermUpdate, acl.PermCreate, acl.PermDelete,
+	}
+	crudPermissionsWithApprove = append(crudPermissions, acl.PermApprove, acl.PermReject)
+)
+
+const (
+	PermAccountRegister = `account.register`
+	PermPermissionList  = `permission.list`
+	PermUserResetPass   = `reset_password`
+	PermUserPassReset   = `password.reset`
+)
+
 // InitModelPermissions models
 func InitModelPermissions(pm *permissions.Manager) {
-	crudModels := []any{
+	// Register permission objects
+	acl.InitModelPermissions(pm,
 		&model.User{},
 		&model.Role{},
 		&model.AuthClient{},
-	}
-
-	acl.InitModelPermissions(pm,
-		append(crudModels,
-			&model.Account{},
-			&model.AccountMember{},
-			&model.AccountSocialSession{},
-			&model.AccountSocial{},
-			&model.HistoryAction{},
-			&model.Option{},
-		)...,
+		&model.Account{},
+		&model.AccountMember{},
+		&model.AccountSocialSession{},
+		&model.AccountSocial{},
+		&model.HistoryAction{},
+		&model.Option{},
 	)
 
-	// Register basic models CRUD permissions
-	for _, model := range crudModels {
-		_ = pm.RegisterNewOwningPermissions(model, []string{"view", "list", "count", "update", "create", "delete"})
-	}
-
-	// Extend user permissions
-	_ = pm.RegisterNewPermissions(&model.User{}, []string{"reset_password", "password.reset"})
-	_ = pm.RegisterNewOwningPermissions(&model.User{}, []string{"reset_password"})
+	// Register user permissions
+	_ = pm.RegisterNewPermissions(&model.User{}, []string{PermUserResetPass, PermUserPassReset})
+	_ = pm.RegisterNewOwningPermissions(&model.User{}, append(crudPermissions, PermUserPassReset, PermUserResetPass))
 
 	// Register basic models CRUD permissions for Account with member checks
-	_ = pm.RegisterNewOwningPermissions(&model.Account{},
-		[]string{"view", "list", "count", "update", "create", "delete", "approve", "reject"},
-		rbac.WithCustomCheck(accountCustomCheck),
-	)
+	_ = pm.RegisterNewOwningPermissions(&model.Account{}, crudPermissionsWithApprove, rbac.WithCustomCheck(accountCustomCheck))
+	_ = pm.RegisterNewPermission(nil, PermAccountRegister, rbac.WithoutCustomCheck)
 
-	// Extend account permissions
-	_ = pm.RegisterNewPermission(nil, "account.register", rbac.WithoutCustomCheck)
+	// Register basic roles permissions
+	_ = pm.RegisterNewOwningPermissions(&model.Role{}, crudPermissions)
+	_ = pm.RegisterNewPermission(nil, PermPermissionList)
+
+	// Register basic permissions for the AuthClient model
+	_ = pm.RegisterNewOwningPermissions(&model.AuthClient{}, crudPermissions)
+
+	// Register basic permissions for the AccountMember model
+	_ = pm.RegisterNewOwningPermissions(&model.AccountMember{}, crudPermissionsWithApprove)
+	_ = pm.RegisterNewPermissions(&model.AccountMember{}, []string{`roles.set`, `invite`})
+
+	// Register basic permissions for the HistoryAction model
+	_ = pm.RegisterNewOwningPermissions(&model.HistoryAction{}, []string{acl.PermView, acl.PermList, acl.PermCount})
 
 	// Register basic permissions for the Option model
-	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{"get", "set", "list", "count"})
-
-	// Register RBAC permissions
-	_ = pm.RegisterNewPermission(nil, "permission.list")
+	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{acl.PermGet, acl.PermSet, acl.PermList, acl.PermCount})
 
 	// Register anonymous role and fill permissions for it
 	pm.RegisterRole(context.Background(),
 		rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithPermissions(
 			`user.view.owner`, `user.reset_password`, `user.reset_password.*`, `user.password.reset`,
-			`account.view.owner`, `account.register`,
+			`account.view.owner`, PermAccountRegister,
 		)),
 	)
 }

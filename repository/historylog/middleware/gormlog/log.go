@@ -67,7 +67,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 		err := db.Create(&model.HistoryAction{
 			ID:         uuid.New(),
 			RequestID:  requestid.Get(ctx),
-			Name:       name,
+			Name:       gocast.Or(historylog.ActionFromContext(ctx), name),
 			Message:    historylog.MessageFromContext(ctx),
 			UserID:     user.ID,
 			AccountID:  acc.ID,

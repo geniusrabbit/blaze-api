@@ -52,6 +52,21 @@ func (mr *MockUsecaseMockRecorder) Count(ctx, filter interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), ctx, filter)
 }
 
+// CountMembers mocks base method.
+func (m *MockUsecase) CountMembers(ctx context.Context, filter *account.MemberFilter) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountMembers", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountMembers indicates an expected call of CountMembers.
+func (mr *MockUsecaseMockRecorder) CountMembers(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockUsecase)(nil).CountMembers), ctx, filter)
+}
+
 // Delete mocks base method.
 func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
 	m.ctrl.T.Helper()
@@ -81,35 +96,19 @@ func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter, order, pagination inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter, order, pagination)
 }
 
-// FetchMemberUsers mocks base method.
-func (m *MockUsecase) FetchMemberUsers(ctx context.Context, account *model.Account) ([]*model.AccountMember, []*model.User, error) {
+// FetchListMembers mocks base method.
+func (m *MockUsecase) FetchListMembers(ctx context.Context, filter *account.MemberFilter, order *account.MemberListOrder, pagination *repository.Pagination) ([]*model.AccountMember, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchMemberUsers", ctx, account)
-	ret0, _ := ret[0].([]*model.AccountMember)
-	ret1, _ := ret[1].([]*model.User)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// FetchMemberUsers indicates an expected call of FetchMemberUsers.
-func (mr *MockUsecaseMockRecorder) FetchMemberUsers(ctx, account interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchMemberUsers", reflect.TypeOf((*MockUsecase)(nil).FetchMemberUsers), ctx, account)
-}
-
-// FetchMembers mocks base method.
-func (m *MockUsecase) FetchMembers(ctx context.Context, account *model.Account) ([]*model.AccountMember, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchMembers", ctx, account)
+	ret := m.ctrl.Call(m, "FetchListMembers", ctx, filter, order, pagination)
 	ret0, _ := ret[0].([]*model.AccountMember)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FetchMembers indicates an expected call of FetchMembers.
-func (mr *MockUsecaseMockRecorder) FetchMembers(ctx, account interface{}) *gomock.Call {
+// FetchListMembers indicates an expected call of FetchListMembers.
+func (mr *MockUsecaseMockRecorder) FetchListMembers(ctx, filter, order, pagination interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchMembers", reflect.TypeOf((*MockUsecase)(nil).FetchMembers), ctx, account)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockUsecase)(nil).FetchListMembers), ctx, filter, order, pagination)
 }
 
 // Get mocks base method.
@@ -140,6 +139,26 @@ func (m *MockUsecase) GetByTitle(ctx context.Context, title string) (*model.Acco
 func (mr *MockUsecaseMockRecorder) GetByTitle(ctx, title interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTitle", reflect.TypeOf((*MockUsecase)(nil).GetByTitle), ctx, title)
+}
+
+// InviteMember mocks base method.
+func (m *MockUsecase) InviteMember(ctx context.Context, accountID uint64, email string, roles ...string) (*model.AccountMember, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, accountID, email}
+	for _, a := range roles {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "InviteMember", varargs...)
+	ret0, _ := ret[0].(*model.AccountMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InviteMember indicates an expected call of InviteMember.
+func (mr *MockUsecaseMockRecorder) InviteMember(ctx, accountID, email interface{}, roles ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, accountID, email}, roles...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteMember", reflect.TypeOf((*MockUsecase)(nil).InviteMember), varargs...)
 }
 
 // LinkMember mocks base method.
@@ -176,6 +195,46 @@ func (mr *MockUsecaseMockRecorder) Register(ctx, ownerObj, accountObj, password 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockUsecase)(nil).Register), ctx, ownerObj, accountObj, password)
 }
 
+// SetAccountMemeberRoles mocks base method.
+func (m *MockUsecase) SetAccountMemeberRoles(ctx context.Context, accountID, userID uint64, roles ...string) (*model.AccountMember, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, accountID, userID}
+	for _, a := range roles {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetAccountMemeberRoles", varargs...)
+	ret0, _ := ret[0].(*model.AccountMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetAccountMemeberRoles indicates an expected call of SetAccountMemeberRoles.
+func (mr *MockUsecaseMockRecorder) SetAccountMemeberRoles(ctx, accountID, userID interface{}, roles ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, accountID, userID}, roles...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAccountMemeberRoles", reflect.TypeOf((*MockUsecase)(nil).SetAccountMemeberRoles), varargs...)
+}
+
+// SetMemberRoles mocks base method.
+func (m *MockUsecase) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*model.AccountMember, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, memberID}
+	for _, a := range roles {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetMemberRoles", varargs...)
+	ret0, _ := ret[0].(*model.AccountMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetMemberRoles indicates an expected call of SetMemberRoles.
+func (mr *MockUsecaseMockRecorder) SetMemberRoles(ctx, memberID interface{}, roles ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, memberID}, roles...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMemberRoles", reflect.TypeOf((*MockUsecase)(nil).SetMemberRoles), varargs...)
+}
+
 // Store mocks base method.
 func (m *MockUsecase) Store(ctx context.Context, account *model.Account) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -189,6 +248,20 @@ func (m *MockUsecase) Store(ctx context.Context, account *model.Account) (uint64
 func (mr *MockUsecaseMockRecorder) Store(ctx, account interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockUsecase)(nil).Store), ctx, account)
+}
+
+// UnlinkAccountMember mocks base method.
+func (m *MockUsecase) UnlinkAccountMember(ctx context.Context, memberID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkAccountMember", ctx, memberID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkAccountMember indicates an expected call of UnlinkAccountMember.
+func (mr *MockUsecaseMockRecorder) UnlinkAccountMember(ctx, memberID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkAccountMember", reflect.TypeOf((*MockUsecase)(nil).UnlinkAccountMember), ctx, memberID)
 }
 
 // UnlinkMember mocks base method.

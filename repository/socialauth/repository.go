@@ -5,7 +5,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/elogin"
+	"github.com/geniusrabbit/blaze-api/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
 )
 
