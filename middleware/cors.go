@@ -23,6 +23,6 @@ func AllowCORS(h http.Handler) http.Handler {
 // CORS from any origin using the methods "GET", "HEAD", "POST", "PUT", "DELETE"
 // We insist, don't do this without consideration in production systems.
 func preflightHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Accept,Authorization")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Accept,Authorization,X-Tunnel-Authorization")
 	w.Header().Set("Access-Control-Allow-Methods", "GET,HEAD,POST,PUT,DELETE")
 }
