@@ -49,6 +49,9 @@ func (fl *AccountListFilter) Filter() *account.Filter {
 
 // Model converts local graphql model to model
 func (acc *AccountInput) Model(appStatus ...model.ApproveStatus) *model.Account {
+	if acc == nil {
+		return nil
+	}
 	var status model.ApproveStatus
 	if len(appStatus) == 0 {
 		status = acc.Status.ModelStatus()

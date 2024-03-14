@@ -33,10 +33,6 @@ func NewAccountUsecase(userRepo user.Repository, accountRepo account.Repository)
 
 // Get returns the group by ID if have access
 func (a *AccountUsecase) Get(ctx context.Context, id uint64) (*model.Account, error) {
-	_, currentAccount := session.UserAccount(ctx)
-	if currentAccount.ID == id {
-		return currentAccount, nil
-	}
 	accountObj, err := a.accountRepo.Get(ctx, id)
 	if err != nil {
 		return nil, err

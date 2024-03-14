@@ -25,8 +25,11 @@ import "github.com/geniusrabbit/blaze-api/model"
 // }
 
 // ModelStatus returns status type from models
-func (status ApproveStatus) ModelStatus() model.ApproveStatus {
-	switch status {
+func (status *ApproveStatus) ModelStatus() model.ApproveStatus {
+	if status == nil {
+		return model.UndefinedApproveStatus
+	}
+	switch *status {
 	case ApproveStatusApproved:
 		return model.ApprovedApproveStatus
 	case ApproveStatusRejected:
@@ -36,8 +39,11 @@ func (status ApproveStatus) ModelStatus() model.ApproveStatus {
 }
 
 // ModelStatus returns status type from models
-func (status AvailableStatus) ModelStatus() model.AvailableStatus {
-	switch status {
+func (status *AvailableStatus) ModelStatus() model.AvailableStatus {
+	if status == nil {
+		return model.UndefinedAvailableStatus
+	}
+	switch *status {
 	case AvailableStatusAvailable:
 		return model.AvailableAvailableStatus
 	case AvailableStatusUnavailable:
