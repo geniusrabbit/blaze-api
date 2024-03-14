@@ -167,6 +167,8 @@ models:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.UserConnection
   AccountConnection:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AccountConnection
+  MemberConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.MemberConnection
   RBACRoleConnection:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.RBACRoleConnection
   AuthClientConnection:
@@ -186,7 +188,6 @@ models:
 - [x] GraphQL API: Integrated GraphQL support for building flexible APIs.
 - [x] Support different databases (PostgreSQL, MySQL, SQLite, etc.)
 - [x] OAuth2 server and client support.
-- [ ] OAuth2 authorization code flow.
 - [x] RBAC: Role-Based Access Control (RBAC) for managing user permissions.
 - [x] JWT Authentication: Secure your API with JWT-based authentication.
 - [x] Object modification history log.

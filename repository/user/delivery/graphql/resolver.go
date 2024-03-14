@@ -112,7 +112,7 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 	if err != nil {
 		return nil, err
 	}
-	if messanger.Get(ctx) != nil {
+	if true {
 		msgName := "user." + strings.ToLower(status.String())
 		err = messanger.Get(ctx).Send(ctx, msgName, []string{}, map[string]any{})
 		if !errors.Is(err, sendmsg.ErrTemplateNotFound) {
@@ -134,7 +134,7 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 
 // ResetUserPassword is the resolver for the resetUserPassword field.
 func (r *QueryResolver) ResetUserPassword(ctx context.Context, email string) (*gqlmodels.StatusResponse, error) {
-	if messanger.Get(ctx) == nil {
+	if !messanger.Get(ctx).IsEnabled() {
 		// Messanger is required for sending emails otherwise no any sense to reset password
 		ctxlogger.Get(ctx).Error("Email service not configured")
 		return &gqlmodels.StatusResponse{

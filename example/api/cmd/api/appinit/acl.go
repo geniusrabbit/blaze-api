@@ -69,8 +69,9 @@ func InitModelPermissions(pm *permissions.Manager) {
 	// Register anonymous role and fill permissions for it
 	pm.RegisterRole(context.Background(),
 		rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithPermissions(
-			`user.view.owner`, `user.reset_password`, `user.reset_password.*`, `user.password.reset`,
-			`account.view.owner`, PermAccountRegister,
+			`user.view.owner`, `user.list.owner`, `user.count.owner`,
+			`user.reset_password`, `user.reset_password.*`, `user.password.reset`,
+			`account.view.owner`, `account.list.owner`, `account.count.owner`, PermAccountRegister,
 		)),
 	)
 }

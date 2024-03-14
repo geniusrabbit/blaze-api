@@ -59,12 +59,9 @@ type Provider struct {
 func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64) (string, time.Time, error) {
 	var (
 		err      error
-		lifetime = provider.TokenLifetime
+		lifetime = gocast.IfThen(provider.TokenLifetime == 0, provider.TokenLifetime, time.Hour)
 		expireAt = time.Now().Add(lifetime)
 	)
-	if lifetime == 0 {
-		lifetime = time.Hour
-	}
 	//Creating Access Token
 	atClaims := jwt.MapClaims{
 		claimUserID:    userID,
