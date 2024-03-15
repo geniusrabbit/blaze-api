@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"context"
+	"strings"
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/google/uuid"
@@ -86,12 +87,15 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID *s
 
 	perm := session.Account(ctx).CheckedPermissions(ctx, obj, name)
 	if perm != nil {
-		switch ext := perm.Ext().(type) {
-		case nil:
-		case *permissions.ExtData:
-			return &[]string{ext.Cover}[0], nil
+		if strings.HasSuffix(perm.Name(), ".all") || strings.HasSuffix(perm.Name(), ".system") {
+			return &[]string{"system"}[0], nil
+		} else if strings.HasSuffix(perm.Name(), ".account") {
+			return &[]string{"account"}[0], nil
+		} else if strings.HasSuffix(perm.Name(), ".owner") {
+			return &[]string{"owner"}[0], nil
+		} else {
+			return &[]string{"general"}[0], nil
 		}
-		return &[]string{"user"}[0], nil
 	}
 	return nil, nil
 }
