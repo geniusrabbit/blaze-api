@@ -45,19 +45,13 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 	}
 
 	for _, perm := range perms {
-		var (
-			index   = max(0, strings.Index(perm, "."))
-			objName = perm[:index]
-			newObj  any
-		)
-		if objName != `` {
-			newObj = ownedObject(ctx, pm.ObjectByName(objName), user, account)
-		}
+		objName, obj := objectByPermissionName(pm, perm)
+		newObj := ownedObject(ctx, obj, user, account)
 		if !account.CheckPermissions(ctx, newObj, perm) {
 			if user.IsAnonymous() {
 				return nil, errAuthorizationRequired
 			}
-			return nil, errors.Wrap(errAccessForbidden, objName+` [`+strings.Trim(perm[index:], `.`)+`]`)
+			return nil, errors.Wrap(errAccessForbidden, objName+` [`+strings.Trim(perm[len(objName):], `.`)+`]`)
 		}
 	}
 
@@ -105,4 +99,16 @@ func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Acco
 		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, user.ID)
 	}
 	return newObj
+}
+
+// ObjectByPermissionName returns object by permission name
+func objectByPermissionName(mng *permissions.Manager, name string) (string, any) {
+	for i := len(name) - 1; i > 0; i-- {
+		if name[i] == '.' {
+			if obj := mng.ObjectByName(name[:i]); obj != nil {
+				return name[:i], obj
+			}
+		}
+	}
+	return "", nil
 }

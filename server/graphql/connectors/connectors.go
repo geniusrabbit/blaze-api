@@ -160,7 +160,7 @@ func NewMemberConnection(ctx context.Context, accountsAccessor account.Usecase, 
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Member, error) {
 			members, err := accountsAccessor.FetchListMembers(ctx,
 				filter.Filter(), order.Order(), page.Pagination())
-			return gqlmodels.FromMemberModelList(members), err
+			return gqlmodels.FromMemberModelList(ctx, members), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
 			return accountsAccessor.CountMembers(ctx, filter.Filter())

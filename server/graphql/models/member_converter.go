@@ -1,6 +1,8 @@
 package models
 
 import (
+	"context"
+
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/blaze-api/model"
@@ -8,7 +10,7 @@ import (
 )
 
 // FromMemberModel to local graphql model
-func FromMemberModel(member *model.AccountMember) *Member {
+func FromMemberModel(ctx context.Context, member *model.AccountMember) *Member {
 	if member == nil {
 		return nil
 	}
@@ -17,13 +19,16 @@ func FromMemberModel(member *model.AccountMember) *Member {
 		Account:   FromAccountModel(gocast.Or(member.Account, &model.Account{ID: member.AccountID})),
 		User:      FromUserModel(gocast.Or(member.User, &model.User{ID: member.UserID})),
 		IsAdmin:   member.IsAdmin,
+		Roles:     FromRBACRoleModelList(ctx, member.Roles),
 		CreatedAt: member.CreatedAt,
 		UpdatedAt: member.UpdatedAt,
 	}
 }
 
-func FromMemberModelList(list []*model.AccountMember) []*Member {
-	return xtypes.SliceApply(list, FromMemberModel)
+func FromMemberModelList(ctx context.Context, list []*model.AccountMember) []*Member {
+	return xtypes.SliceApply(list, func(m *model.AccountMember) *Member {
+		return FromMemberModel(ctx, m)
+	})
 }
 
 func (fl *MemberListFilter) Filter() *account.MemberFilter {

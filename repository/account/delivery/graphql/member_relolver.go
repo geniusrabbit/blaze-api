@@ -32,7 +32,7 @@ func (r *MemberQueryResolver) Invite(ctx context.Context, accountID uint64, memb
 	return &models.MemberPayload{
 		ClientMutationID: requestid.Get(ctx),
 		MemberID:         accountID,
-		Member:           models.FromMemberModel(accountMember),
+		Member:           models.FromMemberModel(ctx, accountMember),
 	}, nil
 }
 
@@ -45,7 +45,7 @@ func (r *MemberQueryResolver) Update(ctx context.Context, memberID uint64, membe
 	return &models.MemberPayload{
 		ClientMutationID: requestid.Get(ctx),
 		MemberID:         memberID,
-		Member:           models.FromMemberModel(accountMember),
+		Member:           models.FromMemberModel(ctx, accountMember),
 	}, nil
 }
 
