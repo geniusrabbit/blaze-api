@@ -75,7 +75,7 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 	}
 	return &models.SessionToken{
 		Token:     token,
-		ExpiresAt: expiresAt,
+		ExpiresAt: expiresAt.UTC(),
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
 		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
 	}, nil

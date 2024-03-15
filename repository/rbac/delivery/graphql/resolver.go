@@ -15,7 +15,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
 	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -50,7 +49,7 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 }
 
 // Check the permission for the given role and target object
-func (r *QueryResolver) Check(ctx context.Context, name string, key *string, targetID *string) (*string, error) {
+func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID *string) (*string, error) {
 	var obj any
 	if key != nil {
 		obj = permissions.FromContext(ctx).ObjectByName(*key)
@@ -170,9 +169,9 @@ func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) 
 }
 
 // ListPermissions is the resolver for the listPermissions field.
-func (r *QueryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
+func (r *QueryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*gqlmodels.RBACPermission, error) {
 	list := permissions.FromContext(ctx).Permissions(patterns...)
-	return models.FromRBACPermissionModelList(list), nil
+	return gqlmodels.FromRBACPermissionModelList(list), nil
 }
 
 func valOrDef[T any](v *T, def T) T {

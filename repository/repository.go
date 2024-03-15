@@ -26,11 +26,13 @@ func (r *Repository) Logger(ctx context.Context) *zap.Logger {
 }
 
 // Slave returns readonly database connection
+// TODO: rename to ReadOnly
 func (r *Repository) Slave(ctx context.Context) *gorm.DB {
 	return database.Readonly(ctx).WithContext(ctx)
 }
 
 // Master returns master database executor
+// TODO: rename to Leader
 func (r *Repository) Master(ctx context.Context) *gorm.DB {
 	return database.ContextExecutor(ctx).WithContext(ctx)
 }

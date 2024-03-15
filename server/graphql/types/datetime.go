@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-const dateTimeFormat = "2006-01-02 15:04:05"
+const dateTimeFormat = "2006-01-02T15:04:05.999999999Z"
 
 // DateTime implements IO custom type of time with custom format
 type DateTime time.Time
