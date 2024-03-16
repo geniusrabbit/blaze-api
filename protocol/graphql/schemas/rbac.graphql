@@ -136,7 +136,7 @@ extend type Query {
   Check if the user has access to the particular role or permission.
   Returns the area of the access or null if access is denied.
   """
-  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: ["role.check"])
+  checkPermission(name: String!, key: String = null, targetID: String = null, idKey: String = null): String @hasPermissions(permissions: ["role.check"])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields

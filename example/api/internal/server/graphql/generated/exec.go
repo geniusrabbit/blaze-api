@@ -278,7 +278,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Account                        func(childComplexity int, id uint64) int
 		AuthClient                     func(childComplexity int, id string) int
-		CheckPermission                func(childComplexity int, name string, key *string, targetID *string) int
+		CheckPermission                func(childComplexity int, name string, key *string, targetID *string, idKey *string) int
 		CurrentAccount                 func(childComplexity int) int
 		CurrentSession                 func(childComplexity int) int
 		CurrentSocialAccounts          func(childComplexity int, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) int
@@ -477,7 +477,7 @@ type QueryResolver interface {
 	Option(ctx context.Context, name string, optionType models.OptionType, targetID uint64) (*models.OptionPayload, error)
 	ListOptions(ctx context.Context, filter *models.OptionListFilter, order *models.OptionListOrder, page *models.Page) (*connectors.CollectionConnection[models.Option, models.OptionEdge], error)
 	Role(ctx context.Context, id uint64) (*models.RBACRolePayload, error)
-	CheckPermission(ctx context.Context, name string, key *string, targetID *string) (*string, error)
+	CheckPermission(ctx context.Context, name string, key *string, targetID *string, idKey *string) (*string, error)
 	ListRoles(ctx context.Context, filter *models.RBACRoleListFilter, order *models.RBACRoleListOrder, page *models.Page) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error)
 	ListPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error)
 }
@@ -1689,7 +1689,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.CheckPermission(childComplexity, args["name"].(string), args["key"].(*string), args["targetID"].(*string)), true
+		return e.complexity.Query.CheckPermission(childComplexity, args["name"].(string), args["key"].(*string), args["targetID"].(*string), args["idKey"].(*string)), true
 
 	case "Query.currentAccount":
 		if e.complexity.Query.CurrentAccount == nil {
@@ -4255,7 +4255,7 @@ extend type Query {
   Check if the user has access to the particular role or permission.
   Returns the area of the access or null if access is denied.
   """
-  checkPermission(name: String!, key: String = null, targetID: String = null): String @hasPermissions(permissions: ["role.check.*"])
+  checkPermission(name: String!, key: String = null, targetID: String = null, idKey: String = null): String @hasPermissions(permissions: ["role.check"])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
@@ -4978,6 +4978,15 @@ func (ec *executionContext) field_Query_checkPermission_args(ctx context.Context
 		}
 	}
 	args["targetID"] = arg2
+	var arg3 *string
+	if tmp, ok := rawArgs["idKey"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idKey"))
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["idKey"] = arg3
 	return args, nil
 }
 
@@ -14567,10 +14576,10 @@ func (ec *executionContext) _Query_checkPermission(ctx context.Context, field gr
 	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().CheckPermission(rctx, fc.Args["name"].(string), fc.Args["key"].(*string), fc.Args["targetID"].(*string))
+			return ec.resolvers.Query().CheckPermission(rctx, fc.Args["name"].(string), fc.Args["key"].(*string), fc.Args["targetID"].(*string), fc.Args["idKey"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.check.*"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.check"})
 			if err != nil {
 				return nil, err
 			}

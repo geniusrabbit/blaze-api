@@ -7,7 +7,9 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
+	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
@@ -50,29 +52,34 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 }
 
 // Check the permission for the given role and target object
-func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID *string) (*string, error) {
+func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID, idKey *string) (*string, error) {
 	var obj any
 	if key != nil {
 		obj = permissions.FromContext(ctx).ObjectByName(*key)
 		if obj == nil {
-			return nil, errors.Wrap(ErrUndefinedPermissionKey, *key)
+			ctxlogger.Get(ctx).Error("undefined permission key request", zap.String("key", *key))
+			return nil, nil
 		}
 		if targetID != nil && *targetID != "" {
-			if id, _ := gocast.StructFieldValue(obj, "ID"); id != nil {
+			key := "ID"
+			if idKey != nil && *idKey != "" {
+				key = *idKey
+			}
+			if id, _ := gocast.StructFieldValue(obj, key); id != nil {
 				var err error
 				switch id.(type) {
 				case uint64:
-					err = gocast.SetStructFieldValue(ctx, obj, "ID", gocast.Uint64(*targetID))
+					err = gocast.SetStructFieldValue(ctx, obj, key, gocast.Uint64(*targetID))
 				case int64:
-					err = gocast.SetStructFieldValue(ctx, obj, "ID", gocast.Int64(*targetID))
+					err = gocast.SetStructFieldValue(ctx, obj, key, gocast.Int64(*targetID))
 				case string:
-					err = gocast.SetStructFieldValue(ctx, obj, "ID", *targetID)
+					err = gocast.SetStructFieldValue(ctx, obj, key, *targetID)
 				case uuid.UUID:
 					uid, uerr := uuid.Parse(*targetID)
 					if uerr != nil {
 						return nil, uerr
 					}
-					err = gocast.SetStructFieldValue(ctx, obj, "ID", uid)
+					err = gocast.SetStructFieldValue(ctx, obj, key, uid)
 				default:
 					return nil, errors.Wrap(ErrInvalidTargetValue, *targetID)
 				}

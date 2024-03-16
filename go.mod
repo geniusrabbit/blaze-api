@@ -1,12 +1,12 @@
 module github.com/geniusrabbit/blaze-api
 
-go 1.21
+go 1.22
 
 require (
 	github.com/99designs/basicauth-go v0.0.0-20230316000542-bf6f9cbbf0f8
 	github.com/99designs/gqlgen v0.17.45
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/alexedwards/scs/v2 v2.7.0
+	github.com/alexedwards/scs/v2 v2.8.0
 	github.com/alicebob/miniredis/v2 v2.32.1
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/auth0/go-jwt-middleware v1.0.1
@@ -51,10 +51,10 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.25.0 // indirect
+	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.21.1 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.22.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/IBM/sarama v1.43.0 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
@@ -173,7 +173,7 @@ require (
 	go.elastic.co/apm/module/apmhttp v1.15.0 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.48.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.23.0 // indirect
 	go.opentelemetry.io/contrib/propagators/jaeger v1.23.0 // indirect
 	go.opentelemetry.io/contrib/samplers/jaegerremote v0.17.0 // indirect
@@ -187,7 +187,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
+	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
@@ -197,9 +197,9 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.19.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240304161311-37d4d3c04a78 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240228224816-df926f6c8641 // indirect
-	google.golang.org/grpc v1.62.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240304161311-37d4d3c04a78 // indirect
+	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

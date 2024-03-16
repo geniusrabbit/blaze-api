@@ -19,6 +19,7 @@ func FromMemberModel(ctx context.Context, member *model.AccountMember) *Member {
 		Account:   FromAccountModel(gocast.Or(member.Account, &model.Account{ID: member.AccountID})),
 		User:      FromUserModel(gocast.Or(member.User, &model.User{ID: member.UserID})),
 		IsAdmin:   member.IsAdmin,
+		Status:    ApproveStatusFrom(member.Approve),
 		Roles:     FromRBACRoleModelList(ctx, member.Roles),
 		CreatedAt: member.CreatedAt,
 		UpdatedAt: member.UpdatedAt,
