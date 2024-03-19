@@ -60,6 +60,11 @@ func WithExternalIDGetter(getter func(r *http.Request) string) Option {
 	}
 }
 
+// WithCloudflareRequestID sets external id getter to get request id from cloudflare headers
+func WithCloudflareRequestID() Option {
+	return WithExternalIDGetter(cfRequestID)
+}
+
 func (cfg *config) getRequestIDGenerator() func(r *http.Request) string {
 	if cfg.queryIDGenerator == nil {
 		return DefaultRequestIDGenerator
