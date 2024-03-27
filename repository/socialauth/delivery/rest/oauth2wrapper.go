@@ -16,6 +16,7 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/acl"
 	"github.com/geniusrabbit/blaze-api/auth/elogin"
+	"github.com/geniusrabbit/blaze-api/auth/elogin/utils"
 	"github.com/geniusrabbit/blaze-api/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
@@ -66,9 +67,9 @@ func (wr *Oauth2Wrapper) HandleWrapper(prefix string) http.Handler {
 // RedirectParams returns the redirect parameters for the oauth2 authentication default redirect URL
 func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) []elogin.URLParam {
 	var (
-		connectionName = r.URL.Query().Get("connect_name")
-		redirectURL    = r.URL.Query().Get("redirect")
-		scopes         = strings.Join(
+		// connectionName = r.URL.Query().Get("connect_name")
+		// redirectURL    = r.URL.Query().Get("redirect")
+		scopes = strings.Join(
 			xtypes.Slice[string](
 				strings.Split(strings.ReplaceAll(r.URL.Query().Get("scope"), " ", ","), ",")).
 				Apply(func(s string) string { return strings.TrimSpace(s) }).
@@ -77,22 +78,42 @@ func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, 
 			" ")
 		res []elogin.URLParam
 	)
-	if redirectURL != "" {
-		res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
-	}
+	// if redirectURL != "" {
+	// 	res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
+	// }
 	if scopes != "" {
 		res = append(res, elogin.URLParam{Key: "scope", Value: scopes})
 	}
-	if connectionName != "" {
-		res = append(res, elogin.URLParam{Key: "connect_name", Value: connectionName})
-	}
+	// if connectionName != "" {
+	// 	res = append(res, elogin.URLParam{Key: "connect_name", Value: connectionName})
+	// }
+	// if isLogin {
+	// 	if token := session.Token(r.Context()); token != "" {
+	// 		res = append(res, elogin.URLParam{Key: "access_token", Value: token})
+	// 	}
+	// } else {
+	// 	if token := r.URL.Query().Get("access_token"); token != "" {
+	// 		res = append(res, elogin.URLParam{Key: "access_token", Value: token})
+	// 	}
+	// }
 	if isLogin {
+		var (
+			connectionName = r.URL.Query().Get("connect_name")
+			redirectURL    = r.URL.Query().Get("redirect")
+		)
 		if token := session.Token(r.Context()); token != "" {
 			res = append(res, elogin.URLParam{Key: "access_token", Value: token})
 		}
+		if redirectURL != "" {
+			res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
+		}
+		if connectionName != "" {
+			res = append(res, elogin.URLParam{Key: "connect_name", Value: connectionName})
+		}
 	} else {
-		if token := r.URL.Query().Get("access_token"); token != "" {
-			res = append(res, elogin.URLParam{Key: "access_token", Value: token})
+		state := utils.DecodeState(r.URL.Query().Get("state"))
+		for _, p := range state {
+			res = append(res, elogin.URLParam{Key: p.Key, Value: p.Value})
 		}
 	}
 	return res

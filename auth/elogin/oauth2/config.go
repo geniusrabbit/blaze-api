@@ -7,6 +7,7 @@ import (
 
 	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/blaze-api/auth/elogin"
+	"github.com/geniusrabbit/blaze-api/auth/elogin/utils"
 	"golang.org/x/oauth2"
 )
 
@@ -33,21 +34,23 @@ func (c *Config) Provider() string {
 
 // LoginURL returns the login url
 func (c *Config) LoginURL(params []elogin.URLParam) string {
+	state := utils.NewState(utils.Param{Key: "sc", Value: c.ProviderName})
 	// reauthorize - always has for permissions
 	// rerequest - for declined/revoked permissions
 	// reauthenticate - always as user to confirm password
-	opts := make([]oauth2.AuthCodeOption, 0, 1+len(params))
+	opts := make([]oauth2.AuthCodeOption, 0, 2)
 	opts = append(opts, oauth2.SetAuthURLParam("auth_type", "rerequest"))
-	if len(params) > 0 {
-		opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
-	}
+	// if len(params) > 0 {
+	// 	opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
+	// }
 	for _, param := range params {
 		if param.Key == "scope" {
 			opts = append(opts, oauth2.SetAuthURLParam("scope", param.Value))
-			break
+		} else {
+			state.Set(param.Key, param.Value)
 		}
 	}
-	return c.OAuth2.AuthCodeURL(c.StateCode, opts...)
+	return c.OAuth2.AuthCodeURL(state.Encode(), opts...)
 }
 
 // OAuth2Config returns the oauth2 configuration
@@ -58,17 +61,18 @@ func (c *Config) OAuth2Config() *oauth2.Config {
 // UserData returns the user data from the oauth2 token
 func (c *Config) UserData(ctx context.Context, values url.Values, params []elogin.URLParam) (*elogin.Token, *elogin.UserData, error) {
 	code := values.Get("code")
+	state := utils.DecodeState(values.Get("state"))
 	scopes := c.OAuth2.Scopes
 
 	// Check state code if it is set
-	if c.StateCode != "" && c.StateCode != values.Get("state") {
+	if c.StateCode != "" && c.StateCode != state.Get("sc") {
 		return nil, nil, elogin.ErrInvalidState
 	}
 
-	var opts []oauth2.AuthCodeOption
-	if params != nil {
-		opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
-	}
+	// var opts []oauth2.AuthCodeOption
+	// if params != nil {
+	// 	opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
+	// }
 
 	// Extract scopes from the params
 	for _, param := range params {
@@ -82,7 +86,7 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 	}
 
 	// Exchange code for token
-	oa2token, err := c.OAuth2.Exchange(ctx, code, opts...)
+	oa2token, err := c.OAuth2.Exchange(ctx, code) //, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -107,17 +111,17 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 	return token, data, nil
 }
 
-func urlSetQueryParams(sUrl string, params []elogin.URLParam) string {
-	if len(params) == 0 {
-		return sUrl
-	}
-	query := url.Values{}
-	baseURL := strings.SplitN(sUrl, "?", 2)
-	if len(baseURL) == 2 {
-		query, _ = url.ParseQuery(baseURL[1])
-	}
-	for _, it := range params {
-		query.Set(it.Key, it.Value)
-	}
-	return baseURL[0] + "?" + query.Encode()
-}
+// func urlSetQueryParams(sUrl string, params []elogin.URLParam) string {
+// 	if len(params) == 0 {
+// 		return sUrl
+// 	}
+// 	query := url.Values{}
+// 	baseURL := strings.SplitN(sUrl, "?", 2)
+// 	if len(baseURL) == 2 {
+// 		query, _ = url.ParseQuery(baseURL[1])
+// 	}
+// 	for _, it := range params {
+// 		query.Set(it.Key, it.Value)
+// 	}
+// 	return baseURL[0] + "?" + query.Encode()
+// }
