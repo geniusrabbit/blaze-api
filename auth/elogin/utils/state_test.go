@@ -17,14 +17,14 @@ func TestState(t *testing.T) {
 				"key1": "value1",
 				"key2": "value2",
 			},
-			encdeding: `{"key1":"value1","key2":"value2"}`,
+			encdeding: `JwAAAAJrZXkxAAcAAAB2YWx1ZTEAAmtleTIABwAAAHZhbHVlMgAA`,
 		},
 		{
 			state: map[string]string{
 				"key2": "value2",
 				"key1": "value1",
 			},
-			encdeding: `{"key1":"value1","key2":"value2"}`,
+			encdeding: `JwAAAAJrZXkxAAcAAAB2YWx1ZTEAAmtleTIABwAAAHZhbHVlMgAA`,
 		},
 		{
 			state: map[string]string{
@@ -32,7 +32,7 @@ func TestState(t *testing.T) {
 				"1": "1",
 				"3": "3",
 			},
-			encdeding: `{"1":"1","2":"2","3":"3"}`,
+			encdeding: `IAAAAAIxAAIAAAAxAAIyAAIAAAAyAAIzAAIAAAAzAAA=`,
 		},
 	}
 

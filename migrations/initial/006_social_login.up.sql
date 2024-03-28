@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS account_social_session
 , refresh_token         VARCHAR(512)                NOT NULL
 , scopes                TEXT[]                      NOT NULL
 
-, expires_at            TIMESTAMP                   NOT NULL
+, expires_at            TIMESTAMP
 , created_at            TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at            TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , deleted_at            TIMESTAMP

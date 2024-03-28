@@ -1,9 +1,11 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/json"
+	"encoding/base64"
 	"sort"
+
+	"github.com/demdxx/gocast/v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type State []Param
@@ -51,30 +53,21 @@ func (s State) Set(key, value string) State {
 
 func (s State) Encode() string {
 	sort.Sort(s)
-	var buf bytes.Buffer
-	_ = buf.WriteByte('{')
-	for i, p := range s {
-		if i > 0 {
-			buf.WriteByte(',')
-		}
-		_ = buf.WriteByte('"')
-		_, _ = buf.WriteString(p.Key)
-		_, _ = buf.WriteString(`":"`)
-		_, _ = buf.WriteString(p.Value)
-		_ = buf.WriteByte('"')
+	data := make(bson.D, 0, len(s))
+	for _, p := range s {
+		data = append(data, bson.DocElem{Name: p.Key, Value: p.Value})
 	}
-	_ = buf.WriteByte('}')
-	return buf.String()
+	b, _ := bson.Marshal(data)
+	return base64.URLEncoding.EncodeToString(b)
 }
 
 func DecodeState(s string) State {
-	var data map[string]string
-	if err := json.Unmarshal([]byte(s), &data); err != nil {
-		return nil
-	}
+	srcData, _ := base64.URLEncoding.DecodeString(s)
+	var data bson.M
+	_ = bson.Unmarshal(srcData, &data)
 	var state State
 	for k, v := range data {
-		state = append(state, Param{Key: k, Value: v})
+		state = append(state, Param{Key: k, Value: gocast.Str(v)})
 	}
 	return state
 }
