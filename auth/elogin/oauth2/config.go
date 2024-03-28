@@ -34,20 +34,17 @@ func (c *Config) Provider() string {
 
 // LoginURL returns the login url
 func (c *Config) LoginURL(params []elogin.URLParam) string {
-	state := utils.NewState(utils.Param{Key: "sc", Value: c.ProviderName})
+	state := utils.NewState(utils.Param{Key: "sc", Value: c.StateCode})
 	// reauthorize - always has for permissions
 	// rerequest - for declined/revoked permissions
 	// reauthenticate - always as user to confirm password
 	opts := make([]oauth2.AuthCodeOption, 0, 2)
 	opts = append(opts, oauth2.SetAuthURLParam("auth_type", "rerequest"))
-	// if len(params) > 0 {
-	// 	opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
-	// }
 	for _, param := range params {
 		if param.Key == "scope" {
 			opts = append(opts, oauth2.SetAuthURLParam("scope", param.Value))
 		} else {
-			state.Set(param.Key, param.Value)
+			state = state.Extend(param.Key, param.Value)
 		}
 	}
 	return c.OAuth2.AuthCodeURL(state.Encode(), opts...)
@@ -68,11 +65,6 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 	if c.StateCode != "" && c.StateCode != state.Get("sc") {
 		return nil, nil, elogin.ErrInvalidState
 	}
-
-	// var opts []oauth2.AuthCodeOption
-	// if params != nil {
-	// 	opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", urlSetQueryParams(c.OAuth2.RedirectURL, params)))
-	// }
 
 	// Extract scopes from the params
 	for _, param := range params {
@@ -110,18 +102,3 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 
 	return token, data, nil
 }
-
-// func urlSetQueryParams(sUrl string, params []elogin.URLParam) string {
-// 	if len(params) == 0 {
-// 		return sUrl
-// 	}
-// 	query := url.Values{}
-// 	baseURL := strings.SplitN(sUrl, "?", 2)
-// 	if len(baseURL) == 2 {
-// 		query, _ = url.ParseQuery(baseURL[1])
-// 	}
-// 	for _, it := range params {
-// 		query.Set(it.Key, it.Value)
-// 	}
-// 	return baseURL[0] + "?" + query.Encode()
-// }

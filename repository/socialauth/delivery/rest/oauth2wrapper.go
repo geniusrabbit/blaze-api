@@ -31,6 +31,11 @@ import (
 
 var errUserDateEmpty = errors.New("user data is empty")
 
+const (
+	connectNameKey = "cn"
+	redirectKey    = "r"
+)
+
 // Oauth2Wrapper provides a wrapper for oauth2 authentication
 type Oauth2Wrapper struct {
 	wrapper            *elogin.AuthHTTPWrapper
@@ -67,8 +72,6 @@ func (wr *Oauth2Wrapper) HandleWrapper(prefix string) http.Handler {
 // RedirectParams returns the redirect parameters for the oauth2 authentication default redirect URL
 func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) []elogin.URLParam {
 	var (
-		// connectionName = r.URL.Query().Get("connect_name")
-		// redirectURL    = r.URL.Query().Get("redirect")
 		scopes = strings.Join(
 			xtypes.Slice[string](
 				strings.Split(strings.ReplaceAll(r.URL.Query().Get("scope"), " ", ","), ",")).
@@ -78,24 +81,9 @@ func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, 
 			" ")
 		res []elogin.URLParam
 	)
-	// if redirectURL != "" {
-	// 	res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
-	// }
 	if scopes != "" {
 		res = append(res, elogin.URLParam{Key: "scope", Value: scopes})
 	}
-	// if connectionName != "" {
-	// 	res = append(res, elogin.URLParam{Key: "connect_name", Value: connectionName})
-	// }
-	// if isLogin {
-	// 	if token := session.Token(r.Context()); token != "" {
-	// 		res = append(res, elogin.URLParam{Key: "access_token", Value: token})
-	// 	}
-	// } else {
-	// 	if token := r.URL.Query().Get("access_token"); token != "" {
-	// 		res = append(res, elogin.URLParam{Key: "access_token", Value: token})
-	// 	}
-	// }
 	if isLogin {
 		var (
 			connectionName = r.URL.Query().Get("connect_name")
@@ -105,10 +93,10 @@ func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, 
 			res = append(res, elogin.URLParam{Key: "access_token", Value: token})
 		}
 		if redirectURL != "" {
-			res = append(res, elogin.URLParam{Key: "redirect", Value: redirectURL})
+			res = append(res, elogin.URLParam{Key: redirectKey, Value: redirectURL})
 		}
 		if connectionName != "" {
-			res = append(res, elogin.URLParam{Key: "connect_name", Value: connectionName})
+			res = append(res, elogin.URLParam{Key: connectNameKey, Value: connectionName})
 		}
 	} else {
 		state := utils.DecodeState(r.URL.Query().Get("state"))
@@ -121,7 +109,8 @@ func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, 
 
 // Error handles the error occurred during the oauth2 authentication
 func (wr *Oauth2Wrapper) Error(w http.ResponseWriter, r *http.Request, err error) {
-	connectName := gocast.Or(r.URL.Query().Get("connect_name"), "default")
+	state := utils.DecodeState(r.URL.Query().Get("state"))
+	connectName := gocast.Or(state.Get(connectNameKey), "default")
 	ctxlogger.Get(r.Context()).Error("Auth error",
 		zap.String(`protocol`, wr.wrapper.Protocol()),
 		zap.String(`provider`, wr.wrapper.Provider()),
@@ -133,7 +122,7 @@ func (wr *Oauth2Wrapper) Error(w http.ResponseWriter, r *http.Request, err error
 	}
 
 	// Redirect to the error URL if provided
-	if red := gocast.Or(r.URL.Query().Get("redirect"), wr.successRedirectURL); red != "" {
+	if red := gocast.Or(state.Get(redirectKey), wr.successRedirectURL); red != "" {
 		redirectURL := urlSetQueryParams(red, map[string]string{"error": err.Error()})
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
@@ -161,10 +150,11 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 		accSocial *model.AccountSocial
 		expiresAt time.Time
 		ctx       = acl.WithNoPermCheck(r.Context())
+		state     = utils.DecodeState(r.URL.Query().Get("state"))
 	)
 
 	// Get session connection name
-	connectName := gocast.Or(r.URL.Query().Get("connect_name"), "default")
+	connectName := gocast.Or(state.Get(connectNameKey), "default")
 
 	// Check if user already exists (awoid permission check)
 	list, err := wr.socialAuthUsecase.List(ctx, &socialauth.Filter{
@@ -229,7 +219,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	}
 
 	// Redirect to the success URL if provided
-	if red := gocast.Or(r.URL.Query().Get("redirect"), wr.successRedirectURL); red != "" {
+	if red := gocast.Or(state.Get(redirectKey), wr.successRedirectURL); red != "" {
 		redirectURL := urlSetQueryParams(red, map[string]string{"access_token": sessToken})
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return

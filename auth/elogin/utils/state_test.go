@@ -40,7 +40,7 @@ func TestState(t *testing.T) {
 		t.Run(fmt.Sprintf("encode%d", i+1), func(t *testing.T) {
 			var s State
 			for k, v := range tt.state {
-				s = s.Set(k, v)
+				s = s.Extend(k, v)
 			}
 			assert.Equal(t, tt.encdeding, s.Encode())
 		})

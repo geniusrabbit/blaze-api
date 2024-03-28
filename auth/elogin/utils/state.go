@@ -41,7 +41,7 @@ func (s State) Get(key string) string {
 	return ""
 }
 
-func (s State) Set(key, value string) State {
+func (s State) Extend(key, value string) State {
 	for i, p := range s {
 		if p.Key == key {
 			s[i].Value = value
