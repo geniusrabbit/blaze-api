@@ -27,12 +27,14 @@ var (
 
 // QueryResolver implements GQL API methods
 type QueryResolver struct {
+	userRepo *userrepo.Repository
 	accounts account.Usecase
 }
 
 // NewQueryResolver returns new API resolver
 func NewQueryResolver() *QueryResolver {
 	return &QueryResolver{
+		userRepo: userrepo.New(),
 		accounts: usecase.NewAccountUsecase(userrepo.New(), repository.New()),
 	}
 }
@@ -85,22 +87,22 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 
 	if _, err := r.accounts.Register(ctx, userObj, accObj, input.Password); err != nil {
 		return nil, err
+	} else {
+		userObj, _ = r.userRepo.Get(ctx, userObj.ID)
 	}
 
 	// Send message to the account owner about the account creation (welcome message)
-	err := messanger.Get(ctx).Send(ctx,
-		"account.register",
-		[]string{userObj.Email},
-		map[string]any{
+	err := messanger.Get(ctx).Send(ctx, "account.register",
+		[]string{userObj.Email}, map[string]any{
 			"id":      accObj.ID,
 			"account": accObj,
 			"owner":   userObj,
 		})
 	if err != nil {
+		// Log error if message sending failed but do not return error to the client
 		ctxlogger.Get(ctx).Error("Failed to send message",
-			zap.String("template", "account.created"),
+			zap.String("template", "account.register"),
 			zap.Error(err))
-		return nil, err
 	}
 
 	return &gqlmodels.AccountCreatePayload{
