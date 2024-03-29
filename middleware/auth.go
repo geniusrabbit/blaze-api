@@ -15,9 +15,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/geniusrabbit/blaze-api/auth/elogin/utils"
 	"github.com/geniusrabbit/blaze-api/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/auth/oauth2/serverprovider"
+	"github.com/geniusrabbit/blaze-api/auth/tokenextractor"
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
@@ -68,16 +68,13 @@ func AuthHTTP(metricsPrefix string, next http.Handler, oauth2provider fosite.OAu
 	authWr := newAuthWrapper(metricsPrefix)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var (
-			err          error
-			ctx          = r.Context()
-			isJWTSession = false
-			token        = fosite.AccessTokenFromRequest(r)
 			authorized   = false
+			isJWTSession = false
+			ctx          = r.Context()
+			token, err   = tokenextractor.DefaultExtractor(r)
 		)
-		// If authroization by social network then all parameters will be passed in the state
-		if token == "" && r.URL.Query().Get("state") != "" {
-			state := utils.DecodeState(r.URL.Query().Get("state"))
-			token = state.Get("access_token")
+		if err != nil {
+			ctxlogger.Get(r.Context()).Error("token extraction", zap.Error(err))
 		}
 		// If token is empty then it's anonymous user
 		if token == "" {

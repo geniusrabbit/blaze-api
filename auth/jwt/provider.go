@@ -9,9 +9,8 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/demdxx/gocast/v2"
 	"github.com/form3tech-oss/jwt-go"
-	"github.com/ory/fosite"
 
-	"github.com/geniusrabbit/blaze-api/auth/elogin/utils"
+	"github.com/geniusrabbit/blaze-api/auth/tokenextractor"
 )
 
 var (
@@ -64,15 +63,8 @@ func NewDefaultProvider(secret string, tokenLifetime time.Duration, isDebug bool
 		TokenLifetime: tokenLifetime,
 		Secret:        secret,
 		MiddlewareOpts: &jwtmiddleware.Options{
-			Debug: isDebug,
-			Extractor: func(r *http.Request) (string, error) {
-				token := fosite.AccessTokenFromRequest(r)
-				if token == "" {
-					state := utils.DecodeState(r.URL.Query().Get("state"))
-					token = state.Get(`access_token`)
-				}
-				return token, nil
-			},
+			Debug:     isDebug,
+			Extractor: tokenextractor.DefaultExtractor,
 		},
 	}
 }
