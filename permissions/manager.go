@@ -16,7 +16,7 @@ import (
 
 const (
 	DefaultAdminRole     = `account:admin`
-	DefaultRole          = `anonymous`
+	DefaultRole          = `general`
 	AnonymousDefaultRole = `anonymous`
 )
 
@@ -139,15 +139,8 @@ func (mng *Manager) AsOneRole(ctx context.Context, isAdmin bool, filter func(con
 			return false
 		})...)
 	}
-
-	if len(roles) == 1 {
-		return roles[0], nil
-	}
-	if len(roles) == 0 {
-		if len(id) == 0 {
-			return mng.DefaultRole(ctx), nil
-		}
+	if len(roles) == 0 && len(id) != 0 {
 		return nil, ErrUndefinedRole
 	}
-	return rbac.NewRole(``, rbac.WithChildRoles(roles...))
+	return rbac.NewRole(``, rbac.WithChildRoles(append(roles, mng.DefaultRole(ctx))...))
 }

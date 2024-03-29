@@ -71,15 +71,13 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Acco
 	if memeber.IsAdmin {
 		accountObj.ExtendAdminUsers(userObj.ID)
 	}
-	if len(roles) > 0 || memeber.IsAdmin {
-		if !accountObj.Approve.IsRejected() && !userObj.Approve.IsRejected() {
-			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, memeber.IsAdmin, nil, roles...)
-		} else {
-			accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(_ context.Context, r rbac.Role) bool {
-				// Skip system or account roles for not approved accounts
-				return !strings.HasPrefix(r.Name(), "system:") || !strings.HasPrefix(r.Name(), "account:")
-			}, roles...)
-		}
+	if !accountObj.Approve.IsRejected() && !userObj.Approve.IsRejected() {
+		accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, memeber.IsAdmin, nil, roles...)
+	} else {
+		accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, func(_ context.Context, r rbac.Role) bool {
+			// Skip system or account roles for not approved accounts
+			return !strings.HasPrefix(r.Name(), "system:") || !strings.HasPrefix(r.Name(), "account:")
+		}, roles...)
 	}
 	return err
 }
