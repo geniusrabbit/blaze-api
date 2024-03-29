@@ -140,8 +140,7 @@ func (w *authWrapper) authContext(ctx context.Context, oauth2provider fosite.OAu
 	if !testMode {
 		oauth2Ctx := serverprovider.NewContext(ctx)
 		tokenType, accessReq, errToken := oauth2provider.IntrospectToken(
-			oauth2Ctx, token, fosite.AccessToken,
-			&fosite.DefaultSession{})
+			oauth2Ctx, token, fosite.AccessToken, &fosite.DefaultSession{})
 		if errToken != nil {
 			return nil, errToken
 		}

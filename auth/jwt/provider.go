@@ -5,10 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	// "github.com/golang-jwt/jwt/v4"
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/demdxx/gocast/v2"
 	"github.com/form3tech-oss/jwt-go"
-	// "github.com/golang-jwt/jwt/v4"
+	"github.com/ory/fosite"
+
+	"github.com/geniusrabbit/blaze-api/auth/elogin/utils"
 )
 
 var (
@@ -53,6 +56,25 @@ type Provider struct {
 
 	// MiddlewareOpts to get middelware procedure
 	MiddlewareOpts *jwtmiddleware.Options
+}
+
+// NewDefaultProvider returns new provider
+func NewDefaultProvider(secret string, tokenLifetime time.Duration, isDebug bool) *Provider {
+	return &Provider{
+		TokenLifetime: tokenLifetime,
+		Secret:        secret,
+		MiddlewareOpts: &jwtmiddleware.Options{
+			Debug: isDebug,
+			Extractor: func(r *http.Request) (string, error) {
+				token := fosite.AccessTokenFromRequest(r)
+				if token == "" {
+					state := utils.DecodeState(r.URL.Query().Get("state"))
+					token = state.Get(`access_token`)
+				}
+				return token, nil
+			},
+		},
+	}
 }
 
 // CreateToken new token for user ID
