@@ -10,7 +10,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.32.1
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/auth0/go-jwt-middleware v1.0.1
-	github.com/demdxx/gocast/v2 v2.8.1
+	github.com/demdxx/gocast/v2 v2.8.3
 	github.com/demdxx/goconfig v1.0.0
 	github.com/demdxx/rbac v0.1.7
 	github.com/demdxx/sendmsg v0.0.0-20240126132054-834dad9e9d6e
@@ -26,7 +26,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/guregu/null v4.0.0+incompatible
 	github.com/lib/pq v1.10.9
-	github.com/nats-io/nats.go v1.33.1
+	github.com/nats-io/nats.go v1.34.0
 	github.com/opentracing-contrib/go-stdlib v1.0.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/ory/fosite v0.46.1
@@ -43,20 +43,20 @@ require (
 	golang.org/x/crypto v0.21.0
 	golang.org/x/oauth2 v0.18.0
 	gorm.io/driver/clickhouse v0.6.0
-	gorm.io/driver/mysql v1.5.4
+	gorm.io/driver/mysql v1.5.6
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/driver/sqlite v1.5.5
 	gorm.io/driver/sqlserver v1.5.3
-	gorm.io/gorm v1.25.7
+	gorm.io/gorm v1.25.9
 )
 
 require (
 	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.22.0 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.23.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
-	github.com/IBM/sarama v1.43.0 // indirect
+	github.com/IBM/sarama v1.43.1 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
@@ -86,7 +86,7 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
@@ -116,7 +116,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.5.3 // indirect
+	github.com/jackc/pgx/v5 v5.5.5 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jcchavezs/porto v0.4.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -187,7 +187,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f // indirect
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.22.0 // indirect

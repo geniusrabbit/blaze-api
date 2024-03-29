@@ -43,9 +43,8 @@ func (c *Config) LoginURL(params []elogin.URLParam) string {
 	for _, param := range params {
 		if param.Key == "scope" {
 			opts = append(opts, oauth2.SetAuthURLParam("scope", param.Value))
-		} else {
-			state = state.Extend(param.Key, param.Value)
 		}
+		state = state.Extend(param.Key, param.Value)
 	}
 	return c.OAuth2.AuthCodeURL(state.Encode(), opts...)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	"github.com/geniusrabbit/blaze-api/auth/elogin/utils"
 	"github.com/geniusrabbit/blaze-api/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/auth/oauth2/serverprovider"
 	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
@@ -73,6 +74,12 @@ func AuthHTTP(metricsPrefix string, next http.Handler, oauth2provider fosite.OAu
 			token        = fosite.AccessTokenFromRequest(r)
 			authorized   = false
 		)
+		// If authroization by social network then all parameters will be passed in the state
+		if token == "" && r.URL.Query().Get("state") != "" {
+			state := utils.DecodeState(r.URL.Query().Get("state"))
+			token = state.Get("access_token")
+		}
+		// If token is empty then it's anonymous user
 		if token == "" {
 			ctx = session.WithAnonymousUserAccount(ctx)
 			next.ServeHTTP(w, r.WithContext(ctx))

@@ -70,39 +70,39 @@ func (wr *Oauth2Wrapper) HandleWrapper(prefix string) http.Handler {
 }
 
 // RedirectParams returns the redirect parameters for the oauth2 authentication default redirect URL
-func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) []elogin.URLParam {
+func (wr *Oauth2Wrapper) RedirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) (res []elogin.URLParam) {
+	query := r.URL.Query()
+
+	if !isLogin {
+		state := utils.DecodeState(query.Get("state"))
+		for _, p := range state {
+			res = append(res, elogin.URLParam{Key: p.Key, Value: p.Value})
+		}
+		return res
+	}
+
 	var (
-		scopes = strings.Join(
+		connectionName = query.Get("connect_name")
+		redirectURL    = query.Get("redirect")
+		scopes         = strings.Join(
 			xtypes.Slice[string](
-				strings.Split(strings.ReplaceAll(r.URL.Query().Get("scope"), " ", ","), ",")).
+				strings.Split(strings.ReplaceAll(query.Get("scope"), " ", ","), ",")).
 				Apply(func(s string) string { return strings.TrimSpace(s) }).
 				Filter(func(s string) bool { return s != "" }).
 				Sort(func(a, b string) bool { return a < b }),
 			" ")
-		res []elogin.URLParam
 	)
+	if token := session.Token(r.Context()); token != "" {
+		res = append(res, elogin.URLParam{Key: "access_token", Value: token})
+	}
+	if redirectURL != "" {
+		res = append(res, elogin.URLParam{Key: redirectKey, Value: redirectURL})
+	}
+	if connectionName != "" {
+		res = append(res, elogin.URLParam{Key: connectNameKey, Value: connectionName})
+	}
 	if scopes != "" {
 		res = append(res, elogin.URLParam{Key: "scope", Value: scopes})
-	}
-	if isLogin {
-		var (
-			connectionName = r.URL.Query().Get("connect_name")
-			redirectURL    = r.URL.Query().Get("redirect")
-		)
-		if token := session.Token(r.Context()); token != "" {
-			res = append(res, elogin.URLParam{Key: "access_token", Value: token})
-		}
-		if redirectURL != "" {
-			res = append(res, elogin.URLParam{Key: redirectKey, Value: redirectURL})
-		}
-		if connectionName != "" {
-			res = append(res, elogin.URLParam{Key: connectNameKey, Value: connectionName})
-		}
-	} else {
-		state := utils.DecodeState(r.URL.Query().Get("state"))
-		for _, p := range state {
-			res = append(res, elogin.URLParam{Key: p.Key, Value: p.Value})
-		}
 	}
 	return res
 }
