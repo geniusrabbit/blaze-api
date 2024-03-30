@@ -2958,11 +2958,6 @@ input InviteMemberInput {
 
 input MemberInput {
   """
-  The user ID of the member to invite
-  """
-  userID: String!
-
-  """
   The roles to assign to the member
   """
   roles: [String!]!
@@ -20762,20 +20757,13 @@ func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj i
 		asMap["isAdmin"] = false
 	}
 
-	fieldsInOrder := [...]string{"userID", "roles", "isAdmin"}
+	fieldsInOrder := [...]string{"roles", "isAdmin"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "userID":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.UserID = data
 		case "roles":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roles"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)

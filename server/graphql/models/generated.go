@@ -300,8 +300,6 @@ type MemberEdge struct {
 }
 
 type MemberInput struct {
-	// The user ID of the member to invite
-	UserID string `json:"userID"`
 	// The roles to assign to the member
 	Roles []string `json:"roles"`
 	// Is the user an admin of the account

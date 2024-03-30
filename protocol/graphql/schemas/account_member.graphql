@@ -129,11 +129,6 @@ input InviteMemberInput {
 
 input MemberInput {
   """
-  The user ID of the member to invite
-  """
-  userID: String!
-
-  """
   The roles to assign to the member
   """
   roles: [String!]!
