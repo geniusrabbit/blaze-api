@@ -6,3 +6,6 @@ directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 
 "Prevents access to a field/method if the user doesnt have the matching permissions"
 directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+
+"Prevents access to a field/method if the user doesnt have the matching permissions"
+directive @skipNoPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD

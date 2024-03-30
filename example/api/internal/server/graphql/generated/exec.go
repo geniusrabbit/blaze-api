@@ -47,9 +47,10 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Acl            func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
-	Auth           func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	HasPermissions func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
+	Acl               func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
+	Auth              func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	HasPermissions    func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
+	SkipNoPermissions func(ctx context.Context, obj interface{}, next graphql.Resolver, permissions []string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -3772,6 +3773,9 @@ directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 
 "Prevents access to a field/method if the user doesnt have the matching permissions"
 directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+
+"Prevents access to a field/method if the user doesnt have the matching permissions"
+directive @skipNoPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 `, BuiltIn: false},
 	{Name: "../../../../../../protocol/graphql/schemas/history.graphql", Input: `"""
 HistoryAction is the model for history actions.
@@ -4352,6 +4356,21 @@ func (ec *executionContext) dir_acl_args(ctx context.Context, rawArgs map[string
 }
 
 func (ec *executionContext) dir_hasPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []string
+	if tmp, ok := rawArgs["permissions"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
+		arg0, err = ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["permissions"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) dir_skipNoPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 []string
@@ -5477,6 +5496,20 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj interface{
 					return nil, errors.New("directive hasPermissions is not implemented")
 				}
 				return ec.directives.HasPermissions(ctx, obj, n, args["permissions"].([]string))
+			}
+		case "skipNoPermissions":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			args, err := ec.dir_skipNoPermissions_args(ctx, rawArgs)
+			if err != nil {
+				ec.Error(ctx, err)
+				return nil
+			}
+			n := next
+			next = func(ctx context.Context) (interface{}, error) {
+				if ec.directives.SkipNoPermissions == nil {
+					return nil, errors.New("directive skipNoPermissions is not implemented")
+				}
+				return ec.directives.SkipNoPermissions(ctx, obj, n, args["permissions"].([]string))
 			}
 		}
 	}

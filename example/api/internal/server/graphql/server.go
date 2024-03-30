@@ -26,9 +26,10 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 		generated.NewExecutableSchema(generated.Config{
 			Resolvers: resolvers.NewResolver(provider),
 			Directives: generated.DirectiveRoot{
-				HasPermissions: directives.HasPermissions,
-				Auth:           directives.Auth,
-				Acl:            directives.HasPermissions,
+				HasPermissions:    directives.HasPermissions,
+				Auth:              directives.Auth,
+				Acl:               directives.HasPermissions,
+				SkipNoPermissions: directives.SkipNoPermissions,
 			},
 		}),
 	)
