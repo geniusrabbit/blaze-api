@@ -19,26 +19,27 @@ func PermissionCheckAccountFromContext(ctx context.Context) *Account {
 }
 
 type permissionChecker interface {
-	CheckPermissions(ctx context.Context, resource any, names ...string) bool
-	CheckedPermissions(ctx context.Context, resource any, names ...string) rbac.Permission
+	CheckPermissions(ctx context.Context, resource any, patterns ...string) bool
+	CheckedPermissions(ctx context.Context, resource any, patterns ...string) rbac.Permission
 	ChildRoles() []rbac.Role
 	ChildPermissions() []rbac.Permission
+	HasPermission(patterns ...string) bool
 }
 
 type groupPermissionChecker []permissionChecker
 
-func (groups groupPermissionChecker) CheckPermissions(ctx context.Context, resource any, names ...string) bool {
+func (groups groupPermissionChecker) CheckPermissions(ctx context.Context, resource any, patterns ...string) bool {
 	for _, group := range groups {
-		if group.CheckPermissions(ctx, resource, names...) {
+		if group.CheckPermissions(ctx, resource, patterns...) {
 			return true
 		}
 	}
 	return false
 }
 
-func (groups groupPermissionChecker) CheckedPermissions(ctx context.Context, resource any, names ...string) rbac.Permission {
+func (groups groupPermissionChecker) CheckedPermissions(ctx context.Context, resource any, patterns ...string) rbac.Permission {
 	for _, group := range groups {
-		if perm := group.CheckedPermissions(ctx, resource, names...); perm == nil {
+		if perm := group.CheckedPermissions(ctx, resource, patterns...); perm == nil {
 			return perm
 		}
 	}
@@ -69,3 +70,14 @@ func (groups groupPermissionChecker) ChildPermissions() []rbac.Permission {
 	}
 	return perms
 }
+
+func (groups groupPermissionChecker) HasPermission(patterns ...string) bool {
+	for _, group := range groups {
+		if group.HasPermission(patterns...) {
+			return true
+		}
+	}
+	return false
+}
+
+var _ permissionChecker = groupPermissionChecker{}

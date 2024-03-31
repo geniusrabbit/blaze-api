@@ -83,3 +83,8 @@ func HaveAccountLink(ctx context.Context, obj any) bool {
 	return false ||
 		account.CheckPermissions(ctx, obj, PermView+`.*`, PermList+`.*`, PermUpdate+`.*`)
 }
+
+// HasPermission returns `true` if the `user` have all permissions from the list (without custom check)
+func HasPermission(ctx context.Context, permissions ...string) bool {
+	return IsNoPermCheck(ctx) || session.Account(ctx).HasPermission(ctx, permissions...)
+}

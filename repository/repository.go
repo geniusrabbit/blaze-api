@@ -41,3 +41,8 @@ func (r *Repository) Master(ctx context.Context) *gorm.DB {
 func (r *Repository) Transaction(ctx context.Context) (*gorm.DB, context.Context, bool, error) {
 	return database.ContextTransaction(ctx)
 }
+
+// TransactionExec executes function in transaction
+func (r *Repository) TransactionExec(ctx context.Context, fn func(ctx context.Context, tx *gorm.DB) error, dbs ...*gorm.DB) error {
+	return database.ContextTransactionExec(ctx, fn, dbs...)
+}

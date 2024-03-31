@@ -7,6 +7,7 @@ import (
 	"github.com/demdxx/xtypes"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/guregu/null"
 )
 
 // FromMemberModel to local graphql model
@@ -40,7 +41,7 @@ func (fl *MemberListFilter) Filter() *account.MemberFilter {
 		ID:        fl.ID,
 		AccountID: fl.AccountID,
 		UserID:    fl.UserID,
-		IsAdmin:   fl.IsAdmin,
+		IsAdmin:   gocast.IfThen(fl.IsAdmin != nil, null.BoolFromPtr(fl.IsAdmin), null.Bool{}),
 	}
 }
 

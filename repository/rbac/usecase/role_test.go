@@ -28,7 +28,7 @@ func (s *testSuite) SetupSuite() {
 	ctrl := gomock.NewController(s.T())
 	s.ctx = session.WithUserAccountDevelop(context.TODO())
 	s.roleRepo = mocks.NewMockRepository(ctrl)
-	s.roleUsecase = NewRoleUsecase(s.roleRepo)
+	s.roleUsecase = New(s.roleRepo)
 }
 
 func (s *testSuite) TestGet() {

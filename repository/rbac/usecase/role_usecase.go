@@ -5,9 +5,11 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/acl"
+	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
+	rbacrepo "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/pkg/errors"
 )
 
@@ -16,11 +18,16 @@ type RoleUsecase struct {
 	roleRepo rbac.Repository
 }
 
-// NewRoleUsecase object controller
-func NewRoleUsecase(repo rbac.Repository) *RoleUsecase {
+// New object usecase
+func New(repo rbac.Repository) *RoleUsecase {
 	return &RoleUsecase{
 		roleRepo: repo,
 	}
+}
+
+// NewDefault object usecase
+func NewDefault() *RoleUsecase {
+	return New(rbacrepo.New())
 }
 
 // Get returns the group by ID if have access
@@ -52,6 +59,7 @@ func (a *RoleUsecase) FetchList(ctx context.Context, filter *rbac.Filter, order 
 	if !acl.HaveAccessList(ctx, &model.Role{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
 	}
+	filter = prepareFilter(ctx, filter, `list`)
 	list, err := a.roleRepo.FetchList(ctx, filter, order, pagination)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
@@ -66,7 +74,7 @@ func (a *RoleUsecase) Count(ctx context.Context, filter *rbac.Filter) (int64, er
 	if !acl.HaveAccessList(ctx, &model.Role{}) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
 	}
-	return a.roleRepo.Count(ctx, filter)
+	return a.roleRepo.Count(ctx, prepareFilter(ctx, filter, `count`))
 }
 
 // Create new object in database
@@ -99,4 +107,21 @@ func (a *RoleUsecase) Delete(ctx context.Context, id uint64) error {
 		return errors.Wrap(acl.ErrNoPermissions, "delete role/permission")
 	}
 	return a.roleRepo.Delete(ctx, id)
+}
+
+func prepareFilter(ctx context.Context, filter *rbac.Filter, accessName string) *rbac.Filter {
+	if acl.HasPermission(ctx, "rbac."+accessName+".all") {
+		return filter
+	}
+	if filter == nil {
+		filter = &rbac.Filter{}
+	}
+	if acl.HasPermission(ctx, "rbac."+accessName+".account") {
+		filter.MaxAccessLevel = model.AccessLevelAccount
+	} else if session.User(ctx).IsAnonymous() {
+		filter.MaxAccessLevel = model.AccessLevelBasic
+	} else {
+		filter.MaxAccessLevel = model.AccessLevelNoAnonymous
+	}
+	return filter
 }

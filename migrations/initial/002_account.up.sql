@@ -91,10 +91,13 @@ CREATE TABLE rbac_role
 , name                VARCHAR(256)                NOT NULL      CHECK (name ~* '^[\w\d@_:\.-]+$') UNIQUE
 
 , title               VARCHAR(256)                NOT NULL
+, description         TEXT                        NOT NULL      DEFAULT ''
 , context             JSONB                                     DEFAULT NULL  -- {model:flags,@custom:value}
 
 -- [`user.view.owner`, `account.*.owner`]
 , permissions         TEXT[]
+
+, access_level        INTEGER                     NOT NULL      DEFAULT 0
 
 , created_at          TIMESTAMPTZ                 NOT NULL      DEFAULT NOW()
 , updated_at          TIMESTAMPTZ                 NOT NULL      DEFAULT NOW()

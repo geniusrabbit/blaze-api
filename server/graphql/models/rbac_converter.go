@@ -36,7 +36,7 @@ func FromRBACPermissionModel(perm mrbac.Permission) *RBACPermission {
 		Name:        name,
 		Object:      objName,
 		Access:      access,
-		Description: nil, // perm.Description(), - TODO: add description
+		Description: s2ptr(perm.Description()),
 	}
 }
 
@@ -61,9 +61,12 @@ func FromRBACPermissionModelList(perms []mrbac.Permission) []*RBACPermission {
 func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
 	perms := permissions.FromContext(ctx).Permissions(role.PermissionPatterns...)
 	return &RBACRole{
-		ID:      role.ID,
-		Name:    role.Name,
-		Title:   role.Title,
+		ID:    role.ID,
+		Name:  role.Name,
+		Title: role.Title,
+
+		Description: s2ptr(role.Description),
+
 		Context: types.MustNullableJSONFrom(role.Context.Data),
 
 		Permissions:        FromRBACPermissionModelList(perms),

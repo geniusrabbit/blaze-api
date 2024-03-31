@@ -40,7 +40,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			return
 		}
 		switch db.Statement.ReflectValue.Kind() {
-		case reflect.Slice, reflect.Array:
+		case reflect.Slice, reflect.Array, reflect.Invalid:
 			return
 		}
 		field := cdb.Statement.Schema.PrioritizedPrimaryField

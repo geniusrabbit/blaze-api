@@ -439,9 +439,10 @@ type RBACPermission struct {
 
 // A role is a collection of permissions. A role can be a child of another role.
 type RBACRole struct {
-	ID    uint64 `json:"ID"`
-	Name  string `json:"name"`
-	Title string `json:"title"`
+	ID          uint64  `json:"ID"`
+	Name        string  `json:"name"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
 	//  Context is a JSON object that defines the context of the role.
 	//  The context is used to determine whether the role is applicable to the object.
 	//  The context is a JSON object with the following structure:

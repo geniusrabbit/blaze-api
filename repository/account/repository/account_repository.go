@@ -9,6 +9,7 @@ import (
 
 	"github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
+	"github.com/guregu/null"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -17,19 +18,27 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	prbac "github.com/geniusrabbit/blaze-api/repository/rbac"
-	reporbac "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
+	userbac "github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
+)
+
+var (
+	// ErrInvalidRoleList error in case of invalid role list
+	ErrInvalidRoleList = errors.New(`invalid role list, check your permissions`)
+
+	// ErrAccountHaveToHaveAdmin error in case of no any admin in account
+	ErrAccountHaveToHaveAdmin = errors.New(`account must have at least one admin`)
 )
 
 // Repository DAO which provides functionality of working with accounts
 type Repository struct {
 	repository.Repository
-	rbacRepo prbac.Repository
+	rbacUse prbac.Usecase
 }
 
 // New account repository
 func New() *Repository {
 	return &Repository{
-		rbacRepo: reporbac.New(),
+		rbacUse: userbac.NewDefault(),
 	}
 }
 
@@ -233,20 +242,69 @@ func (r *Repository) UnlinkMember(ctx context.Context, accountObj *model.Account
 }
 
 // SetMemberRoles into account
-func (r *Repository) SetMemberRoles(ctx context.Context, accountObj *model.Account, member *model.User, roles ...string) error {
+func (r *Repository) SetMemberRoles(ctx context.Context, accountObj *model.Account, user *model.User, roles ...string) error {
 	var (
-		listRoles      []*model.Role
-		memberObj, err = r.Member(ctx, member.ID, accountObj.ID)
+		listRoles   []*model.Role
+		member, err = r.Member(ctx, user.ID, accountObj.ID)
 	)
 	if err != nil {
 		return err
 	}
+
+	// Load roles for the member
 	if len(roles) > 0 {
-		if listRoles, err = r.rbacRepo.FetchList(ctx, &prbac.Filter{Names: roles}, nil, nil); err != nil {
+		if listRoles, err = r.rbacUse.FetchList(ctx, &prbac.Filter{Names: roles}, nil, nil); err != nil {
 			return err
 		}
+		if len(listRoles) != len(roles) {
+			return ErrInvalidRoleList
+		}
 	}
-	memberObj.IsAdmin = xtypes.Slice[string](roles).Has(func(v string) bool { return v == "admin" })
-	memberObj.Roles = listRoles
-	return r.Master(ctx).Save(memberObj).Error
+
+	// Prepare member roles
+	wasAdmin := member.IsAdmin
+	member.Roles = listRoles
+	member.IsAdmin = xtypes.Slice[string](roles).Has(func(v string) bool { return v == "admin" || v == "account:admin" })
+
+	// Check if we have at least one admin in account
+	if wasAdmin != member.IsAdmin && !member.IsAdmin {
+		cnt, err := r.CountMembers(ctx, &account.MemberFilter{
+			AccountID: []uint64{accountObj.ID},
+			NotUserID: []uint64{user.ID},
+			IsAdmin:   null.BoolFrom(true),
+			Status:    []model.ApproveStatus{model.ApprovedApproveStatus},
+		})
+		if err != nil {
+			return err
+		}
+		if cnt == 0 {
+			return ErrAccountHaveToHaveAdmin
+		}
+	}
+
+	// Transaction for updating member roles
+	return r.TransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
+		// Save member object state
+		err := tx.Omit(clause.Associations).Save(member).Error
+		if err != nil {
+			return err
+		}
+		roleIDs := xtypes.SliceApply(listRoles, func(v *model.Role) uint64 { return v.ID })
+		// Remove roles for the member
+		err = tx.Model((*model.M2MAccountMemberRole)(nil)).
+			Where(`member_id=?`, member.ID).
+			Where(`role_id NOT IN (?)`, roleIDs).
+			Delete(&model.M2MAccountMemberRole{}).Error
+		if err != nil {
+			return err
+		}
+		// Save roles for the member
+		return tx.Save(xtypes.SliceApply(listRoles, func(v *model.Role) *model.M2MAccountMemberRole {
+			return &model.M2MAccountMemberRole{
+				MemberID:  member.ID,
+				RoleID:    v.ID,
+				CreatedAt: time.Now(),
+			}
+		})).Error
+	})
 }

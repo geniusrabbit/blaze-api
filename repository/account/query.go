@@ -1,9 +1,11 @@
 package account
 
 import (
+	"github.com/guregu/null"
+	"gorm.io/gorm"
+
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
-	"gorm.io/gorm"
 )
 
 // Filter of the objects list
@@ -63,8 +65,9 @@ type MemberFilter struct {
 	ID        []uint64
 	AccountID []uint64
 	UserID    []uint64
+	NotUserID []uint64
 	Status    []model.ApproveStatus
-	IsAdmin   *bool
+	IsAdmin   null.Bool
 }
 
 func (fl *MemberFilter) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -80,11 +83,14 @@ func (fl *MemberFilter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if len(fl.UserID) > 0 {
 		query = query.Where(`user_id IN (?)`, fl.UserID)
 	}
+	if len(fl.NotUserID) > 0 {
+		query = query.Where(`user_id NOT IN (?)`, fl.NotUserID)
+	}
 	if len(fl.Status) > 0 {
 		query = query.Where(`approve_status IN (?)`, fl.Status)
 	}
-	if fl.IsAdmin != nil {
-		query = query.Where(`is_admin = ?`, *fl.IsAdmin)
+	if fl.IsAdmin.Bool && fl.IsAdmin.Valid {
+		query = query.Where(`is_admin = ?`, fl.IsAdmin.Bool)
 	}
 	return query
 }

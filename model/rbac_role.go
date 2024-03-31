@@ -8,6 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	AccessLevelBasic       = 0
+	AccessLevelNoAnonymous = 1
+	AccessLevelAccount     = 2
+	AccessLevelSystem      = 3
+)
+
 // M2MRole link parent and child role
 type M2MRole struct {
 	ParentRoleID uint64    `db:"parent_role_id" gorm:"primaryKey"`
@@ -26,11 +33,15 @@ type Role struct {
 	Name  string `db:"name"`
 	Title string `db:"title"`
 
+	Description string `db:"description"`
+
 	// Contains additional data for the role
 	Context gosql.NullableJSON[map[string]any] `db:"context"`
 
 	ChildRoles         []*Role                   `db:"-" gorm:"many2many:m2m_rbac_role;ForeignKey:ID;joinForeignKey:parent_role_id;joinReferences:child_role_id;References:ID"`
 	PermissionPatterns gosql.NullableStringArray `db:"permissions" gorm:"column:permissions;type:text[]"`
+
+	AccessLevel int `db:"access_level"` // 0 - any, 1 - no anonymous, 2 - account, >=3 - system
 
 	CreatedAt time.Time      `db:"created_at"`
 	UpdatedAt time.Time      `db:"updated_at"`

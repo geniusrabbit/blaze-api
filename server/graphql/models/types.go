@@ -19,3 +19,10 @@ func s4ptr(s *string) string {
 	}
 	return *s
 }
+
+func s2ptr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

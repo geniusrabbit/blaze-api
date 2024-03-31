@@ -14,6 +14,8 @@ type RBACRole {
 	name:     String!
 	title:    String!
 
+  description: String
+
   """
   Context is a JSON object that defines the context of the role.
   The context is used to determine whether the role is applicable to the object.

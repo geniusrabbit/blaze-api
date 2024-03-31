@@ -34,7 +34,7 @@ type QueryResolver struct {
 // NewQueryResolver returns new API resolver
 func NewQueryResolver() *QueryResolver {
 	return &QueryResolver{
-		roles: usecase.NewRoleUsecase(repository.New()),
+		roles: usecase.New(repository.New()),
 	}
 }
 

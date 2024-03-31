@@ -12,7 +12,7 @@ require (
 	github.com/auth0/go-jwt-middleware v1.0.1
 	github.com/demdxx/gocast/v2 v2.8.3
 	github.com/demdxx/goconfig v1.0.0
-	github.com/demdxx/rbac v0.1.7
+	github.com/demdxx/rbac v0.1.8
 	github.com/demdxx/sendmsg v0.0.0-20240126132054-834dad9e9d6e
 	github.com/demdxx/xtypes v0.2.0
 	github.com/elliotchance/redismock/v8 v8.11.1

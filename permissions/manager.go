@@ -2,16 +2,12 @@ package permissions
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
-	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
-
-	"github.com/geniusrabbit/blaze-api/model"
 )
 
 const (
@@ -27,53 +23,9 @@ var (
 
 // ExtData permission data
 type ExtData struct {
-	ID     uint64 `json:"id"`
-	Object string `json:"object"`
-	Cover  string `json:"cover"`
-}
-
-type DBRoleLoader struct {
-	conn *gorm.DB
-}
-
-func (l *DBRoleLoader) ListRoles(ctx context.Context) []rbac.Role {
-	var (
-		links     []*model.M2MRole
-		roles     []*model.Role
-		roleCache = make(map[uint64]rbac.Role, 10)
-		query     = l.conn.WithContext(ctx)
-	)
-	err := query.Find(&roles).Error
-	if err != nil {
-		panic(err)
-	}
-	err = query.Find(&links).Error
-	if err != nil && !errors.Is(err, sql.ErrNoRows) && !errors.Is(err, gorm.ErrRecordNotFound) {
-		panic(err)
-	}
-	for _, role := range roles {
-		roleCache[role.ID], err = roleByModel(role, roleCache, links)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return xtypes.Map[uint64, rbac.Role](roleCache).Values()
-}
-
-func roleByModel(role *model.Role, roles map[uint64]rbac.Role, links []*model.M2MRole) (rbac.Role, error) {
-	roleList := make([]rbac.Role, 0, len(links))
-	for _, link := range links {
-		if link.ParentRoleID != role.ID {
-			continue
-		}
-		if rls := roles[link.ChildRoleID]; rls != nil {
-			roleList = append(roleList, rls)
-		}
-	}
-	return rbac.NewRole(role.Name, rbac.WithChildRoles(roleList...),
-		rbac.WithPermissions(gocast.Slice[any](role.PermissionPatterns)...),
-		rbac.WithExtData(&ExtData{ID: role.ID}),
-	)
+	ID          uint64 `json:"id"`
+	Title       string `json:"title"`
+	AccessLevel int    `json:"access_level"`
 }
 
 // Manager provides methods to control and cache permissions

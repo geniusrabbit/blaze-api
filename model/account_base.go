@@ -81,21 +81,26 @@ func (acc *Account) ExtendAdminUsers(ids ...uint64) {
 }
 
 // CheckPermissions for some specific resource
-func (acc *Account) CheckPermissions(ctx context.Context, resource any, names ...string) bool {
+func (acc *Account) CheckPermissions(ctx context.Context, resource any, patterns ...string) bool {
 	if acc == nil || acc.Permissions == nil {
 		return false
 	}
 	ctx = context.WithValue(ctx, ctxPermissionCheckAccount, acc)
-	return acc.Permissions.CheckPermissions(ctx, resource, names...)
+	return acc.Permissions.CheckPermissions(ctx, resource, patterns...)
 }
 
 // CheckedPermissions for some specific resource
-func (acc *Account) CheckedPermissions(ctx context.Context, resource any, names ...string) rbac.Permission {
+func (acc *Account) CheckedPermissions(ctx context.Context, resource any, patterns ...string) rbac.Permission {
 	if acc == nil || acc.Permissions == nil {
 		return nil
 	}
 	ctx = context.WithValue(ctx, ctxPermissionCheckAccount, acc)
-	return acc.Permissions.CheckedPermissions(ctx, resource, names...)
+	return acc.Permissions.CheckedPermissions(ctx, resource, patterns...)
+}
+
+// HasPermission for the account
+func (acc *Account) HasPermission(ctx context.Context, patterns ...string) bool {
+	return acc.Permissions.HasPermission(patterns...)
 }
 
 // OwnerAccountID returns the account ID which belongs the object

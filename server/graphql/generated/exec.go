@@ -314,6 +314,7 @@ type ComplexityRoot struct {
 		Context            func(childComplexity int) int
 		CreatedAt          func(childComplexity int) int
 		DeletedAt          func(childComplexity int) int
+		Description        func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Name               func(childComplexity int) int
 		PermissionPatterns func(childComplexity int) int
@@ -1962,6 +1963,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.RBACRole.DeletedAt(childComplexity), true
+
+	case "RBACRole.description":
+		if e.complexity.RBACRole.Description == nil {
+			break
+		}
+
+		return e.complexity.RBACRole.Description(childComplexity), true
 
 	case "RBACRole.ID":
 		if e.complexity.RBACRole.ID == nil {
@@ -4131,6 +4139,8 @@ type RBACRole {
 	ID:       ID64!
 	name:     String!
 	title:    String!
+
+  description: String
 
   """
   Context is a JSON object that defines the context of the role.
@@ -8981,6 +8991,8 @@ func (ec *executionContext) fieldContext_Member_roles(ctx context.Context, field
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
+			case "description":
+				return ec.fieldContext_RBACRole_description(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
 			case "childRoles":
@@ -15278,6 +15290,44 @@ func (ec *executionContext) fieldContext_RBACRole_title(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _RBACRole_description(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RBACRole_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RBACRole_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RBACRole",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RBACRole_context(ctx context.Context, field graphql.CollectedField, obj *models.RBACRole) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RBACRole_context(ctx, field)
 	if err != nil {
@@ -15355,6 +15405,8 @@ func (ec *executionContext) fieldContext_RBACRole_childRoles(ctx context.Context
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
+			case "description":
+				return ec.fieldContext_RBACRole_description(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
 			case "childRoles":
@@ -15708,6 +15760,8 @@ func (ec *executionContext) fieldContext_RBACRoleConnection_list(ctx context.Con
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
+			case "description":
+				return ec.fieldContext_RBACRole_description(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
 			case "childRoles":
@@ -15866,6 +15920,8 @@ func (ec *executionContext) fieldContext_RBACRoleEdge_node(ctx context.Context, 
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
+			case "description":
+				return ec.fieldContext_RBACRole_description(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
 			case "childRoles":
@@ -16008,6 +16064,8 @@ func (ec *executionContext) fieldContext_RBACRolePayload_role(ctx context.Contex
 				return ec.fieldContext_RBACRole_name(ctx, field)
 			case "title":
 				return ec.fieldContext_RBACRole_title(ctx, field)
+			case "description":
+				return ec.fieldContext_RBACRole_description(ctx, field)
 			case "context":
 				return ec.fieldContext_RBACRole_context(ctx, field)
 			case "childRoles":
@@ -23655,6 +23713,8 @@ func (ec *executionContext) _RBACRole(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "description":
+			out.Values[i] = ec._RBACRole_description(ctx, field, obj)
 		case "context":
 			out.Values[i] = ec._RBACRole_context(ctx, field, obj)
 		case "childRoles":
