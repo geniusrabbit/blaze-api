@@ -60,13 +60,14 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID, i
 			ctxlogger.Get(ctx).Error("undefined permission key request", zap.String("key", *key))
 			return nil, nil
 		}
+		obj = ownedObject(ctx, obj, session.User(ctx), session.Account(ctx))
 		if targetID != nil && *targetID != "" {
+			var err error
 			key := "ID"
 			if idKey != nil && *idKey != "" {
 				key = *idKey
 			}
 			if id, _ := gocast.StructFieldValue(obj, key); id != nil {
-				var err error
 				switch id.(type) {
 				case uint64:
 					err = gocast.SetStructFieldValue(ctx, obj, key, gocast.Uint64(*targetID))
@@ -83,11 +84,11 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID, i
 				default:
 					return nil, errors.Wrap(ErrInvalidTargetValue, *targetID)
 				}
-				if err != nil {
-					return nil, err
-				}
 			} else {
 				return nil, errors.Wrap(ErrInvalidTargetValue, *targetID)
+			}
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -188,11 +189,4 @@ func (r *QueryResolver) ListPermissions(ctx context.Context, patterns []string) 
 func (r *QueryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*gqlmodels.RBACPermission, error) {
 	list := session.Account(ctx).ListPermissions()
 	return gqlmodels.FromRBACPermissionModelList(list), nil
-}
-
-func valOrDef[T any](v *T, def T) T {
-	if v == nil {
-		return def
-	}
-	return *v
 }

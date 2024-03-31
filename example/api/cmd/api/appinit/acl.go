@@ -58,7 +58,7 @@ func InitModelPermissions(pm *permissions.Manager) {
 
 	// Register basic permissions for the AccountMember model
 	_ = pm.RegisterNewOwningPermissions(&model.AccountMember{}, crudPermissionsWithApprove)
-	_ = pm.RegisterNewPermissions(&model.AccountMember{}, []string{`roles.set`, `invite`})
+	_ = pm.RegisterNewPermissions(&model.AccountMember{}, []string{`roles.set.account`, `roles.set.all`, `invite`})
 
 	// Register basic permissions for the HistoryAction model
 	_ = pm.RegisterNewOwningPermissions(&model.HistoryAction{}, []string{acl.PermView, acl.PermList, acl.PermCount})

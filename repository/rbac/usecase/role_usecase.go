@@ -110,13 +110,13 @@ func (a *RoleUsecase) Delete(ctx context.Context, id uint64) error {
 }
 
 func prepareFilter(ctx context.Context, filter *rbac.Filter, accessName string) *rbac.Filter {
-	if acl.HasPermission(ctx, "rbac."+accessName+".all") {
+	if acl.HasPermission(ctx, "role."+accessName+".all") {
 		return filter
 	}
 	if filter == nil {
 		filter = &rbac.Filter{}
 	}
-	if acl.HasPermission(ctx, "rbac."+accessName+".account") {
+	if acl.HasPermission(ctx, "role."+accessName+".account") {
 		filter.MaxAccessLevel = model.AccessLevelAccount
 	} else if session.User(ctx).IsAnonymous() {
 		filter.MaxAccessLevel = model.AccessLevelBasic

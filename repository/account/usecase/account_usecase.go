@@ -242,7 +242,7 @@ func (a *AccountUsecase) SetAccountMemeberRoles(ctx context.Context, accountID, 
 	if err != nil {
 		return nil, err
 	}
-	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set`) {
+	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set.*`) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
 	}
 	return memeber, a.accountRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
@@ -254,7 +254,7 @@ func (a *AccountUsecase) SetMemberRoles(ctx context.Context, memberID uint64, ro
 	if err != nil {
 		return nil, err
 	}
-	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set`) {
+	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set.*`) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
 	}
 	return memeber, a.accountRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
