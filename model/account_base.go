@@ -98,8 +98,16 @@ func (acc *Account) CheckedPermissions(ctx context.Context, resource any, patter
 	return acc.Permissions.CheckedPermissions(ctx, resource, patterns...)
 }
 
+// ListPermissions for the account
+func (acc *Account) ListPermissions(patterns ...string) []rbac.Permission {
+	if acc == nil || acc.Permissions == nil {
+		return nil
+	}
+	return acc.Permissions.Permissions(patterns...)
+}
+
 // HasPermission for the account
-func (acc *Account) HasPermission(ctx context.Context, patterns ...string) bool {
+func (acc *Account) HasPermission(patterns ...string) bool {
 	return acc.Permissions.HasPermission(patterns...)
 }
 

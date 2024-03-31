@@ -153,6 +153,11 @@ extend type Query {
   List of the RBAC permissions
   """
   listPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
+
+  """
+  List of the RBAC permissions for the current user
+  """
+  listMyPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
 }
 
 extend type Mutation {

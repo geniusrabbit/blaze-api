@@ -23,6 +23,7 @@ type permissionChecker interface {
 	CheckedPermissions(ctx context.Context, resource any, patterns ...string) rbac.Permission
 	ChildRoles() []rbac.Role
 	ChildPermissions() []rbac.Permission
+	Permissions(patterns ...string) []rbac.Permission
 	HasPermission(patterns ...string) bool
 }
 
@@ -67,6 +68,14 @@ func (groups groupPermissionChecker) ChildPermissions() []rbac.Permission {
 			perms = append(perms, perm)
 		}
 		perms = append(perms, group.ChildPermissions()...)
+	}
+	return perms
+}
+
+func (groups groupPermissionChecker) Permissions(patterns ...string) []rbac.Permission {
+	var perms []rbac.Permission
+	for _, group := range groups {
+		perms = append(perms, group.Permissions(patterns...)...)
 	}
 	return perms
 }

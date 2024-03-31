@@ -6,9 +6,7 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/generated"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -48,12 +46,7 @@ func (r *queryResolver) ListPermissions(ctx context.Context, patterns []string) 
 	return r.Resolver.Query().ListPermissions(ctx, patterns)
 }
 
-// Description is the resolver for the description field.
-func (r *rBACRoleResolver) Description(ctx context.Context, obj *models.RBACRole) (*string, error) {
-	panic(fmt.Errorf("not implemented: Description - description"))
+// ListMyPermissions is the resolver for the listMyPermissions field.
+func (r *queryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
+	return r.Resolver.Query().ListMyPermissions(ctx, patterns)
 }
-
-// RBACRole returns generated.RBACRoleResolver implementation.
-func (r *Resolver) RBACRole() generated.RBACRoleResolver { return &rBACRoleResolver{r} }
-
-type rBACRoleResolver struct{ *Resolver }

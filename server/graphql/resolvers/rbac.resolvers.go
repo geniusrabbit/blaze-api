@@ -45,3 +45,8 @@ func (r *queryResolver) ListRoles(ctx context.Context, filter *models.RBACRoleLi
 func (r *queryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
 	return r.roles.ListPermissions(ctx, patterns)
 }
+
+// ListMyPermissions is the resolver for the listMyPermissions field.
+func (r *queryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
+	return r.roles.ListMyPermissions(ctx, patterns)
+}

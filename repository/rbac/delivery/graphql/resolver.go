@@ -13,7 +13,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/permissions"
-	"github.com/geniusrabbit/blaze-api/repository/rbac"
+	rbacGen "github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
 	"github.com/geniusrabbit/blaze-api/requestid"
@@ -28,7 +28,7 @@ var (
 
 // QueryResolver implements GQL API methods
 type QueryResolver struct {
-	roles rbac.Usecase
+	roles rbacGen.Usecase
 }
 
 // NewQueryResolver returns new API resolver
@@ -182,6 +182,11 @@ func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) 
 // ListPermissions is the resolver for the listPermissions field.
 func (r *QueryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*gqlmodels.RBACPermission, error) {
 	list := permissions.FromContext(ctx).Permissions(patterns...)
+	return gqlmodels.FromRBACPermissionModelList(list), nil
+}
+
+func (r *QueryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*gqlmodels.RBACPermission, error) {
+	list := session.Account(ctx).ListPermissions()
 	return gqlmodels.FromRBACPermissionModelList(list), nil
 }
 
