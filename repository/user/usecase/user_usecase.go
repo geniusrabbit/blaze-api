@@ -4,9 +4,9 @@ package usecase
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -17,8 +17,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
-
-const passwordUpdatePermission = `user:password.update`
 
 var ErrInvalidPasswordResetCode = errors.New(`invalid password reset code`)
 
@@ -110,8 +108,8 @@ func (a *UserUsecase) Count(ctx context.Context, filter *user.ListFilter) (int64
 
 // SetPassword for the exists user
 func (a *UserUsecase) SetPassword(ctx context.Context, userObj *model.User, password string) error {
-	if !acl.HaveAccessUpdate(ctx, userObj) || !acl.HavePermissions(ctx, passwordUpdatePermission) {
-		return acl.ErrNoPermissions
+	if !acl.HaveObjectPermissions(ctx, userObj, `password.set.*`) {
+		return errors.Wrap(acl.ErrNoPermissions, `set password`)
 	}
 	return a.userRepo.SetPassword(ctx, userObj, password)
 }
@@ -124,6 +122,9 @@ func (a *UserUsecase) ResetPassword(ctx context.Context, email string) (*model.U
 			return nil, nil, nil
 		}
 		return nil, nil, err
+	}
+	if !acl.HaveObjectPermissions(ctx, user, `password.reset.*`) {
+		return nil, nil, errors.Wrap(acl.ErrNoPermissions, `reset password`)
 	}
 	reset, err := a.userRepo.CreateResetPassword(ctx, user.ID)
 	if err != nil {

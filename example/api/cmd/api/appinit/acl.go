@@ -22,8 +22,8 @@ var (
 const (
 	PermAccountRegister = `account.register`
 	PermPermissionList  = `permission.list`
-	PermUserResetPass   = `reset_password`
 	PermUserPassReset   = `password.reset`
+	PermUserPassSet     = `password.set`
 )
 
 // InitModelPermissions models
@@ -42,8 +42,7 @@ func InitModelPermissions(pm *permissions.Manager) {
 	)
 
 	// Register user permissions
-	_ = pm.RegisterNewPermissions(&model.User{}, []string{PermUserResetPass, PermUserPassReset})
-	_ = pm.RegisterNewOwningPermissions(&model.User{}, append(crudPermissions, PermUserPassReset, PermUserResetPass))
+	_ = pm.RegisterNewOwningPermissions(&model.User{}, append(crudPermissions, PermUserPassReset, PermUserPassSet))
 
 	// Register basic models CRUD permissions for Account with member checks
 	_ = pm.RegisterNewOwningPermissions(&model.Account{}, crudPermissionsWithApprove, rbac.WithCustomCheck(accountCustomCheck))
@@ -70,8 +69,8 @@ func InitModelPermissions(pm *permissions.Manager) {
 	pm.RegisterRole(context.Background(),
 		rbac.MustNewRole(session.AnonymousDefaultRole, rbac.WithPermissions(
 			`user.view.owner`, `user.list.owner`, `user.count.owner`,
-			`user.reset_password`, `user.reset_password.*`, `user.password.reset`,
-			`account.view.owner`, `account.list.owner`, `account.count.owner`, PermAccountRegister,
+			`user.password.reset.owner`, `user.password.set.owner`, PermAccountRegister,
+			`account.view.owner`, `account.list.owner`, `account.count.owner`,
 		)),
 	)
 }

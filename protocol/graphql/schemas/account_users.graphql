@@ -203,10 +203,10 @@ extend type Mutation {
   """
   Reset password of the particular user in case if user forgot it
   """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset"])
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
 
   """
   Update password of the particular user
   """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset"])
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
 }
