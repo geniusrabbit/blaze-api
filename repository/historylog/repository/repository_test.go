@@ -44,7 +44,7 @@ func (s *testSuite) TestCount() {
 func (s *testSuite) TestFetchList() {
 	uid1, uid2 := uuid.New(), uuid.New()
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(uid1, uid2).
+		WithArgs(uid1, uid2, 100).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "user_id", "account_id", "object_id", "object_id_str", "object_type", "created_at"}).
 				AddRow(uid1, 1, 1, 111, "111", "model:User", time.Now()).

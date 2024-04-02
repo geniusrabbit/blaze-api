@@ -18,8 +18,8 @@ import (
 
 // Errors list...
 var (
-	ErrInvalidPassword   = errors.New(`[user] invalid password`)
-	ErrInvalidUserObject = errors.New(`[user] invalid object`)
+	ErrInvalidPassword   = errors.New(`invalid password`)
+	ErrInvalidUserObject = errors.New(`invalid object`)
 )
 
 // Repository DAO which provides functionality of working with users and authorization
@@ -45,6 +45,9 @@ func (r *Repository) Get(ctx context.Context, id uint64) (*model.User, error) {
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	object := new(model.User)
 	if err := r.Slave(ctx).First(object, `lower(email)=?`, strings.ToLower(email)).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return object, nil

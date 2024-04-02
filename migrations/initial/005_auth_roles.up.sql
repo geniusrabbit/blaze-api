@@ -49,7 +49,7 @@ INSERT INTO rbac_role
     'Account administrators have full access to all account resources',
     NULL,
     2,
-    '{"*.*.{account|owner}", "*.*.*.{account|owner}", "role.check", "user.password.reset", "permission.list", "account.member.roles.set.account"}'
+    '{"*.*.{account|owner}", "*.*.*.{account|owner}", "role.check", "user.password.reset.{account|owner}", "permission.list", "account.member.roles.set.account"}'
   ),
   (
     'account:writer',

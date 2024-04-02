@@ -55,8 +55,8 @@ func (s *testSuite) TestGetByTitle() {
 }
 
 func (s *testSuite) TestGetCurrent() {
-	// s.accountRepo.EXPECT().Get(s.ctx, uint64(1)).
-	// 	Return(&model.Account{ID: 1}, nil)
+	s.accountRepo.EXPECT().Get(s.ctx, uint64(1)).
+		Return(&model.Account{ID: 1}, nil)
 
 	account, err := s.accountUsecase.Get(s.ctx, 1)
 	s.NoError(err)
@@ -115,7 +115,10 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.accountRepo.EXPECT().
-		Delete(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
+		Get(s.ctx, uint64(1)).
+		Return(&model.Account{ID: 1}, nil)
+	s.accountRepo.EXPECT().
+		Delete(s.ctx, gomock.AssignableToTypeOf(uint64(1))).
 		Return(nil)
 
 	err := s.accountUsecase.Delete(s.ctx, 1)
@@ -132,7 +135,7 @@ func (s *testSuite) TestDeleteNotFound() {
 
 func (s *testSuite) TestFetchListMembers() {
 	s.accountRepo.EXPECT().
-		FetchListMembers(s.ctx, gomock.AssignableToTypeOf(account.MemberListOption(nil)), nil, nil).
+		FetchListMembers(s.ctx, gomock.AssignableToTypeOf((*account.MemberFilter)(nil)), nil, nil).
 		Return([]*model.AccountMember{{ID: 1}, {ID: 2}}, nil)
 
 	members, err := s.accountUsecase.FetchListMembers(s.ctx,

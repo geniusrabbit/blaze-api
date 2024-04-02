@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-
 	"github.com/stretchr/testify/suite"
 
 	"github.com/geniusrabbit/blaze-api/model"
@@ -40,7 +39,7 @@ func (s *testSuite) SetupSuite() {
 
 func (s *testSuite) TestGet() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(1).
+		WithArgs(1, 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
@@ -52,7 +51,7 @@ func (s *testSuite) TestGet() {
 
 func (s *testSuite) TestGetByEmail() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs("test@mail.com").
+		WithArgs("test@mail.com", 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "test@mail.com", defaultPasswordHash, time.Now()),
@@ -65,7 +64,7 @@ func (s *testSuite) TestGetByEmail() {
 
 func (s *testSuite) TestFetchList() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(1, 1, 2).
+		WithArgs(1, 1, 2, 100).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()).
@@ -94,7 +93,7 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestGetByPassword() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs("email1").
+		WithArgs("email1", 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
@@ -113,14 +112,14 @@ func (s *testSuite) TestGetByToken() {
 			sqlmock.NewRows([]string{"id", "status", "user_id", "account_id", "is_admin", "created_at", "updated_at"}).
 				AddRow(1, 1, 1, 1, 0, time.Now(), time.Now()),
 		)
-	s.Mock.ExpectQuery(`SELECT \* FROM "` + (*model.User)(nil).TableName() + `"`).
-		WithArgs(uint64(1)).
+	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*model.User)(nil).TableName()+`"`).
+		WithArgs(uint64(1), 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
 		)
-	s.Mock.ExpectQuery(`SELECT \* FROM "` + (*model.Account)(nil).TableName() + `"`).
-		WithArgs(uint64(1)).
+	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*model.Account)(nil).TableName()+`"`).
+		WithArgs(uint64(1), 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "title", "description", "created_at"}).
 				AddRow(1, 1, "title1", "description1", time.Now()),

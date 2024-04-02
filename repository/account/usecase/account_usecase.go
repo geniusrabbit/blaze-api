@@ -3,6 +3,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/pkg/errors"
@@ -16,6 +17,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
+
+var ErrOwnerRequired = errors.New("owner is required")
 
 // AccountUsecase provides bussiness logic for account access
 type AccountUsecase struct {
@@ -107,8 +110,16 @@ func (a *AccountUsecase) Store(ctx context.Context, accountObj *model.Account) (
 
 // Register new account with owner if not exists
 func (a *AccountUsecase) Register(ctx context.Context, ownerObj *model.User, accountObj *model.Account, password string) (uint64, error) {
+	if ownerObj == nil || (ownerObj.ID == 0 && ownerObj.Email == "") {
+		return 0, errors.Wrap(ErrOwnerRequired, "invalid user data")
+	}
 	if !acl.HavePermissions(ctx, "account.register") {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "register account")
+	}
+	if ownerObj.ID == 0 {
+		if user, _ := a.userRepo.GetByEmail(ctx, ownerObj.Email); user != nil {
+			return 0, fmt.Errorf("user with email %s cant be registered", ownerObj.Email)
+		}
 	}
 	// Execute all operations in transaction
 	err := database.ContextTransactionExec(ctx, func(txctx context.Context, tx *gorm.DB) error {
@@ -137,7 +148,7 @@ func (a *AccountUsecase) Register(ctx context.Context, ownerObj *model.User, acc
 
 // Delete delites record by ID
 func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
-	accountObj, err := a.Get(ctx, id)
+	accountObj, err := a.accountRepo.Get(ctx, id)
 	if err != nil {
 		return err
 	}

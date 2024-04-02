@@ -46,7 +46,7 @@ func (s *testSuite) TestGet() {
 
 func (s *testSuite) TestFetchList() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs("opt.name1", "opt.name2").
+		WithArgs("opt.name1", "opt.name2", 100).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}).
 				AddRow(model.UserOptionType, uint64(1), "opt.name1", `{"val":1}`, time.Now()).
