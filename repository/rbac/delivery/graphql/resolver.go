@@ -9,14 +9,14 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
-	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	rbacGen "github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
-	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )

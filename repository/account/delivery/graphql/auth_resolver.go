@@ -9,10 +9,10 @@ import (
 	lrbac "github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/auth/jwt"
-	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"

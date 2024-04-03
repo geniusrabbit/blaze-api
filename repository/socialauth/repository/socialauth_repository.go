@@ -7,8 +7,8 @@ import (
 	"github.com/guregu/null"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 )

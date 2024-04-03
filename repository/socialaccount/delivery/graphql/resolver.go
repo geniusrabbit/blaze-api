@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/geniusrabbit/blaze-api/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount/usecase"
-	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )

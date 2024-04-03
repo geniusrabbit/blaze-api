@@ -3,8 +3,8 @@ package socialauth
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 )
 
 // Usecase of the socialauth account which provides bussiness logic for socialauth access

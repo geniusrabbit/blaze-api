@@ -1,7 +1,7 @@
 package resolvers
 
 import (
-	"github.com/geniusrabbit/blaze-api/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	account_graphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
 	authclient_graphql "github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql"
 	historylog_graphql "github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql"

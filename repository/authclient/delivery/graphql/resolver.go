@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/repository"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/usecase"
-	"github.com/geniusrabbit/blaze-api/requestid"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )

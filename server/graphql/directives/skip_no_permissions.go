@@ -5,8 +5,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 
-	"github.com/geniusrabbit/blaze-api/context/session"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 )
 
 // SkipNoPermissions directive to skip resolver if no permissions

@@ -49,7 +49,7 @@ INSERT INTO rbac_role
     'Account administrators have full access to all account resources',
     NULL,
     2,
-    '{"*.*.{account|owner}", "*.*.*.{account|owner}", "role.check", "user.password.reset.{account|owner}", "permission.list", "account.member.roles.set.account"}'
+    '{"*.*.{account|owner}", "*.*.*.{account|owner}", "role.check", "user.password.reset.{account|owner}", "permission.list", "account.member.roles.set.account", "certificate.view.statistic.{account|owner}"}'
   ),
   (
     'account:writer',
@@ -57,7 +57,7 @@ INSERT INTO rbac_role
     'Account writers have full access to all account resources except for some sensitive operations',
     NULL,
     2,
-    '{"*.{view|list|restore}.{account|owner}", "*.*.{view|list|restore}.{account|owner}", "role.check", "user.password.reset", "permission.list"}'
+    '{"*.{view|list|restore}.{account|owner}", "*.*.{view|list|restore}.{account|owner}", "role.check", "user.password.reset", "permission.list", "certificate.view.statistic.{account|owner}"}'
   ),
   (
     'account:analyst',
@@ -65,7 +65,7 @@ INSERT INTO rbac_role
     'Account analysts have read-only access to all account resources and analytics',
     NULL,
     2,
-    '{"*.{view|list}.{account|owner}", "*.*.{view|list}.{account|owner}", "role.check", "user.password.reset", "permission.list"}'
+    '{"*.{view|list}.{account|owner}", "*.*.{view|list}.{account|owner}", "role.check", "user.password.reset", "permission.list", "certificate.view.statistic.{account|owner}"}'
   ),
   (
     'account:viewer',
@@ -73,7 +73,7 @@ INSERT INTO rbac_role
     'Account viewers have read-only access to all account resources except analytics',
     NULL,
     2,
-    '{"*.{view|list}.{account|owner}", "*.*.{view|list}.{account|owner}", "role.check", "user.password.reset", "permission.list"}'
+    '{"*.{view|list}.{account|owner}", "*.*.{view|list}.{account|owner}", "role.check", "user.password.reset", "permission.list", "certificate.view.statistic.{account|owner}"}'
   ),
   (
     'account:compliance',

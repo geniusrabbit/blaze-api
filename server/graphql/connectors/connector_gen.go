@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/demdxx/gocast/v2"
-	"github.com/geniusrabbit/blaze-api/acl"
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 

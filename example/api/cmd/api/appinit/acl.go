@@ -5,10 +5,10 @@ import (
 
 	"github.com/demdxx/rbac"
 
-	"github.com/geniusrabbit/blaze-api/acl"
-	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 )
 

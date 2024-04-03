@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"github.com/geniusrabbit/blaze-api/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 )
 

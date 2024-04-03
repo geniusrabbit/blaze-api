@@ -3,12 +3,13 @@ package usecase
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/acl"
-	"github.com/geniusrabbit/blaze-api/context/session"
+	"github.com/pkg/errors"
+
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
-	"github.com/pkg/errors"
 )
 
 // Usecase for social account

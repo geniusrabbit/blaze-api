@@ -16,9 +16,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/auth/jwt"
-	"github.com/geniusrabbit/blaze-api/middleware"
-	"github.com/geniusrabbit/blaze-api/profiler"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/middleware"
+	"github.com/geniusrabbit/blaze-api/pkg/profiler"
 	"github.com/geniusrabbit/blaze-api/server/graphql"
 )
 

@@ -13,8 +13,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/opentracing/opentracing-go"
 
-	"github.com/geniusrabbit/blaze-api/acl"
-	"github.com/geniusrabbit/blaze-api/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/server/graphql/directives"
 	"github.com/geniusrabbit/blaze-api/server/graphql/generated"
 	"github.com/geniusrabbit/blaze-api/server/graphql/resolvers"

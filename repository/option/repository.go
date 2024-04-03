@@ -5,9 +5,10 @@ import (
 	"bytes"
 	"context"
 
+	"gorm.io/gorm"
+
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
-	"gorm.io/gorm"
 )
 
 // Filter of the objects list

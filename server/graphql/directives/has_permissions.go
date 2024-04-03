@@ -9,9 +9,9 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/pkg/errors"
 
-	"github.com/geniusrabbit/blaze-api/context/session"
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 )
 
 var (

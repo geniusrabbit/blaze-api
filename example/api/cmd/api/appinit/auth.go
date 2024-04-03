@@ -10,13 +10,13 @@ import (
 	"github.com/ory/fosite/compose"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/auth/jwt"
-	"github.com/geniusrabbit/blaze-api/auth/oauth2/serverprovider"
-	"github.com/geniusrabbit/blaze-api/cache"
-	"github.com/geniusrabbit/blaze-api/cache/dummy"
-	"github.com/geniusrabbit/blaze-api/cache/memory"
-	"github.com/geniusrabbit/blaze-api/cache/redis"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2/serverprovider"
+	"github.com/geniusrabbit/blaze-api/pkg/cache"
+	"github.com/geniusrabbit/blaze-api/pkg/cache/dummy"
+	"github.com/geniusrabbit/blaze-api/pkg/cache/memory"
+	"github.com/geniusrabbit/blaze-api/pkg/cache/redis"
 	user_repository "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
 

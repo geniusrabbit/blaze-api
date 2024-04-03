@@ -7,9 +7,9 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
-	"github.com/geniusrabbit/blaze-api/context/database"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 )
 
 // Repository with basic functionality

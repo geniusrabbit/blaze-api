@@ -7,8 +7,8 @@ package resolvers
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/context/version"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/generated"
+	"github.com/geniusrabbit/blaze-api/pkg/context/version"
 )
 
 // Poke is the resolver for the poke field.

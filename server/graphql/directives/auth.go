@@ -5,7 +5,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 
-	"github.com/geniusrabbit/blaze-api/context/session"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 )
 
 // Auth directive checks that user is authenticated

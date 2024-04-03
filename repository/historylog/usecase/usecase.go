@@ -4,8 +4,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/acl"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/pkg/errors"

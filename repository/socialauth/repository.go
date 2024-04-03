@@ -5,8 +5,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 )
 
 type Filter struct {

@@ -10,9 +10,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/context/ctxlogger"
-	"github.com/geniusrabbit/blaze-api/database"
-	"github.com/geniusrabbit/blaze-api/permissions"
+	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	"github.com/geniusrabbit/blaze-api/pkg/database"
+	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 )
 
 // DatabaseSuite implementation with database
