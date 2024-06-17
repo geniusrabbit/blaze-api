@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS direct_access_tokens
                                                                         ON DELETE RESTRICT
 
 , created_at              TIMESTAMP                   NOT NULL      DEFAULT NOW()
-, deleted_at              TIMESTAMP
+, expires_at              TIMESTAMP
 );
 
 CREATE TRIGGER updated_at_triger BEFORE UPDATE
