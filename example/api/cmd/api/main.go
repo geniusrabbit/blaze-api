@@ -119,12 +119,6 @@ func main() {
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
 		SessionManager: appinit.SessionManager(conf.Session.CookieName, conf.Session.Lifetime),
-		// OAuth2provider: oauth2provider,
-		// AuthOption: gocast.IfThen(conf.IsDebug(), &middleware.AuthOption{
-		// 	DevToken:     conf.Session.DevToken,
-		// 	DevUserID:    conf.Session.DevUserID,
-		// 	DevAccountID: conf.Session.DevAccountID,
-		// }, nil),
 		Authorizers: []auth.Authorizer{
 			jwt.NewAuthorizer(jwtProvider),
 			oauth2.NewAuthorizer(oauth2provider),

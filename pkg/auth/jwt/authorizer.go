@@ -29,12 +29,12 @@ func (au *Authorizer) AuthorizerCode() string {
 }
 
 func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (token string, usr *model.User, acc *model.Account, err error) {
-	ctx := r.Context()
 	if err = au.jmid.CheckJWT(w, r); err != nil {
-		ctxlogger.Get(ctx).Debug("JWT authorization", zap.Error(err))
+		ctxlogger.Get(r.Context()).Debug("JWT authorization", zap.Error(err))
 		return "", nil, nil, nil
 	}
 
+	ctx := r.Context()
 	jwtToken := ctx.Value(au.jmid.Options.UserProperty)
 	switch t := jwtToken.(type) {
 	case nil:
