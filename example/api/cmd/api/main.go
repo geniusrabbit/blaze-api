@@ -17,11 +17,14 @@ import (
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/migratedb"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server"
+	"github.com/geniusrabbit/blaze-api/pkg/auth"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/devtoken"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/facebook"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/version"
 	"github.com/geniusrabbit/blaze-api/pkg/database"
-	"github.com/geniusrabbit/blaze-api/pkg/middleware"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
 	"github.com/geniusrabbit/blaze-api/pkg/zlogger"
@@ -114,14 +117,23 @@ func main() {
 
 	httpServer := server.HTTPServer{
 		Logger:         loggerObj,
-		OAuth2provider: oauth2provider,
 		JWTProvider:    jwtProvider,
 		SessionManager: appinit.SessionManager(conf.Session.CookieName, conf.Session.Lifetime),
-		AuthOption: gocast.IfThen(conf.IsDebug(), &middleware.AuthOption{
-			DevToken:     conf.Session.DevToken,
-			DevUserID:    conf.Session.DevUserID,
-			DevAccountID: conf.Session.DevAccountID,
-		}, nil),
+		// OAuth2provider: oauth2provider,
+		// AuthOption: gocast.IfThen(conf.IsDebug(), &middleware.AuthOption{
+		// 	DevToken:     conf.Session.DevToken,
+		// 	DevUserID:    conf.Session.DevUserID,
+		// 	DevAccountID: conf.Session.DevAccountID,
+		// }, nil),
+		Authorizers: []auth.Authorizer{
+			jwt.NewAuthorizer(jwtProvider),
+			oauth2.NewAuthorizer(oauth2provider),
+			devtoken.NewAuthorizer(gocast.IfThen(conf.IsDebug(), &devtoken.AuthOption{
+				DevToken:     conf.Session.DevToken,
+				DevUserID:    conf.Session.DevUserID,
+				DevAccountID: conf.Session.DevAccountID,
+			}, nil)),
+		},
 		ContextWrap: func(ctx context.Context) context.Context {
 			ctx = ctxlogger.WithLogger(ctx, loggerObj)
 			ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)

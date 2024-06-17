@@ -131,6 +131,33 @@ type ComplexityRoot struct {
 		ClientMutationID func(childComplexity int) int
 	}
 
+	DirectAccessToken struct {
+		AccountID   func(childComplexity int) int
+		CreatedAt   func(childComplexity int) int
+		Description func(childComplexity int) int
+		ExpiresAt   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Token       func(childComplexity int) int
+		UserID      func(childComplexity int) int
+	}
+
+	DirectAccessTokenConnection struct {
+		Edges      func(childComplexity int) int
+		List       func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	DirectAccessTokenEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	DirectAccessTokenPayload struct {
+		ClientMutationID func(childComplexity int) int
+		Token            func(childComplexity int) int
+	}
+
 	HistoryAction struct {
 		AccountID  func(childComplexity int) int
 		ActionAt   func(childComplexity int) int
@@ -194,33 +221,35 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ApproveAccount          func(childComplexity int, id uint64, msg string) int
-		ApproveAccountMember    func(childComplexity int, memberID uint64, msg string) int
-		ApproveUser             func(childComplexity int, id uint64, msg *string) int
-		CreateAuthClient        func(childComplexity int, input models.AuthClientInput) int
-		CreateRole              func(childComplexity int, input models.RBACRoleInput) int
-		CreateUser              func(childComplexity int, input models.UserInput) int
-		DeleteAuthClient        func(childComplexity int, id string, msg *string) int
-		DeleteRole              func(childComplexity int, id uint64, msg *string) int
-		DisconnectSocialAccount func(childComplexity int, id uint64) int
-		InviteAccountMember     func(childComplexity int, accountID uint64, member models.InviteMemberInput) int
-		Login                   func(childComplexity int, login string, password string) int
-		Logout                  func(childComplexity int) int
-		Poke                    func(childComplexity int) int
-		RegisterAccount         func(childComplexity int, input models.AccountCreateInput) int
-		RejectAccount           func(childComplexity int, id uint64, msg string) int
-		RejectAccountMember     func(childComplexity int, memberID uint64, msg string) int
-		RejectUser              func(childComplexity int, id uint64, msg *string) int
-		RemoveAccountMember     func(childComplexity int, memberID uint64) int
-		ResetUserPassword       func(childComplexity int, email string) int
-		SetOption               func(childComplexity int, name string, input models.OptionInput) int
-		SwitchAccount           func(childComplexity int, id uint64) int
-		UpdateAccount           func(childComplexity int, id uint64, input models.AccountInput) int
-		UpdateAccountMember     func(childComplexity int, memberID uint64, member models.MemberInput) int
-		UpdateAuthClient        func(childComplexity int, id string, input models.AuthClientInput) int
-		UpdateRole              func(childComplexity int, id uint64, input models.RBACRoleInput) int
-		UpdateUser              func(childComplexity int, id uint64, input models.UserInput) int
-		UpdateUserPassword      func(childComplexity int, token string, email string, password string) int
+		ApproveAccount            func(childComplexity int, id uint64, msg string) int
+		ApproveAccountMember      func(childComplexity int, memberID uint64, msg string) int
+		ApproveUser               func(childComplexity int, id uint64, msg *string) int
+		CreateAuthClient          func(childComplexity int, input models.AuthClientInput) int
+		CreateRole                func(childComplexity int, input models.RBACRoleInput) int
+		CreateUser                func(childComplexity int, input models.UserInput) int
+		DeleteAuthClient          func(childComplexity int, id string, msg *string) int
+		DeleteRole                func(childComplexity int, id uint64, msg *string) int
+		DisconnectSocialAccount   func(childComplexity int, id uint64) int
+		GenerateDirectAccessToken func(childComplexity int, userID *uint64, description string, expiresAt *time.Time) int
+		InviteAccountMember       func(childComplexity int, accountID uint64, member models.InviteMemberInput) int
+		Login                     func(childComplexity int, login string, password string) int
+		Logout                    func(childComplexity int) int
+		Poke                      func(childComplexity int) int
+		RegisterAccount           func(childComplexity int, input models.AccountCreateInput) int
+		RejectAccount             func(childComplexity int, id uint64, msg string) int
+		RejectAccountMember       func(childComplexity int, memberID uint64, msg string) int
+		RejectUser                func(childComplexity int, id uint64, msg *string) int
+		RemoveAccountMember       func(childComplexity int, memberID uint64) int
+		ResetUserPassword         func(childComplexity int, email string) int
+		RevokeDirectAccessToken   func(childComplexity int, filter models.DirectAccessTokenListFilter) int
+		SetOption                 func(childComplexity int, name string, input models.OptionInput) int
+		SwitchAccount             func(childComplexity int, id uint64) int
+		UpdateAccount             func(childComplexity int, id uint64, input models.AccountInput) int
+		UpdateAccountMember       func(childComplexity int, memberID uint64, member models.MemberInput) int
+		UpdateAuthClient          func(childComplexity int, id string, input models.AuthClientInput) int
+		UpdateRole                func(childComplexity int, id uint64, input models.RBACRoleInput) int
+		UpdateUser                func(childComplexity int, id uint64, input models.UserInput) int
+		UpdateUserPassword        func(childComplexity int, token string, email string, password string) int
 	}
 
 	Option struct {
@@ -284,9 +313,11 @@ type ComplexityRoot struct {
 		CurrentSession                 func(childComplexity int) int
 		CurrentSocialAccounts          func(childComplexity int, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) int
 		CurrentUser                    func(childComplexity int) int
+		GetDirectAccessToken           func(childComplexity int, id uint64) int
 		ListAccountRolesAndPermissions func(childComplexity int, accountID uint64, order *models.RBACRoleListOrder) int
 		ListAccounts                   func(childComplexity int, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) int
 		ListAuthClients                func(childComplexity int, filter *models.AuthClientListFilter, order *models.AuthClientListOrder, page *models.Page) int
+		ListDirectAccessTokens         func(childComplexity int, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) int
 		ListHistory                    func(childComplexity int, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) int
 		ListMembers                    func(childComplexity int, filter *models.MemberListFilter, order *models.MemberListOrder, page *models.Page) int
 		ListMyPermissions              func(childComplexity int, patterns []string) int
@@ -399,8 +430,9 @@ type ComplexityRoot struct {
 	}
 
 	StatusResponse struct {
-		Message func(childComplexity int) int
-		Status  func(childComplexity int) int
+		ClientMutationID func(childComplexity int) int
+		Message          func(childComplexity int) int
+		Status           func(childComplexity int) int
 	}
 
 	User struct {
@@ -455,6 +487,8 @@ type MutationResolver interface {
 	CreateAuthClient(ctx context.Context, input models.AuthClientInput) (*models.AuthClientPayload, error)
 	UpdateAuthClient(ctx context.Context, id string, input models.AuthClientInput) (*models.AuthClientPayload, error)
 	DeleteAuthClient(ctx context.Context, id string, msg *string) (*models.AuthClientPayload, error)
+	GenerateDirectAccessToken(ctx context.Context, userID *uint64, description string, expiresAt *time.Time) (*models.DirectAccessTokenPayload, error)
+	RevokeDirectAccessToken(ctx context.Context, filter models.DirectAccessTokenListFilter) (*models.StatusResponse, error)
 	SetOption(ctx context.Context, name string, input models.OptionInput) (*models.OptionPayload, error)
 	CreateRole(ctx context.Context, input models.RBACRoleInput) (*models.RBACRolePayload, error)
 	UpdateRole(ctx context.Context, id uint64, input models.RBACRoleInput) (*models.RBACRolePayload, error)
@@ -476,6 +510,8 @@ type QueryResolver interface {
 	ListUsers(ctx context.Context, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) (*connectors.CollectionConnection[models.User, models.UserEdge], error)
 	AuthClient(ctx context.Context, id string) (*models.AuthClientPayload, error)
 	ListAuthClients(ctx context.Context, filter *models.AuthClientListFilter, order *models.AuthClientListOrder, page *models.Page) (*connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge], error)
+	GetDirectAccessToken(ctx context.Context, id uint64) (*models.DirectAccessTokenPayload, error)
+	ListDirectAccessTokens(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge], error)
 	ListHistory(ctx context.Context, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) (*connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge], error)
 	Option(ctx context.Context, name string, optionType models.OptionType, targetID uint64) (*models.OptionPayload, error)
 	ListOptions(ctx context.Context, filter *models.OptionListFilter, order *models.OptionListOrder, page *models.Page) (*connectors.CollectionConnection[models.Option, models.OptionEdge], error)
@@ -855,6 +891,111 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AuthClientPayload.ClientMutationID(childComplexity), true
 
+	case "DirectAccessToken.accountID":
+		if e.complexity.DirectAccessToken.AccountID == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.AccountID(childComplexity), true
+
+	case "DirectAccessToken.createdAt":
+		if e.complexity.DirectAccessToken.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.CreatedAt(childComplexity), true
+
+	case "DirectAccessToken.description":
+		if e.complexity.DirectAccessToken.Description == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.Description(childComplexity), true
+
+	case "DirectAccessToken.expiresAt":
+		if e.complexity.DirectAccessToken.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.ExpiresAt(childComplexity), true
+
+	case "DirectAccessToken.ID":
+		if e.complexity.DirectAccessToken.ID == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.ID(childComplexity), true
+
+	case "DirectAccessToken.token":
+		if e.complexity.DirectAccessToken.Token == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.Token(childComplexity), true
+
+	case "DirectAccessToken.userID":
+		if e.complexity.DirectAccessToken.UserID == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessToken.UserID(childComplexity), true
+
+	case "DirectAccessTokenConnection.edges":
+		if e.complexity.DirectAccessTokenConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenConnection.Edges(childComplexity), true
+
+	case "DirectAccessTokenConnection.list":
+		if e.complexity.DirectAccessTokenConnection.List == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenConnection.List(childComplexity), true
+
+	case "DirectAccessTokenConnection.pageInfo":
+		if e.complexity.DirectAccessTokenConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenConnection.PageInfo(childComplexity), true
+
+	case "DirectAccessTokenConnection.totalCount":
+		if e.complexity.DirectAccessTokenConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenConnection.TotalCount(childComplexity), true
+
+	case "DirectAccessTokenEdge.cursor":
+		if e.complexity.DirectAccessTokenEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenEdge.Cursor(childComplexity), true
+
+	case "DirectAccessTokenEdge.node":
+		if e.complexity.DirectAccessTokenEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenEdge.Node(childComplexity), true
+
+	case "DirectAccessTokenPayload.clientMutationID":
+		if e.complexity.DirectAccessTokenPayload.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenPayload.ClientMutationID(childComplexity), true
+
+	case "DirectAccessTokenPayload.token":
+		if e.complexity.DirectAccessTokenPayload.Token == nil {
+			break
+		}
+
+		return e.complexity.DirectAccessTokenPayload.Token(childComplexity), true
+
 	case "HistoryAction.accountID":
 		if e.complexity.HistoryAction.AccountID == nil {
 			break
@@ -1229,6 +1370,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DisconnectSocialAccount(childComplexity, args["id"].(uint64)), true
 
+	case "Mutation.generateDirectAccessToken":
+		if e.complexity.Mutation.GenerateDirectAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_generateDirectAccessToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GenerateDirectAccessToken(childComplexity, args["userID"].(*uint64), args["description"].(string), args["expiresAt"].(*time.Time)), true
+
 	case "Mutation.inviteAccountMember":
 		if e.complexity.Mutation.InviteAccountMember == nil {
 			break
@@ -1338,6 +1491,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ResetUserPassword(childComplexity, args["email"].(string)), true
+
+	case "Mutation.revokeDirectAccessToken":
+		if e.complexity.Mutation.RevokeDirectAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeDirectAccessToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokeDirectAccessToken(childComplexity, args["filter"].(models.DirectAccessTokenListFilter)), true
 
 	case "Mutation.setOption":
 		if e.complexity.Mutation.SetOption == nil {
@@ -1728,6 +1893,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.CurrentUser(childComplexity), true
 
+	case "Query.getDirectAccessToken":
+		if e.complexity.Query.GetDirectAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getDirectAccessToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetDirectAccessToken(childComplexity, args["id"].(uint64)), true
+
 	case "Query.listAccountRolesAndPermissions":
 		if e.complexity.Query.ListAccountRolesAndPermissions == nil {
 			break
@@ -1763,6 +1940,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ListAuthClients(childComplexity, args["filter"].(*models.AuthClientListFilter), args["order"].(*models.AuthClientListOrder), args["page"].(*models.Page)), true
+
+	case "Query.listDirectAccessTokens":
+		if e.complexity.Query.ListDirectAccessTokens == nil {
+			break
+		}
+
+		args, err := ec.field_Query_listDirectAccessTokens_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ListDirectAccessTokens(childComplexity, args["filter"].(*models.DirectAccessTokenListFilter), args["order"].(*models.DirectAccessTokenListOrder), args["page"].(*models.Page)), true
 
 	case "Query.listHistory":
 		if e.complexity.Query.ListHistory == nil {
@@ -2356,6 +2545,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SocialAccountSession.UpdatedAt(childComplexity), true
 
+	case "StatusResponse.clientMutationID":
+		if e.complexity.StatusResponse.ClientMutationID == nil {
+			break
+		}
+
+		return e.complexity.StatusResponse.ClientMutationID(childComplexity), true
+
 	case "StatusResponse.message":
 		if e.complexity.StatusResponse.Message == nil {
 			break
@@ -2490,6 +2686,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAuthClientInput,
 		ec.unmarshalInputAuthClientListFilter,
 		ec.unmarshalInputAuthClientListOrder,
+		ec.unmarshalInputDirectAccessTokenListFilter,
+		ec.unmarshalInputDirectAccessTokenListOrder,
 		ec.unmarshalInputHistoryActionListFilter,
 		ec.unmarshalInputHistoryActionListOrder,
 		ec.unmarshalInputInviteMemberInput,
@@ -3454,12 +3652,12 @@ extend type Mutation {
   """
   Reset password of the particular user in case if user forgot it
   """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset"])
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
 
   """
   Update password of the particular user
   """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset"])
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/auth_client.graphql", Input: `"""
@@ -3780,6 +3978,133 @@ enum ResponseStatus {
   Error status of the response
   """
   ERROR
+}
+`, BuiltIn: false},
+	{Name: "../../../protocol/graphql/schemas/directaccesstoken.graphql", Input: `type DirectAccessToken {
+  ID: ID64!
+  token: String!
+  description: String!
+  userID: ID64
+  accountID: ID64!
+  createdAt: Time!
+  expiresAt: Time!
+}
+
+type DirectAccessTokenEdge {
+  """
+  Cursor for pagination
+  """
+  cursor: String!
+
+  """
+  Node for the edge
+  """
+  node: DirectAccessToken
+}
+
+type DirectAccessTokenConnection {
+  """
+  Total count of DirectAccessToken objects
+  """
+  totalCount: Int!
+
+  """
+  Edges for the DirectAccessTokenConnection
+  """
+  edges: [DirectAccessTokenEdge!]
+
+  """
+  List of DirectAccessToken objects
+  """
+  list: [DirectAccessToken!]
+
+  """
+  PageInfo for the DirectAccessTokenConnection
+  """
+  pageInfo: PageInfo!
+}
+
+type DirectAccessTokenPayload {
+  """
+  Unique identifier for the client performing the mutation
+  """
+  clientMutationID: String!
+
+  """
+  DirectAccessToken ID operation result
+  """
+  token: DirectAccessToken
+}
+
+###############################################################################
+## Query
+###############################################################################
+
+input DirectAccessTokenListFilter {
+  ID:           [ID64!]
+  token:        [String!]
+  userID:       [ID64!]
+  accountID:    [ID64!]
+  minExpiresAt: Time
+  maxExpiresAt: Time
+}
+
+input DirectAccessTokenListOrder {
+  ID:        Ordering
+  token:     Ordering
+  userID:    Ordering
+  accountID: Ordering
+  createdAt: Ordering
+  expiresAt: Ordering
+}
+
+###############################################################################
+# Query and Mutations
+###############################################################################
+
+extend type Query {
+  """
+  Get a DirectAccessToken by its ID
+  """
+  getDirectAccessToken(id: ID64!): DirectAccessTokenPayload @hasPermissions(permissions: ["directaccesstoken.view.*"])
+
+  """
+  List DirectAccessTokens
+  """
+  listDirectAccessTokens(
+    """
+    Filter to apply to the list
+    """
+    filter: DirectAccessTokenListFilter
+
+    """
+    Order to apply to the list
+    """
+    order: DirectAccessTokenListOrder
+
+    """
+    Pagination options
+    """
+    page: Page
+  ): DirectAccessTokenConnection @hasPermissions(permissions: ["directaccesstoken.list.*"])
+}
+
+extend type Mutation {
+  """
+  Generate a new DirectAccessToken
+  """
+  generateDirectAccessToken(
+    userID:       ID64    = null,
+    description:  String! = "",
+    expiresAt:    Time    = null
+  ): DirectAccessTokenPayload @hasPermissions(permissions: ["directaccesstoken.create.*"])
+
+  """
+  Revoke a DirectAccessToken
+  """
+  revokeDirectAccessToken(
+    filter: DirectAccessTokenListFilter!
+  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.revoke.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/directives.graphql", Input: `"Prevents access to a field if the user is not authenticated"
@@ -4347,6 +4672,11 @@ Simple response type for the API
 """
 type StatusResponse {
   """
+  Unique identifier for the client performing the mutation
+  """
+  clientMutationID: String!
+
+  """
   The status of the response
   """
   status: ResponseStatus!
@@ -4589,6 +4919,39 @@ func (ec *executionContext) field_Mutation_disconnectSocialAccount_args(ctx cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_generateDirectAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *uint64
+	if tmp, ok := rawArgs["userID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+		arg0, err = ec.unmarshalOID642ᚖuint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["description"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["description"] = arg1
+	var arg2 *time.Time
+	if tmp, ok := rawArgs["expiresAt"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
+		arg2, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["expiresAt"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_inviteAccountMember_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -4751,6 +5114,21 @@ func (ec *executionContext) field_Mutation_resetUserPassword_args(ctx context.Co
 		}
 	}
 	args["email"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeDirectAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.DirectAccessTokenListFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalNDirectAccessTokenListFilter2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -5057,6 +5435,21 @@ func (ec *executionContext) field_Query_currentSocialAccounts_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_getDirectAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_listAccountRolesAndPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -5130,6 +5523,39 @@ func (ec *executionContext) field_Query_listAuthClients_args(ctx context.Context
 	if tmp, ok := rawArgs["order"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
 		arg1, err = ec.unmarshalOAuthClientListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order"] = arg1
+	var arg2 *models.Page
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_listDirectAccessTokens_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *models.DirectAccessTokenListFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalODirectAccessTokenListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
+	var arg1 *models.DirectAccessTokenListOrder
+	if tmp, ok := rawArgs["order"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+		arg1, err = ec.unmarshalODirectAccessTokenListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -5592,7 +6018,7 @@ func (ec *executionContext) _Account_ID(ctx context.Context, field graphql.Colle
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5633,7 +6059,7 @@ func (ec *executionContext) _Account_status(ctx context.Context, field graphql.C
 	return ec.marshalNApproveStatus2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐApproveStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5671,7 +6097,7 @@ func (ec *executionContext) _Account_statusMessage(ctx context.Context, field gr
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_statusMessage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5712,7 +6138,7 @@ func (ec *executionContext) _Account_title(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5753,7 +6179,7 @@ func (ec *executionContext) _Account_description(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5794,7 +6220,7 @@ func (ec *executionContext) _Account_logoURI(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_logoURI(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_logoURI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5835,7 +6261,7 @@ func (ec *executionContext) _Account_policyURI(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_policyURI(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_policyURI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5876,7 +6302,7 @@ func (ec *executionContext) _Account_termsOfServiceURI(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_termsOfServiceURI(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_termsOfServiceURI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5917,7 +6343,7 @@ func (ec *executionContext) _Account_clientURI(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_clientURI(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_clientURI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5955,7 +6381,7 @@ func (ec *executionContext) _Account_contacts(ctx context.Context, field graphql
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_contacts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_contacts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -5996,7 +6422,7 @@ func (ec *executionContext) _Account_createdAt(ctx context.Context, field graphq
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -6037,7 +6463,7 @@ func (ec *executionContext) _Account_updatedAt(ctx context.Context, field graphq
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Account_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Account_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Account",
 		Field:      field,
@@ -6078,7 +6504,7 @@ func (ec *executionContext) _AccountConnection_totalCount(ctx context.Context, f
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountConnection",
 		Field:      field,
@@ -6116,7 +6542,7 @@ func (ec *executionContext) _AccountConnection_edges(ctx context.Context, field 
 	return ec.marshalOAccountEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountConnection",
 		Field:      field,
@@ -6160,7 +6586,7 @@ func (ec *executionContext) _AccountConnection_list(ctx context.Context, field g
 	return ec.marshalOAccount2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountConnection",
 		Field:      field,
@@ -6227,7 +6653,7 @@ func (ec *executionContext) _AccountConnection_pageInfo(ctx context.Context, fie
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountConnection",
 		Field:      field,
@@ -6284,7 +6710,7 @@ func (ec *executionContext) _AccountCreatePayload_clientMutationID(ctx context.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountCreatePayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountCreatePayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountCreatePayload",
 		Field:      field,
@@ -6325,7 +6751,7 @@ func (ec *executionContext) _AccountCreatePayload_account(ctx context.Context, f
 	return ec.marshalNAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccount(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountCreatePayload_account(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountCreatePayload_account(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountCreatePayload",
 		Field:      field,
@@ -6392,7 +6818,7 @@ func (ec *executionContext) _AccountCreatePayload_owner(ctx context.Context, fie
 	return ec.marshalNUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountCreatePayload_owner(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountCreatePayload_owner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountCreatePayload",
 		Field:      field,
@@ -6447,7 +6873,7 @@ func (ec *executionContext) _AccountEdge_cursor(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountEdge",
 		Field:      field,
@@ -6485,7 +6911,7 @@ func (ec *executionContext) _AccountEdge_node(ctx context.Context, field graphql
 	return ec.marshalOAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccount(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountEdge",
 		Field:      field,
@@ -6552,7 +6978,7 @@ func (ec *executionContext) _AccountPayload_clientMutationID(ctx context.Context
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountPayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountPayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountPayload",
 		Field:      field,
@@ -6593,7 +7019,7 @@ func (ec *executionContext) _AccountPayload_accountID(ctx context.Context, field
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountPayload_accountID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountPayload_accountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountPayload",
 		Field:      field,
@@ -6631,7 +7057,7 @@ func (ec *executionContext) _AccountPayload_account(ctx context.Context, field g
 	return ec.marshalOAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccount(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AccountPayload_account(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AccountPayload_account(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AccountPayload",
 		Field:      field,
@@ -6698,7 +7124,7 @@ func (ec *executionContext) _AuthClient_ID(ctx context.Context, field graphql.Co
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6739,7 +7165,7 @@ func (ec *executionContext) _AuthClient_accountID(ctx context.Context, field gra
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_accountID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_accountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6780,7 +7206,7 @@ func (ec *executionContext) _AuthClient_userID(ctx context.Context, field graphq
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_userID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6821,7 +7247,7 @@ func (ec *executionContext) _AuthClient_title(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6862,7 +7288,7 @@ func (ec *executionContext) _AuthClient_secret(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_secret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_secret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6900,7 +7326,7 @@ func (ec *executionContext) _AuthClient_redirectURIs(ctx context.Context, field 
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_redirectURIs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_redirectURIs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6938,7 +7364,7 @@ func (ec *executionContext) _AuthClient_grantTypes(ctx context.Context, field gr
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_grantTypes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_grantTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -6976,7 +7402,7 @@ func (ec *executionContext) _AuthClient_responseTypes(ctx context.Context, field
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_responseTypes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_responseTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7017,7 +7443,7 @@ func (ec *executionContext) _AuthClient_scope(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_scope(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_scope(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7055,7 +7481,7 @@ func (ec *executionContext) _AuthClient_audience(ctx context.Context, field grap
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_audience(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_audience(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7096,7 +7522,7 @@ func (ec *executionContext) _AuthClient_subjectType(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_subjectType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_subjectType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7134,7 +7560,7 @@ func (ec *executionContext) _AuthClient_allowedCORSOrigins(ctx context.Context, 
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_allowedCORSOrigins(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_allowedCORSOrigins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7175,7 +7601,7 @@ func (ec *executionContext) _AuthClient_public(ctx context.Context, field graphq
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_public(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_public(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7216,7 +7642,7 @@ func (ec *executionContext) _AuthClient_expiresAt(ctx context.Context, field gra
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_expiresAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7257,7 +7683,7 @@ func (ec *executionContext) _AuthClient_createdAt(ctx context.Context, field gra
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7298,7 +7724,7 @@ func (ec *executionContext) _AuthClient_updatedAt(ctx context.Context, field gra
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7336,7 +7762,7 @@ func (ec *executionContext) _AuthClient_deletedAt(ctx context.Context, field gra
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClient_deletedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClient_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClient",
 		Field:      field,
@@ -7377,7 +7803,7 @@ func (ec *executionContext) _AuthClientConnection_totalCount(ctx context.Context
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientConnection",
 		Field:      field,
@@ -7415,7 +7841,7 @@ func (ec *executionContext) _AuthClientConnection_edges(ctx context.Context, fie
 	return ec.marshalOAuthClientEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientConnection",
 		Field:      field,
@@ -7459,7 +7885,7 @@ func (ec *executionContext) _AuthClientConnection_list(ctx context.Context, fiel
 	return ec.marshalOAuthClient2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientConnection",
 		Field:      field,
@@ -7536,7 +7962,7 @@ func (ec *executionContext) _AuthClientConnection_pageInfo(ctx context.Context, 
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientConnection",
 		Field:      field,
@@ -7593,7 +8019,7 @@ func (ec *executionContext) _AuthClientEdge_cursor(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientEdge",
 		Field:      field,
@@ -7631,7 +8057,7 @@ func (ec *executionContext) _AuthClientEdge_node(ctx context.Context, field grap
 	return ec.marshalOAuthClient2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClient(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientEdge",
 		Field:      field,
@@ -7708,7 +8134,7 @@ func (ec *executionContext) _AuthClientPayload_clientMutationID(ctx context.Cont
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientPayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientPayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientPayload",
 		Field:      field,
@@ -7749,7 +8175,7 @@ func (ec *executionContext) _AuthClientPayload_authClientID(ctx context.Context,
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientPayload_authClientID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientPayload_authClientID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientPayload",
 		Field:      field,
@@ -7787,7 +8213,7 @@ func (ec *executionContext) _AuthClientPayload_authClient(ctx context.Context, f
 	return ec.marshalOAuthClient2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClient(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AuthClientPayload_authClient(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AuthClientPayload_authClient(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AuthClientPayload",
 		Field:      field,
@@ -7836,6 +8262,676 @@ func (ec *executionContext) fieldContext_AuthClientPayload_authClient(ctx contex
 	return fc, nil
 }
 
+func (ec *executionContext) _DirectAccessToken_ID(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_ID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNID642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessToken_token(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_token(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessToken_description(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessToken_userID(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_userID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*uint64)
+	fc.Result = res
+	return ec.marshalOID642ᚖuint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessToken_accountID(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_accountID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AccountID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNID642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_accountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessToken_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessToken_expiresAt(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessToken_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpiresAt, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessToken_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount(), nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenConnection_edges(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges(), nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*models.DirectAccessTokenEdge)
+	fc.Result = res
+	return ec.marshalODirectAccessTokenEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_DirectAccessTokenEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_DirectAccessTokenEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessTokenEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenConnection_list(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.List(), nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*models.DirectAccessToken)
+	fc.Result = res
+	return ec.marshalODirectAccessToken2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_DirectAccessToken_ID(ctx, field)
+			case "token":
+				return ec.fieldContext_DirectAccessToken_token(ctx, field)
+			case "description":
+				return ec.fieldContext_DirectAccessToken_description(ctx, field)
+			case "userID":
+				return ec.fieldContext_DirectAccessToken_userID(ctx, field)
+			case "accountID":
+				return ec.fieldContext_DirectAccessToken_accountID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DirectAccessToken_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_DirectAccessToken_expiresAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo(), nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "total":
+				return ec.fieldContext_PageInfo_total(ctx, field)
+			case "page":
+				return ec.fieldContext_PageInfo_page(ctx, field)
+			case "count":
+				return ec.fieldContext_PageInfo_count(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessTokenEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenEdge_node(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessTokenEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.DirectAccessToken)
+	fc.Result = res
+	return ec.marshalODirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_DirectAccessToken_ID(ctx, field)
+			case "token":
+				return ec.fieldContext_DirectAccessToken_token(ctx, field)
+			case "description":
+				return ec.fieldContext_DirectAccessToken_description(ctx, field)
+			case "userID":
+				return ec.fieldContext_DirectAccessToken_userID(ctx, field)
+			case "accountID":
+				return ec.fieldContext_DirectAccessToken_accountID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DirectAccessToken_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_DirectAccessToken_expiresAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenPayload_clientMutationID(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenPayload_clientMutationID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenPayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectAccessTokenPayload_token(ctx context.Context, field graphql.CollectedField, obj *models.DirectAccessTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectAccessTokenPayload_token(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.DirectAccessToken)
+	fc.Result = res
+	return ec.marshalODirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectAccessTokenPayload_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectAccessTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_DirectAccessToken_ID(ctx, field)
+			case "token":
+				return ec.fieldContext_DirectAccessToken_token(ctx, field)
+			case "description":
+				return ec.fieldContext_DirectAccessToken_description(ctx, field)
+			case "userID":
+				return ec.fieldContext_DirectAccessToken_userID(ctx, field)
+			case "accountID":
+				return ec.fieldContext_DirectAccessToken_accountID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DirectAccessToken_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_DirectAccessToken_expiresAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HistoryAction_ID(ctx context.Context, field graphql.CollectedField, obj *models.HistoryAction) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_HistoryAction_ID(ctx, field)
 	if err != nil {
@@ -7864,7 +8960,7 @@ func (ec *executionContext) _HistoryAction_ID(ctx context.Context, field graphql
 	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -7905,7 +9001,7 @@ func (ec *executionContext) _HistoryAction_RequestID(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_RequestID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_RequestID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -7946,7 +9042,7 @@ func (ec *executionContext) _HistoryAction_name(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -7987,7 +9083,7 @@ func (ec *executionContext) _HistoryAction_message(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8028,7 +9124,7 @@ func (ec *executionContext) _HistoryAction_userID(ctx context.Context, field gra
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_userID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8069,7 +9165,7 @@ func (ec *executionContext) _HistoryAction_accountID(ctx context.Context, field 
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_accountID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_accountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8110,7 +9206,7 @@ func (ec *executionContext) _HistoryAction_objectType(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_objectType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_objectType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8151,7 +9247,7 @@ func (ec *executionContext) _HistoryAction_objectID(ctx context.Context, field g
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_objectID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_objectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8192,7 +9288,7 @@ func (ec *executionContext) _HistoryAction_objectIDs(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_objectIDs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_objectIDs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8233,7 +9329,7 @@ func (ec *executionContext) _HistoryAction_data(ctx context.Context, field graph
 	return ec.marshalNNullableJSON2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋtypesᚐNullableJSON(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_data(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8274,7 +9370,7 @@ func (ec *executionContext) _HistoryAction_actionAt(ctx context.Context, field g
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryAction_actionAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryAction_actionAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryAction",
 		Field:      field,
@@ -8315,7 +9411,7 @@ func (ec *executionContext) _HistoryActionConnection_totalCount(ctx context.Cont
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionConnection",
 		Field:      field,
@@ -8353,7 +9449,7 @@ func (ec *executionContext) _HistoryActionConnection_edges(ctx context.Context, 
 	return ec.marshalOHistoryActionEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionConnection",
 		Field:      field,
@@ -8397,7 +9493,7 @@ func (ec *executionContext) _HistoryActionConnection_list(ctx context.Context, f
 	return ec.marshalOHistoryAction2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionConnection",
 		Field:      field,
@@ -8462,7 +9558,7 @@ func (ec *executionContext) _HistoryActionConnection_pageInfo(ctx context.Contex
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionConnection",
 		Field:      field,
@@ -8519,7 +9615,7 @@ func (ec *executionContext) _HistoryActionEdge_node(ctx context.Context, field g
 	return ec.marshalNHistoryAction2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryAction(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionEdge",
 		Field:      field,
@@ -8584,7 +9680,7 @@ func (ec *executionContext) _HistoryActionEdge_cursor(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionEdge",
 		Field:      field,
@@ -8622,7 +9718,7 @@ func (ec *executionContext) _HistoryActionPayload_clientMutationId(ctx context.C
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionPayload_clientMutationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionPayload",
 		Field:      field,
@@ -8663,7 +9759,7 @@ func (ec *executionContext) _HistoryActionPayload_actionID(ctx context.Context, 
 	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionPayload_actionID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionPayload_actionID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionPayload",
 		Field:      field,
@@ -8704,7 +9800,7 @@ func (ec *executionContext) _HistoryActionPayload_action(ctx context.Context, fi
 	return ec.marshalNHistoryAction2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryAction(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HistoryActionPayload_action(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HistoryActionPayload_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "HistoryActionPayload",
 		Field:      field,
@@ -8769,7 +9865,7 @@ func (ec *executionContext) _Member_ID(ctx context.Context, field graphql.Collec
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -8810,7 +9906,7 @@ func (ec *executionContext) _Member_status(ctx context.Context, field graphql.Co
 	return ec.marshalNApproveStatus2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐApproveStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -8851,7 +9947,7 @@ func (ec *executionContext) _Member_user(ctx context.Context, field graphql.Coll
 	return ec.marshalNUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -8906,7 +10002,7 @@ func (ec *executionContext) _Member_account(ctx context.Context, field graphql.C
 	return ec.marshalNAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccount(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_account(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_account(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -8973,7 +10069,7 @@ func (ec *executionContext) _Member_isAdmin(ctx context.Context, field graphql.C
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_isAdmin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_isAdmin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -9011,7 +10107,7 @@ func (ec *executionContext) _Member_roles(ctx context.Context, field graphql.Col
 	return ec.marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_roles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_roles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -9076,7 +10172,7 @@ func (ec *executionContext) _Member_createdAt(ctx context.Context, field graphql
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -9117,7 +10213,7 @@ func (ec *executionContext) _Member_updatedAt(ctx context.Context, field graphql
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -9155,7 +10251,7 @@ func (ec *executionContext) _Member_deletedAt(ctx context.Context, field graphql
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Member_deletedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Member_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Member",
 		Field:      field,
@@ -9196,7 +10292,7 @@ func (ec *executionContext) _MemberConnection_totalCount(ctx context.Context, fi
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberConnection",
 		Field:      field,
@@ -9234,7 +10330,7 @@ func (ec *executionContext) _MemberConnection_edges(ctx context.Context, field g
 	return ec.marshalOMemberEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberConnection",
 		Field:      field,
@@ -9278,7 +10374,7 @@ func (ec *executionContext) _MemberConnection_list(ctx context.Context, field gr
 	return ec.marshalOMember2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberConnection",
 		Field:      field,
@@ -9339,7 +10435,7 @@ func (ec *executionContext) _MemberConnection_pageInfo(ctx context.Context, fiel
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberConnection",
 		Field:      field,
@@ -9396,7 +10492,7 @@ func (ec *executionContext) _MemberEdge_cursor(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberEdge",
 		Field:      field,
@@ -9434,7 +10530,7 @@ func (ec *executionContext) _MemberEdge_node(ctx context.Context, field graphql.
 	return ec.marshalOMember2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMember(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberEdge",
 		Field:      field,
@@ -9495,7 +10591,7 @@ func (ec *executionContext) _MemberPayload_clientMutationID(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberPayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberPayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberPayload",
 		Field:      field,
@@ -9536,7 +10632,7 @@ func (ec *executionContext) _MemberPayload_memberID(ctx context.Context, field g
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberPayload_memberID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberPayload_memberID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberPayload",
 		Field:      field,
@@ -9574,7 +10670,7 @@ func (ec *executionContext) _MemberPayload_member(ctx context.Context, field gra
 	return ec.marshalOMember2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMember(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MemberPayload_member(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MemberPayload_member(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MemberPayload",
 		Field:      field,
@@ -9635,7 +10731,7 @@ func (ec *executionContext) _Mutation_poke(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_poke(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_poke(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -9738,7 +10834,7 @@ func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_logout(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_logout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -11007,7 +12103,7 @@ func (ec *executionContext) _Mutation_resetUserPassword(ctx context.Context, fie
 			return ec.resolvers.Mutation().ResetUserPassword(rctx, fc.Args["email"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -11049,6 +12145,8 @@ func (ec *executionContext) fieldContext_Mutation_resetUserPassword(ctx context.
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
 			case "status":
 				return ec.fieldContext_StatusResponse_status(ctx, field)
 			case "message":
@@ -11089,7 +12187,7 @@ func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, fi
 			return ec.resolvers.Mutation().UpdateUserPassword(rctx, fc.Args["token"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset.*"})
 			if err != nil {
 				return nil, err
 			}
@@ -11131,6 +12229,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserPassword(ctx context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
 			case "status":
 				return ec.fieldContext_StatusResponse_status(ctx, field)
 			case "message":
@@ -11399,6 +12499,166 @@ func (ec *executionContext) fieldContext_Mutation_deleteAuthClient(ctx context.C
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteAuthClient_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_generateDirectAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_generateDirectAccessToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().GenerateDirectAccessToken(rctx, fc.Args["userID"].(*uint64), fc.Args["description"].(string), fc.Args["expiresAt"].(*time.Time))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.create.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.DirectAccessTokenPayload); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/models.DirectAccessTokenPayload`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.DirectAccessTokenPayload)
+	fc.Result = res
+	return ec.marshalODirectAccessTokenPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_generateDirectAccessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_DirectAccessTokenPayload_clientMutationID(ctx, field)
+			case "token":
+				return ec.fieldContext_DirectAccessTokenPayload_token(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessTokenPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_generateDirectAccessToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_revokeDirectAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_revokeDirectAccessToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RevokeDirectAccessToken(rctx, fc.Args["filter"].(models.DirectAccessTokenListFilter))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.revoke.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.StatusResponse); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/models.StatusResponse`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.StatusResponse)
+	fc.Result = res
+	return ec.marshalOStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_revokeDirectAccessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
+			case "status":
+				return ec.fieldContext_StatusResponse_status(ctx, field)
+			case "message":
+				return ec.fieldContext_StatusResponse_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatusResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_revokeDirectAccessToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -11769,7 +13029,7 @@ func (ec *executionContext) _Option_optionType(ctx context.Context, field graphq
 	return ec.marshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Option_optionType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Option_optionType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Option",
 		Field:      field,
@@ -11810,7 +13070,7 @@ func (ec *executionContext) _Option_targetID(ctx context.Context, field graphql.
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Option_targetID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Option_targetID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Option",
 		Field:      field,
@@ -11851,7 +13111,7 @@ func (ec *executionContext) _Option_name(ctx context.Context, field graphql.Coll
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Option_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Option_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Option",
 		Field:      field,
@@ -11889,7 +13149,7 @@ func (ec *executionContext) _Option_value(ctx context.Context, field graphql.Col
 	return ec.marshalONullableJSON2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋtypesᚐNullableJSON(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Option_value(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Option_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Option",
 		Field:      field,
@@ -11930,7 +13190,7 @@ func (ec *executionContext) _OptionConnection_totalCount(ctx context.Context, fi
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionConnection",
 		Field:      field,
@@ -11971,7 +13231,7 @@ func (ec *executionContext) _OptionConnection_edges(ctx context.Context, field g
 	return ec.marshalNOptionEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionConnection",
 		Field:      field,
@@ -12018,7 +13278,7 @@ func (ec *executionContext) _OptionConnection_list(ctx context.Context, field gr
 	return ec.marshalNOption2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionConnection",
 		Field:      field,
@@ -12069,7 +13329,7 @@ func (ec *executionContext) _OptionConnection_pageInfo(ctx context.Context, fiel
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionConnection",
 		Field:      field,
@@ -12126,7 +13386,7 @@ func (ec *executionContext) _OptionEdge_cursor(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionEdge",
 		Field:      field,
@@ -12167,7 +13427,7 @@ func (ec *executionContext) _OptionEdge_node(ctx context.Context, field graphql.
 	return ec.marshalNOption2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOption(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionEdge",
 		Field:      field,
@@ -12218,7 +13478,7 @@ func (ec *executionContext) _OptionPayload_clientMutationId(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionPayload_clientMutationId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionPayload_clientMutationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionPayload",
 		Field:      field,
@@ -12259,7 +13519,7 @@ func (ec *executionContext) _OptionPayload_optionName(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionPayload_optionName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionPayload_optionName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionPayload",
 		Field:      field,
@@ -12297,7 +13557,7 @@ func (ec *executionContext) _OptionPayload_option(ctx context.Context, field gra
 	return ec.marshalOOption2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOption(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionPayload_option(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionPayload_option(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionPayload",
 		Field:      field,
@@ -12348,7 +13608,7 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_startCursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_startCursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12389,7 +13649,7 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_endCursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_endCursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12430,7 +13690,7 @@ func (ec *executionContext) _PageInfo_hasPreviousPage(ctx context.Context, field
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_hasPreviousPage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_hasPreviousPage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12471,7 +13731,7 @@ func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field gra
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_hasNextPage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12512,7 +13772,7 @@ func (ec *executionContext) _PageInfo_total(ctx context.Context, field graphql.C
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12553,7 +13813,7 @@ func (ec *executionContext) _PageInfo_page(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_page(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_page(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12594,7 +13854,7 @@ func (ec *executionContext) _PageInfo_count(ctx context.Context, field graphql.C
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PageInfo_count(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PageInfo_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PageInfo",
 		Field:      field,
@@ -12635,7 +13895,7 @@ func (ec *executionContext) _Profile_ID(ctx context.Context, field graphql.Colle
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12676,7 +13936,7 @@ func (ec *executionContext) _Profile_user(ctx context.Context, field graphql.Col
 	return ec.marshalNUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12731,7 +13991,7 @@ func (ec *executionContext) _Profile_firstName(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_firstName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_firstName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12772,7 +14032,7 @@ func (ec *executionContext) _Profile_lastName(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_lastName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_lastName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12813,7 +14073,7 @@ func (ec *executionContext) _Profile_companyName(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_companyName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_companyName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12854,7 +14114,7 @@ func (ec *executionContext) _Profile_about(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_about(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_about(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12895,7 +14155,7 @@ func (ec *executionContext) _Profile_email(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12933,7 +14193,7 @@ func (ec *executionContext) _Profile_messgangers(ctx context.Context, field grap
 	return ec.marshalOProfileMessanger2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐProfileMessangerᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_messgangers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_messgangers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -12980,7 +14240,7 @@ func (ec *executionContext) _Profile_createdAt(ctx context.Context, field graphq
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -13021,7 +14281,7 @@ func (ec *executionContext) _Profile_updatedAt(ctx context.Context, field graphq
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Profile_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Profile_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Profile",
 		Field:      field,
@@ -13062,7 +14322,7 @@ func (ec *executionContext) _ProfileMessanger_mtype(ctx context.Context, field g
 	return ec.marshalNMessangerType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMessangerType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ProfileMessanger_mtype(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProfileMessanger_mtype(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ProfileMessanger",
 		Field:      field,
@@ -13103,7 +14363,7 @@ func (ec *executionContext) _ProfileMessanger_address(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ProfileMessanger_address(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProfileMessanger_address(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ProfileMessanger",
 		Field:      field,
@@ -13144,7 +14404,7 @@ func (ec *executionContext) _Query_serviceVersion(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_serviceVersion(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_serviceVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -13209,7 +14469,7 @@ func (ec *executionContext) _Query_currentSession(ctx context.Context, field gra
 	return ec.marshalNSessionToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSessionToken(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_currentSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_currentSession(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -13284,7 +14544,7 @@ func (ec *executionContext) _Query_currentAccount(ctx context.Context, field gra
 	return ec.marshalNAccountPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_currentAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_currentAccount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -13946,7 +15206,7 @@ func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphq
 	return ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_currentUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_currentUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -14295,6 +15555,168 @@ func (ec *executionContext) fieldContext_Query_listAuthClients(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_listAuthClients_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getDirectAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getDirectAccessToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().GetDirectAccessToken(rctx, fc.Args["id"].(uint64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.view.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.DirectAccessTokenPayload); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/models.DirectAccessTokenPayload`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.DirectAccessTokenPayload)
+	fc.Result = res
+	return ec.marshalODirectAccessTokenPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getDirectAccessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_DirectAccessTokenPayload_clientMutationID(ctx, field)
+			case "token":
+				return ec.fieldContext_DirectAccessTokenPayload_token(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessTokenPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getDirectAccessToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_listDirectAccessTokens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_listDirectAccessTokens(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().ListDirectAccessTokens(rctx, fc.Args["filter"].(*models.DirectAccessTokenListFilter), fc.Args["order"].(*models.DirectAccessTokenListOrder), fc.Args["page"].(*models.Page))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.list.*"})
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasPermissions == nil {
+				return nil, errors.New("directive hasPermissions is not implemented")
+			}
+			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/geniusrabbit/blaze-api/server/graphql/connectors.CollectionConnection[github.com/geniusrabbit/blaze-api/server/graphql/models.DirectAccessToken, github.com/geniusrabbit/blaze-api/server/graphql/models.DirectAccessTokenEdge]`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge])
+	fc.Result = res
+	return ec.marshalODirectAccessTokenConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_listDirectAccessTokens(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_DirectAccessTokenConnection_totalCount(ctx, field)
+			case "edges":
+				return ec.fieldContext_DirectAccessTokenConnection_edges(ctx, field)
+			case "list":
+				return ec.fieldContext_DirectAccessTokenConnection_list(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_DirectAccessTokenConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectAccessTokenConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_listDirectAccessTokens_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15057,7 +16479,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -15112,7 +16534,7 @@ func (ec *executionContext) _RBACPermission_name(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACPermission_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACPermission_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACPermission",
 		Field:      field,
@@ -15153,7 +16575,7 @@ func (ec *executionContext) _RBACPermission_object(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACPermission_object(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACPermission_object(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACPermission",
 		Field:      field,
@@ -15194,7 +16616,7 @@ func (ec *executionContext) _RBACPermission_access(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACPermission_access(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACPermission_access(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACPermission",
 		Field:      field,
@@ -15235,7 +16657,7 @@ func (ec *executionContext) _RBACPermission_fullname(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACPermission_fullname(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACPermission_fullname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACPermission",
 		Field:      field,
@@ -15273,7 +16695,7 @@ func (ec *executionContext) _RBACPermission_description(ctx context.Context, fie
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACPermission_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACPermission_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACPermission",
 		Field:      field,
@@ -15314,7 +16736,7 @@ func (ec *executionContext) _RBACRole_ID(ctx context.Context, field graphql.Coll
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15355,7 +16777,7 @@ func (ec *executionContext) _RBACRole_name(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15396,7 +16818,7 @@ func (ec *executionContext) _RBACRole_title(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15434,7 +16856,7 @@ func (ec *executionContext) _RBACRole_description(ctx context.Context, field gra
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15472,7 +16894,7 @@ func (ec *executionContext) _RBACRole_context(ctx context.Context, field graphql
 	return ec.marshalONullableJSON2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋtypesᚐNullableJSON(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_context(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_context(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15510,7 +16932,7 @@ func (ec *executionContext) _RBACRole_childRoles(ctx context.Context, field grap
 	return ec.marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_childRoles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_childRoles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15572,7 +16994,7 @@ func (ec *executionContext) _RBACRole_permissions(ctx context.Context, field gra
 	return ec.marshalORBACPermission2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermissionᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_permissions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_permissions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15622,7 +17044,7 @@ func (ec *executionContext) _RBACRole_permissionPatterns(ctx context.Context, fi
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_permissionPatterns(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_permissionPatterns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15663,7 +17085,7 @@ func (ec *executionContext) _RBACRole_createdAt(ctx context.Context, field graph
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15704,7 +17126,7 @@ func (ec *executionContext) _RBACRole_updatedAt(ctx context.Context, field graph
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15742,7 +17164,7 @@ func (ec *executionContext) _RBACRole_deletedAt(ctx context.Context, field graph
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRole_deletedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRole_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRole",
 		Field:      field,
@@ -15783,7 +17205,7 @@ func (ec *executionContext) _RBACRoleConnection_totalCount(ctx context.Context, 
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleConnection",
 		Field:      field,
@@ -15821,7 +17243,7 @@ func (ec *executionContext) _RBACRoleConnection_edges(ctx context.Context, field
 	return ec.marshalORBACRoleEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleConnection",
 		Field:      field,
@@ -15865,7 +17287,7 @@ func (ec *executionContext) _RBACRoleConnection_list(ctx context.Context, field 
 	return ec.marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleConnection",
 		Field:      field,
@@ -15930,7 +17352,7 @@ func (ec *executionContext) _RBACRoleConnection_pageInfo(ctx context.Context, fi
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleConnection",
 		Field:      field,
@@ -15987,7 +17409,7 @@ func (ec *executionContext) _RBACRoleEdge_cursor(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleEdge",
 		Field:      field,
@@ -16025,7 +17447,7 @@ func (ec *executionContext) _RBACRoleEdge_node(ctx context.Context, field graphq
 	return ec.marshalORBACRole2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRole(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRoleEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRoleEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRoleEdge",
 		Field:      field,
@@ -16090,7 +17512,7 @@ func (ec *executionContext) _RBACRolePayload_clientMutationID(ctx context.Contex
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRolePayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRolePayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRolePayload",
 		Field:      field,
@@ -16131,7 +17553,7 @@ func (ec *executionContext) _RBACRolePayload_roleID(ctx context.Context, field g
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRolePayload_roleID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRolePayload_roleID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRolePayload",
 		Field:      field,
@@ -16169,7 +17591,7 @@ func (ec *executionContext) _RBACRolePayload_role(ctx context.Context, field gra
 	return ec.marshalORBACRole2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRole(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_RBACRolePayload_role(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RBACRolePayload_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RBACRolePayload",
 		Field:      field,
@@ -16234,7 +17656,7 @@ func (ec *executionContext) _SessionToken_token(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SessionToken_token(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SessionToken_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SessionToken",
 		Field:      field,
@@ -16275,7 +17697,7 @@ func (ec *executionContext) _SessionToken_expiresAt(ctx context.Context, field g
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SessionToken_expiresAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SessionToken_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SessionToken",
 		Field:      field,
@@ -16316,7 +17738,7 @@ func (ec *executionContext) _SessionToken_isAdmin(ctx context.Context, field gra
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SessionToken_isAdmin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SessionToken_isAdmin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SessionToken",
 		Field:      field,
@@ -16354,7 +17776,7 @@ func (ec *executionContext) _SessionToken_roles(ctx context.Context, field graph
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SessionToken_roles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SessionToken_roles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SessionToken",
 		Field:      field,
@@ -16395,7 +17817,7 @@ func (ec *executionContext) _SocialAccount_ID(ctx context.Context, field graphql
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16436,7 +17858,7 @@ func (ec *executionContext) _SocialAccount_userID(ctx context.Context, field gra
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_userID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16477,7 +17899,7 @@ func (ec *executionContext) _SocialAccount_socialID(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_socialID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_socialID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16518,7 +17940,7 @@ func (ec *executionContext) _SocialAccount_provider(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_provider(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16559,7 +17981,7 @@ func (ec *executionContext) _SocialAccount_email(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16600,7 +18022,7 @@ func (ec *executionContext) _SocialAccount_username(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_username(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16641,7 +18063,7 @@ func (ec *executionContext) _SocialAccount_firstName(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_firstName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_firstName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16682,7 +18104,7 @@ func (ec *executionContext) _SocialAccount_lastName(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_lastName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_lastName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16723,7 +18145,7 @@ func (ec *executionContext) _SocialAccount_avatar(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_avatar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_avatar(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16764,7 +18186,7 @@ func (ec *executionContext) _SocialAccount_link(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_link(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_link(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16805,7 +18227,7 @@ func (ec *executionContext) _SocialAccount_data(ctx context.Context, field graph
 	return ec.marshalNNullableJSON2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋtypesᚐNullableJSON(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_data(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16843,7 +18265,7 @@ func (ec *executionContext) _SocialAccount_sessions(ctx context.Context, field g
 	return ec.marshalOSocialAccountSession2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountSessionᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_sessions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_sessions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16906,7 +18328,7 @@ func (ec *executionContext) _SocialAccount_createdAt(ctx context.Context, field 
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16947,7 +18369,7 @@ func (ec *executionContext) _SocialAccount_updatedAt(ctx context.Context, field 
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -16985,7 +18407,7 @@ func (ec *executionContext) _SocialAccount_deletedAt(ctx context.Context, field 
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccount_deletedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccount_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccount",
 		Field:      field,
@@ -17026,7 +18448,7 @@ func (ec *executionContext) _SocialAccountConnection_totalCount(ctx context.Cont
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountConnection",
 		Field:      field,
@@ -17064,7 +18486,7 @@ func (ec *executionContext) _SocialAccountConnection_edges(ctx context.Context, 
 	return ec.marshalOSocialAccountEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountConnection",
 		Field:      field,
@@ -17108,7 +18530,7 @@ func (ec *executionContext) _SocialAccountConnection_list(ctx context.Context, f
 	return ec.marshalOSocialAccount2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountConnection",
 		Field:      field,
@@ -17181,7 +18603,7 @@ func (ec *executionContext) _SocialAccountConnection_pageInfo(ctx context.Contex
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountConnection",
 		Field:      field,
@@ -17238,7 +18660,7 @@ func (ec *executionContext) _SocialAccountEdge_cursor(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountEdge",
 		Field:      field,
@@ -17276,7 +18698,7 @@ func (ec *executionContext) _SocialAccountEdge_node(ctx context.Context, field g
 	return ec.marshalOSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountEdge",
 		Field:      field,
@@ -17349,7 +18771,7 @@ func (ec *executionContext) _SocialAccountPayload_clientMutationID(ctx context.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountPayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountPayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountPayload",
 		Field:      field,
@@ -17390,7 +18812,7 @@ func (ec *executionContext) _SocialAccountPayload_socialAccountID(ctx context.Co
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccountID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountPayload",
 		Field:      field,
@@ -17428,7 +18850,7 @@ func (ec *executionContext) _SocialAccountPayload_socialAccount(ctx context.Cont
 	return ec.marshalOSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountPayload_socialAccount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountPayload",
 		Field:      field,
@@ -17501,7 +18923,7 @@ func (ec *executionContext) _SocialAccountSession_name(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17542,7 +18964,7 @@ func (ec *executionContext) _SocialAccountSession_socialAccountID(ctx context.Co
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_socialAccountID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_socialAccountID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17583,7 +19005,7 @@ func (ec *executionContext) _SocialAccountSession_tokenType(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_tokenType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_tokenType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17624,7 +19046,7 @@ func (ec *executionContext) _SocialAccountSession_accessToken(ctx context.Contex
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_accessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_accessToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17665,7 +19087,7 @@ func (ec *executionContext) _SocialAccountSession_refreshToken(ctx context.Conte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_refreshToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_refreshToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17703,7 +19125,7 @@ func (ec *executionContext) _SocialAccountSession_scope(ctx context.Context, fie
 	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_scope(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_scope(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17744,7 +19166,7 @@ func (ec *executionContext) _SocialAccountSession_createdAt(ctx context.Context,
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17785,7 +19207,7 @@ func (ec *executionContext) _SocialAccountSession_updatedAt(ctx context.Context,
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17823,7 +19245,7 @@ func (ec *executionContext) _SocialAccountSession_expiresAt(ctx context.Context,
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_expiresAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17861,7 +19283,7 @@ func (ec *executionContext) _SocialAccountSession_deletedAt(ctx context.Context,
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SocialAccountSession_deletedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SocialAccountSession_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SocialAccountSession",
 		Field:      field,
@@ -17869,6 +19291,47 @@ func (ec *executionContext) fieldContext_SocialAccountSession_deletedAt(ctx cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusResponse_clientMutationID(ctx context.Context, field graphql.CollectedField, obj *models.StatusResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientMutationID, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatusResponse_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -17902,7 +19365,7 @@ func (ec *executionContext) _StatusResponse_status(ctx context.Context, field gr
 	return ec.marshalNResponseStatus2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐResponseStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_StatusResponse_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StatusResponse_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StatusResponse",
 		Field:      field,
@@ -17940,7 +19403,7 @@ func (ec *executionContext) _StatusResponse_message(ctx context.Context, field g
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_StatusResponse_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StatusResponse_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StatusResponse",
 		Field:      field,
@@ -17981,7 +19444,7 @@ func (ec *executionContext) _User_ID(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -18022,7 +19485,7 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_username(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -18063,7 +19526,7 @@ func (ec *executionContext) _User_status(ctx context.Context, field graphql.Coll
 	return ec.marshalNApproveStatus2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐApproveStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -18101,7 +19564,7 @@ func (ec *executionContext) _User_statusMessage(ctx context.Context, field graph
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_statusMessage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -18142,7 +19605,7 @@ func (ec *executionContext) _User_createdAt(ctx context.Context, field graphql.C
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -18183,7 +19646,7 @@ func (ec *executionContext) _User_updatedAt(ctx context.Context, field graphql.C
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -18224,7 +19687,7 @@ func (ec *executionContext) _UserConnection_totalCount(ctx context.Context, fiel
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserConnection",
 		Field:      field,
@@ -18262,7 +19725,7 @@ func (ec *executionContext) _UserConnection_edges(ctx context.Context, field gra
 	return ec.marshalOUserEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserEdgeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserConnection",
 		Field:      field,
@@ -18306,7 +19769,7 @@ func (ec *executionContext) _UserConnection_list(ctx context.Context, field grap
 	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserConnection_list(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserConnection_list(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserConnection",
 		Field:      field,
@@ -18361,7 +19824,7 @@ func (ec *executionContext) _UserConnection_pageInfo(ctx context.Context, field 
 	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserConnection",
 		Field:      field,
@@ -18418,7 +19881,7 @@ func (ec *executionContext) _UserEdge_cursor(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserEdge",
 		Field:      field,
@@ -18456,7 +19919,7 @@ func (ec *executionContext) _UserEdge_node(ctx context.Context, field graphql.Co
 	return ec.marshalOUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserEdge",
 		Field:      field,
@@ -18511,7 +19974,7 @@ func (ec *executionContext) _UserPayload_clientMutationID(ctx context.Context, f
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserPayload_clientMutationID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserPayload_clientMutationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserPayload",
 		Field:      field,
@@ -18552,7 +20015,7 @@ func (ec *executionContext) _UserPayload_userID(ctx context.Context, field graph
 	return ec.marshalNID642uint64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserPayload_userID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserPayload_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserPayload",
 		Field:      field,
@@ -18590,7 +20053,7 @@ func (ec *executionContext) _UserPayload_user(ctx context.Context, field graphql
 	return ec.marshalOUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserPayload_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserPayload_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserPayload",
 		Field:      field,
@@ -18645,7 +20108,7 @@ func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Directive_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Directive_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Directive",
 		Field:      field,
@@ -18683,7 +20146,7 @@ func (ec *executionContext) ___Directive_description(ctx context.Context, field 
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Directive_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Directive_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Directive",
 		Field:      field,
@@ -18724,7 +20187,7 @@ func (ec *executionContext) ___Directive_locations(ctx context.Context, field gr
 	return ec.marshalN__DirectiveLocation2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Directive_locations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Directive_locations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Directive",
 		Field:      field,
@@ -18765,7 +20228,7 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Directive_args(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Directive_args(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Directive",
 		Field:      field,
@@ -18816,7 +20279,7 @@ func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Directive_isRepeatable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Directive",
 		Field:      field,
@@ -18857,7 +20320,7 @@ func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___EnumValue_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___EnumValue_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__EnumValue",
 		Field:      field,
@@ -18895,7 +20358,7 @@ func (ec *executionContext) ___EnumValue_description(ctx context.Context, field 
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___EnumValue_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___EnumValue_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__EnumValue",
 		Field:      field,
@@ -18936,7 +20399,7 @@ func (ec *executionContext) ___EnumValue_isDeprecated(ctx context.Context, field
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___EnumValue_isDeprecated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___EnumValue_isDeprecated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__EnumValue",
 		Field:      field,
@@ -18974,7 +20437,7 @@ func (ec *executionContext) ___EnumValue_deprecationReason(ctx context.Context, 
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___EnumValue_deprecationReason(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___EnumValue_deprecationReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__EnumValue",
 		Field:      field,
@@ -19015,7 +20478,7 @@ func (ec *executionContext) ___Field_name(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -19053,7 +20516,7 @@ func (ec *executionContext) ___Field_description(ctx context.Context, field grap
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -19094,7 +20557,7 @@ func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.Col
 	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_args(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_args(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -19145,7 +20608,7 @@ func (ec *executionContext) ___Field_type(ctx context.Context, field graphql.Col
 	return ec.marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -19208,7 +20671,7 @@ func (ec *executionContext) ___Field_isDeprecated(ctx context.Context, field gra
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_isDeprecated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_isDeprecated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -19246,7 +20709,7 @@ func (ec *executionContext) ___Field_deprecationReason(ctx context.Context, fiel
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_deprecationReason(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_deprecationReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -19287,7 +20750,7 @@ func (ec *executionContext) ___InputValue_name(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___InputValue_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___InputValue_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__InputValue",
 		Field:      field,
@@ -19325,7 +20788,7 @@ func (ec *executionContext) ___InputValue_description(ctx context.Context, field
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___InputValue_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___InputValue_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__InputValue",
 		Field:      field,
@@ -19366,7 +20829,7 @@ func (ec *executionContext) ___InputValue_type(ctx context.Context, field graphq
 	return ec.marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___InputValue_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___InputValue_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__InputValue",
 		Field:      field,
@@ -19426,7 +20889,7 @@ func (ec *executionContext) ___InputValue_defaultValue(ctx context.Context, fiel
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___InputValue_defaultValue(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___InputValue_defaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__InputValue",
 		Field:      field,
@@ -19464,7 +20927,7 @@ func (ec *executionContext) ___Schema_description(ctx context.Context, field gra
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Schema_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Schema_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Schema",
 		Field:      field,
@@ -19505,7 +20968,7 @@ func (ec *executionContext) ___Schema_types(ctx context.Context, field graphql.C
 	return ec.marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Schema_types(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Schema_types(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Schema",
 		Field:      field,
@@ -19568,7 +21031,7 @@ func (ec *executionContext) ___Schema_queryType(ctx context.Context, field graph
 	return ec.marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Schema_queryType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Schema_queryType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Schema",
 		Field:      field,
@@ -19628,7 +21091,7 @@ func (ec *executionContext) ___Schema_mutationType(ctx context.Context, field gr
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Schema_mutationType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Schema_mutationType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Schema",
 		Field:      field,
@@ -19688,7 +21151,7 @@ func (ec *executionContext) ___Schema_subscriptionType(ctx context.Context, fiel
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Schema_subscriptionType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Schema_subscriptionType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Schema",
 		Field:      field,
@@ -19751,7 +21214,7 @@ func (ec *executionContext) ___Schema_directives(ctx context.Context, field grap
 	return ec.marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Schema_directives(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Schema_directives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Schema",
 		Field:      field,
@@ -19804,7 +21267,7 @@ func (ec *executionContext) ___Type_kind(ctx context.Context, field graphql.Coll
 	return ec.marshalN__TypeKind2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_kind(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -19842,7 +21305,7 @@ func (ec *executionContext) ___Type_name(ctx context.Context, field graphql.Coll
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -19880,7 +21343,7 @@ func (ec *executionContext) ___Type_description(ctx context.Context, field graph
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -19981,7 +21444,7 @@ func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphq
 	return ec.marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_interfaces(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_interfaces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -20041,7 +21504,7 @@ func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field gra
 	return ec.marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_possibleTypes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_possibleTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -20160,7 +21623,7 @@ func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graph
 	return ec.marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_inputFields(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_inputFields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -20208,7 +21671,7 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_ofType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_ofType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -20268,7 +21731,7 @@ func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field gr
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
@@ -20713,6 +22176,130 @@ func (ec *executionContext) unmarshalInputAuthClientListOrder(ctx context.Contex
 				return it, err
 			}
 			it.LastUpdate = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDirectAccessTokenListFilter(ctx context.Context, obj interface{}) (models.DirectAccessTokenListFilter, error) {
+	var it models.DirectAccessTokenListFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ID", "token", "userID", "accountID", "minExpiresAt", "maxExpiresAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ID"))
+			data, err := ec.unmarshalOID642ᚕuint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "token":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Token = data
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			data, err := ec.unmarshalOID642ᚕuint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "accountID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
+			data, err := ec.unmarshalOID642ᚕuint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountID = data
+		case "minExpiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minExpiresAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MinExpiresAt = data
+		case "maxExpiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxExpiresAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxExpiresAt = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDirectAccessTokenListOrder(ctx context.Context, obj interface{}) (models.DirectAccessTokenListOrder, error) {
+	var it models.DirectAccessTokenListOrder
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ID", "token", "userID", "accountID", "createdAt", "expiresAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ID"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "token":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Token = data
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "accountID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountID = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "expiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
+			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAt = data
 		}
 	}
 
@@ -22191,6 +23778,202 @@ func (ec *executionContext) _AuthClientPayload(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var directAccessTokenImplementors = []string{"DirectAccessToken"}
+
+func (ec *executionContext) _DirectAccessToken(ctx context.Context, sel ast.SelectionSet, obj *models.DirectAccessToken) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, directAccessTokenImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DirectAccessToken")
+		case "ID":
+			out.Values[i] = ec._DirectAccessToken_ID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "token":
+			out.Values[i] = ec._DirectAccessToken_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._DirectAccessToken_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userID":
+			out.Values[i] = ec._DirectAccessToken_userID(ctx, field, obj)
+		case "accountID":
+			out.Values[i] = ec._DirectAccessToken_accountID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._DirectAccessToken_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresAt":
+			out.Values[i] = ec._DirectAccessToken_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var directAccessTokenConnectionImplementors = []string{"DirectAccessTokenConnection"}
+
+func (ec *executionContext) _DirectAccessTokenConnection(ctx context.Context, sel ast.SelectionSet, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, directAccessTokenConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DirectAccessTokenConnection")
+		case "totalCount":
+			out.Values[i] = ec._DirectAccessTokenConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._DirectAccessTokenConnection_edges(ctx, field, obj)
+		case "list":
+			out.Values[i] = ec._DirectAccessTokenConnection_list(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._DirectAccessTokenConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var directAccessTokenEdgeImplementors = []string{"DirectAccessTokenEdge"}
+
+func (ec *executionContext) _DirectAccessTokenEdge(ctx context.Context, sel ast.SelectionSet, obj *models.DirectAccessTokenEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, directAccessTokenEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DirectAccessTokenEdge")
+		case "cursor":
+			out.Values[i] = ec._DirectAccessTokenEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "node":
+			out.Values[i] = ec._DirectAccessTokenEdge_node(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var directAccessTokenPayloadImplementors = []string{"DirectAccessTokenPayload"}
+
+func (ec *executionContext) _DirectAccessTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *models.DirectAccessTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, directAccessTokenPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DirectAccessTokenPayload")
+		case "clientMutationID":
+			out.Values[i] = ec._DirectAccessTokenPayload_clientMutationID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "token":
+			out.Values[i] = ec._DirectAccessTokenPayload_token(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var historyActionImplementors = []string{"HistoryAction"}
 
 func (ec *executionContext) _HistoryAction(ctx context.Context, sel ast.SelectionSet, obj *models.HistoryAction) graphql.Marshaler {
@@ -22806,6 +24589,14 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "generateDirectAccessToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_generateDirectAccessToken(ctx, field)
+			})
+		case "revokeDirectAccessToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_revokeDirectAccessToken(ctx, field)
+			})
 		case "setOption":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setOption(ctx, field)
@@ -23356,7 +25147,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listAccounts":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23375,7 +25166,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listAccountRolesAndPermissions":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23394,7 +25185,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listMembers":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23523,7 +25314,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listUsers":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23564,7 +25355,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listAuthClients":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23580,10 +25371,48 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getDirectAccessToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getDirectAccessToken(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "listDirectAccessTokens":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_listDirectAccessTokens(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "listHistory":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23624,7 +25453,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listOptions":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23665,7 +25494,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "checkPermission":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23684,7 +25513,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listRoles":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23703,7 +25532,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listPermissions":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -23722,7 +25551,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "listMyPermissions":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
@@ -24406,6 +26235,11 @@ func (ec *executionContext) _StatusResponse(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("StatusResponse")
+		case "clientMutationID":
+			out.Values[i] = ec._StatusResponse_clientMutationID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "status":
 			out.Values[i] = ec._StatusResponse_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -25083,6 +26917,31 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNDirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx context.Context, sel ast.SelectionSet, v *models.DirectAccessToken) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DirectAccessToken(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDirectAccessTokenEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenEdge(ctx context.Context, sel ast.SelectionSet, v *models.DirectAccessTokenEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DirectAccessTokenEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDirectAccessTokenListFilter2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx context.Context, v interface{}) (models.DirectAccessTokenListFilter, error) {
+	res, err := ec.unmarshalInputDirectAccessTokenListFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNHistoryAction2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryAction(ctx context.Context, sel ast.SelectionSet, v *models.HistoryAction) graphql.Marshaler {
@@ -26242,6 +28101,137 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalODirectAccessToken2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.DirectAccessToken) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalODirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx context.Context, sel ast.SelectionSet, v *models.DirectAccessToken) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DirectAccessToken(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalODirectAccessTokenConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx context.Context, sel ast.SelectionSet, v *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DirectAccessTokenConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalODirectAccessTokenEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.DirectAccessTokenEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDirectAccessTokenEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalODirectAccessTokenListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx context.Context, v interface{}) (*models.DirectAccessTokenListFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDirectAccessTokenListFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODirectAccessTokenListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListOrder(ctx context.Context, v interface{}) (*models.DirectAccessTokenListOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDirectAccessTokenListOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODirectAccessTokenPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenPayload(ctx context.Context, sel ast.SelectionSet, v *models.DirectAccessTokenPayload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DirectAccessTokenPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOHistoryAction2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.HistoryAction) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -27070,6 +29060,13 @@ func (ec *executionContext) marshalOSocialAccountSession2ᚕᚖgithubᚗcomᚋge
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse(ctx context.Context, sel ast.SelectionSet, v *models.StatusResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._StatusResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

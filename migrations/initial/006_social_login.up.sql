@@ -1,6 +1,6 @@
 -- Social account connection table with the user
 CREATE TABLE IF NOT EXISTS account_social
-( ID                      BIGSERIAL                   PRIMARY KEY
+( id                      BIGSERIAL                   PRIMARY KEY
 , user_id                 BIGINT                      NOT NULL      REFERENCES account_user (id) MATCH SIMPLE
                                                                         ON UPDATE NO ACTION
                                                                         ON DELETE RESTRICT

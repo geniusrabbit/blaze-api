@@ -7,13 +7,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/model"
 )
 
-// Filter of the objects list
-type Filter struct {
-	ID       []string
-	Page     int
-	PageSize int
-}
-
 // Repository of access to the account
 //
 //go:generate mockgen -source $GOFILE -package mocks -destination mocks/repository.go

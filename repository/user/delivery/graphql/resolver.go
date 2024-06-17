@@ -138,8 +138,9 @@ func (r *QueryResolver) ResetUserPassword(ctx context.Context, email string) (*g
 		// Messanger is required for sending emails otherwise no any sense to reset password
 		ctxlogger.Get(ctx).Error("Email service not configured")
 		return &gqlmodels.StatusResponse{
-			Status:  gqlmodels.ResponseStatusError,
-			Message: &[]string{"Internal service problem. Request again later."}[0],
+			ClientMutationID: requestid.Get(ctx),
+			Status:           gqlmodels.ResponseStatusError,
+			Message:          &[]string{"Internal service problem. Request again later."}[0],
 		}, nil
 	}
 
@@ -162,8 +163,9 @@ func (r *QueryResolver) ResetUserPassword(ctx context.Context, email string) (*g
 				zap.String("msgname", msgName),
 				zap.Error(err))
 			return &gqlmodels.StatusResponse{
-				Status:  gqlmodels.ResponseStatusError,
-				Message: &[]string{"Error sending reset password email"}[0],
+				ClientMutationID: requestid.Get(ctx),
+				Status:           gqlmodels.ResponseStatusError,
+				Message:          &[]string{"Error sending reset password email"}[0],
 			}, nil
 		}
 	} else {
@@ -171,8 +173,9 @@ func (r *QueryResolver) ResetUserPassword(ctx context.Context, email string) (*g
 	}
 
 	return &gqlmodels.StatusResponse{
-		Status:  gqlmodels.ResponseStatusSuccess,
-		Message: &[]string{"Password reset link sent to " + email}[0],
+		ClientMutationID: requestid.Get(ctx),
+		Status:           gqlmodels.ResponseStatusSuccess,
+		Message:          &[]string{"Password reset link sent to " + email}[0],
 	}, nil
 }
 
@@ -188,8 +191,9 @@ func (r *QueryResolver) UpdateResetedUserPassword(ctx context.Context, token, em
 		return nil, err
 	}
 	return &gqlmodels.StatusResponse{
-		Status:  gqlmodels.ResponseStatusSuccess,
-		Message: &[]string{"Password updated"}[0],
+		ClientMutationID: requestid.Get(ctx),
+		Status:           gqlmodels.ResponseStatusSuccess,
+		Message:          &[]string{"Password updated"}[0],
 	}, nil
 }
 

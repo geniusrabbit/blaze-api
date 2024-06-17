@@ -12,10 +12,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/opentracing-contrib/go-stdlib/nethttp"
 	"github.com/opentracing/opentracing-go"
-	"github.com/ory/fosite"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
+	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/middleware"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
@@ -32,10 +32,9 @@ type HTTPServer struct {
 	RequestTimeout time.Duration
 	ContextWrap    contextWrapper
 	InitWrap       muxInitWrapper
-	OAuth2provider fosite.OAuth2Provider
+	Authorizers    []auth.Authorizer
 	JWTProvider    *jwt.Provider
 	SessionManager *scs.SessionManager
-	AuthOption     *middleware.AuthOption
 	Logger         *zap.Logger
 }
 
@@ -58,7 +57,7 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	h := http.Handler(mux)
 
 	// Add middleware's
-	h = middleware.AuthHTTP("http_", h, s.OAuth2provider, s.JWTProvider, s.AuthOption)
+	h = auth.Middelware(h, s.Authorizers...)
 	h = middleware.HTTPContextWrapper(h, s.ContextWrap)
 	h = middleware.HTTPSession(h, s.SessionManager)
 	h = middleware.RealIP(h)

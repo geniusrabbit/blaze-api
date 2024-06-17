@@ -3,6 +3,11 @@ Simple response type for the API
 """
 type StatusResponse {
   """
+  Unique identifier for the client performing the mutation
+  """
+  clientMutationID: String!
+
+  """
   The status of the response
   """
   status: ResponseStatus!

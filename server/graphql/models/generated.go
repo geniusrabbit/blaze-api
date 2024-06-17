@@ -200,6 +200,48 @@ type AuthClientPayload struct {
 	AuthClient *AuthClient `json:"authClient,omitempty"`
 }
 
+type DirectAccessToken struct {
+	ID          uint64    `json:"ID"`
+	Token       string    `json:"token"`
+	Description string    `json:"description"`
+	UserID      *uint64   `json:"userID,omitempty"`
+	AccountID   uint64    `json:"accountID"`
+	CreatedAt   time.Time `json:"createdAt"`
+	ExpiresAt   time.Time `json:"expiresAt"`
+}
+
+type DirectAccessTokenEdge struct {
+	// Cursor for pagination
+	Cursor string `json:"cursor"`
+	// Node for the edge
+	Node *DirectAccessToken `json:"node,omitempty"`
+}
+
+type DirectAccessTokenListFilter struct {
+	ID           []uint64   `json:"ID,omitempty"`
+	Token        []string   `json:"token,omitempty"`
+	UserID       []uint64   `json:"userID,omitempty"`
+	AccountID    []uint64   `json:"accountID,omitempty"`
+	MinExpiresAt *time.Time `json:"minExpiresAt,omitempty"`
+	MaxExpiresAt *time.Time `json:"maxExpiresAt,omitempty"`
+}
+
+type DirectAccessTokenListOrder struct {
+	ID        *Ordering `json:"ID,omitempty"`
+	Token     *Ordering `json:"token,omitempty"`
+	UserID    *Ordering `json:"userID,omitempty"`
+	AccountID *Ordering `json:"accountID,omitempty"`
+	CreatedAt *Ordering `json:"createdAt,omitempty"`
+	ExpiresAt *Ordering `json:"expiresAt,omitempty"`
+}
+
+type DirectAccessTokenPayload struct {
+	// Unique identifier for the client performing the mutation
+	ClientMutationID string `json:"clientMutationID"`
+	// DirectAccessToken ID operation result
+	Token *DirectAccessToken `json:"token,omitempty"`
+}
+
 // HistoryAction is the model for history actions.
 type HistoryAction struct {
 	ID         uuid.UUID          `json:"ID"`
@@ -575,6 +617,8 @@ type SocialAccountSession struct {
 
 // Simple response type for the API
 type StatusResponse struct {
+	// Unique identifier for the client performing the mutation
+	ClientMutationID string `json:"clientMutationID"`
 	// The status of the response
 	Status ResponseStatus `json:"status"`
 	// The message of the response

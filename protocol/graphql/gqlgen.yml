@@ -91,3 +91,5 @@ models:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.HistoryActionConnection
   OptionConnection:
     model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.OptionConnection
+  DirectAccessTokenConnection:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.DirectAccessTokenConnection

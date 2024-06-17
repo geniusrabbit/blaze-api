@@ -1,0 +1,126 @@
+type DirectAccessToken {
+  ID: ID64!
+  token: String!
+  description: String!
+  userID: ID64
+  accountID: ID64!
+  createdAt: Time!
+  expiresAt: Time!
+}
+
+type DirectAccessTokenEdge {
+  """
+  Cursor for pagination
+  """
+  cursor: String!
+
+  """
+  Node for the edge
+  """
+  node: DirectAccessToken
+}
+
+type DirectAccessTokenConnection {
+  """
+  Total count of DirectAccessToken objects
+  """
+  totalCount: Int!
+
+  """
+  Edges for the DirectAccessTokenConnection
+  """
+  edges: [DirectAccessTokenEdge!]
+
+  """
+  List of DirectAccessToken objects
+  """
+  list: [DirectAccessToken!]
+
+  """
+  PageInfo for the DirectAccessTokenConnection
+  """
+  pageInfo: PageInfo!
+}
+
+type DirectAccessTokenPayload {
+  """
+  Unique identifier for the client performing the mutation
+  """
+  clientMutationID: String!
+
+  """
+  DirectAccessToken ID operation result
+  """
+  token: DirectAccessToken
+}
+
+###############################################################################
+## Query
+###############################################################################
+
+input DirectAccessTokenListFilter {
+  ID:           [ID64!]
+  token:        [String!]
+  userID:       [ID64!]
+  accountID:    [ID64!]
+  minExpiresAt: Time
+  maxExpiresAt: Time
+}
+
+input DirectAccessTokenListOrder {
+  ID:        Ordering
+  token:     Ordering
+  userID:    Ordering
+  accountID: Ordering
+  createdAt: Ordering
+  expiresAt: Ordering
+}
+
+###############################################################################
+# Query and Mutations
+###############################################################################
+
+extend type Query {
+  """
+  Get a DirectAccessToken by its ID
+  """
+  getDirectAccessToken(id: ID64!): DirectAccessTokenPayload @hasPermissions(permissions: ["directaccesstoken.view.*"])
+
+  """
+  List DirectAccessTokens
+  """
+  listDirectAccessTokens(
+    """
+    Filter to apply to the list
+    """
+    filter: DirectAccessTokenListFilter
+
+    """
+    Order to apply to the list
+    """
+    order: DirectAccessTokenListOrder
+
+    """
+    Pagination options
+    """
+    page: Page
+  ): DirectAccessTokenConnection @hasPermissions(permissions: ["directaccesstoken.list.*"])
+}
+
+extend type Mutation {
+  """
+  Generate a new DirectAccessToken
+  """
+  generateDirectAccessToken(
+    userID:       ID64    = null,
+    description:  String! = "",
+    expiresAt:    Time    = null
+  ): DirectAccessTokenPayload @hasPermissions(permissions: ["directaccesstoken.create.*"])
+
+  """
+  Revoke a DirectAccessToken
+  """
+  revokeDirectAccessToken(
+    filter: DirectAccessTokenListFilter!
+  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.revoke.*"])
+}
