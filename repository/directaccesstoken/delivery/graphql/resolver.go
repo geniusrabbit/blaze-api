@@ -80,7 +80,7 @@ func (r *QueryResolver) Get(ctx context.Context, id uint64) (*models.DirectAcces
 func (r *QueryResolver) List(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge], error) {
 	return connectors.NewDirectAccessTokenConnection(ctx, r.uc, filter, order, page,
 		func(dat *model.DirectAccessToken) *model.DirectAccessToken {
-			if dat.CreatedAt.Before(time.Now().Add(time.Minute * 5)) {
+			if dat.CreatedAt.After(time.Now().Add(-time.Minute * 5)) {
 				return dat
 			}
 			m := new(model.DirectAccessToken)

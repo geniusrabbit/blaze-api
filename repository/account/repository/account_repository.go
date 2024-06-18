@@ -61,9 +61,12 @@ func (r *Repository) GetByTitle(ctx context.Context, title string) (*model.Accou
 }
 
 // LoadPermissions into account object
-func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Account, userObj *model.User) error {
+func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Account, userObj *model.User) (err error) {
+	if accountObj == nil || userObj == nil {
+		accountObj.Permissions, err = r.PermissionManager(ctx).AsOneRole(ctx, false, nil)
+		return err
+	}
 	var (
-		err     error
 		roles   []uint64
 		memeber = new(model.AccountMember)
 		query   = r.Slave(ctx)
