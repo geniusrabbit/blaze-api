@@ -3,9 +3,11 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/demdxx/gocast/v2"
+	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/repository"
@@ -76,5 +78,14 @@ func (r *QueryResolver) Get(ctx context.Context, id uint64) (*models.DirectAcces
 
 // List is the resolver for the listDirectAccessTokens field.
 func (r *QueryResolver) List(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge], error) {
-	return connectors.NewDirectAccessTokenConnection(ctx, r.uc, filter, order, page), nil
+	return connectors.NewDirectAccessTokenConnection(ctx, r.uc, filter, order, page,
+		func(dat *model.DirectAccessToken) *model.DirectAccessToken {
+			if dat.CreatedAt.Before(time.Now().Add(time.Minute * 5)) {
+				return dat
+			}
+			m := new(model.DirectAccessToken)
+			*m = *dat
+			m.Token = strings.Repeat("*", len(m.Token))
+			return m
+		}), nil
 }

@@ -14,9 +14,6 @@ CREATE TABLE IF NOT EXISTS direct_access_tokens
 , expires_at              TIMESTAMP
 );
 
-CREATE TRIGGER updated_at_triger BEFORE UPDATE
-    ON direct_access_tokens FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
-
 CREATE TRIGGER notify_update_event_trigger
 AFTER INSERT OR UPDATE OR DELETE ON direct_access_tokens
     FOR EACH ROW EXECUTE PROCEDURE notify_update_event();
