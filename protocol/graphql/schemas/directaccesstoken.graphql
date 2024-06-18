@@ -122,5 +122,5 @@ extend type Mutation {
   """
   revokeDirectAccessToken(
     filter: DirectAccessTokenListFilter!
-  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.revoke.*"])
+  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.delete.*"])
 }
