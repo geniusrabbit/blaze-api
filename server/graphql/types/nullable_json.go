@@ -44,6 +44,11 @@ func (j *NullableJSON) SetValue(v any) error {
 	return j.goJSON().SetValue(v)
 }
 
+// DataOr returns data or default value
+func (j *NullableJSON) DataOr(def any) any {
+	return j.goJSON().DataOr(def)
+}
+
 // MarshalGQL implements method of interface graphql.Marshaler
 func (j NullableJSON) MarshalGQL(w io.Writer) {
 	data, _ := j.goJSON().MarshalJSON()
