@@ -9,9 +9,10 @@ type QueryPreparer interface {
 
 // List select options
 type listOptions[F, O QueryPreparer] struct {
-	Filter F
-	Order  O
-	Page   *Pagination
+	Filter   F
+	Order    O
+	Page     *Pagination
+	Preloads []string
 }
 
 // Option for list query
@@ -38,8 +39,20 @@ func WithPagination[F, O QueryPreparer](page *Pagination) ListOption[F, O] {
 	}
 }
 
+// WithPreloads option for list query
+func WithPreloads[F, O QueryPreparer](preloads []string) ListOption[F, O] {
+	return func(opts *listOptions[F, O]) {
+		opts.Preloads = preloads
+	}
+}
+
 // PrepareQuery prepare query with options
 func (opts *listOptions[F, O]) PrepareQuery(query *gorm.DB) *gorm.DB {
+	if len(opts.Preloads) > 0 {
+		for _, preload := range opts.Preloads {
+			query = query.Preload(preload)
+		}
+	}
 	query = opts.Filter.PrepareQuery(query)
 	query = opts.Order.PrepareQuery(query)
 	query = opts.Page.PrepareQuery(query)
@@ -73,6 +86,10 @@ func (opts ListOptions[F, O]) WithOrder(order O) ListOptions[F, O] {
 
 func (opts ListOptions[F, O]) WithPagination(page *Pagination) ListOptions[F, O] {
 	return append(opts, WithPagination[F, O](page))
+}
+
+func (opts ListOptions[F, O]) WithPreloads(preloads []string) ListOptions[F, O] {
+	return append(opts, WithPreloads[F, O](preloads))
 }
 
 func (opts ListOptions[F, O]) PrepareQuery(query *gorm.DB) *gorm.DB {
