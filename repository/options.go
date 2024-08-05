@@ -40,7 +40,7 @@ func WithPagination[F, O QueryPreparer](page *Pagination) ListOption[F, O] {
 }
 
 // WithPreloads option for list query
-func WithPreloads[F, O QueryPreparer](preloads []string) ListOption[F, O] {
+func WithPreloads[F, O QueryPreparer](preloads ...string) ListOption[F, O] {
 	return func(opts *listOptions[F, O]) {
 		opts.Preloads = preloads
 	}
@@ -88,8 +88,8 @@ func (opts ListOptions[F, O]) WithPagination(page *Pagination) ListOptions[F, O]
 	return append(opts, WithPagination[F, O](page))
 }
 
-func (opts ListOptions[F, O]) WithPreloads(preloads []string) ListOptions[F, O] {
-	return append(opts, WithPreloads[F, O](preloads))
+func (opts ListOptions[F, O]) WithPreloads(preloads ...string) ListOptions[F, O] {
+	return append(opts, WithPreloads[F, O](preloads...))
 }
 
 func (opts ListOptions[F, O]) PrepareQuery(query *gorm.DB) *gorm.DB {
