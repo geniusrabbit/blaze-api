@@ -1,7 +1,5 @@
 package acl
 
-import "errors"
-
 // import (
 // 	"google.golang.org/grpc/codes"
 // 	"google.golang.org/grpc/status"
@@ -39,4 +37,28 @@ import "errors"
 // 	ErrNoPermissions = NewPermissionError(codes.PermissionDenied, "no permissions")
 // )
 
-var ErrNoPermissions = errors.New("no permissions")
+type ACLError struct {
+	parent  error
+	Message string
+}
+
+func (err *ACLError) Error() string {
+	if err.parent != nil {
+		return err.parent.Error() + ": " + err.Message
+	}
+	return err.Message
+}
+
+func (err *ACLError) WithMessage(message string) *ACLError {
+	nErr := &ACLError{
+		parent:  err,
+		Message: message,
+	}
+	return nErr
+}
+
+func (err *ACLError) Unwrap() error {
+	return err.parent
+}
+
+var ErrNoPermissions = &ACLError{Message: "no permissions"}
