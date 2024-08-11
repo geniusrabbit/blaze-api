@@ -6,15 +6,15 @@ import (
 	"gorm.io/gorm"
 )
 
-// QueryPreparer prepare query
-type QueryPreparer interface {
+// QOption prepare query
+type QOption interface {
 	PrepareQuery(query *gorm.DB) *gorm.DB
 }
 
 // ListOptions for query preparation
-type ListOptions []QueryPreparer
+type ListOptions []QOption
 
-func (opts ListOptions) With(prep QueryPreparer) ListOptions {
+func (opts ListOptions) With(prep QOption) ListOptions {
 	updated := false
 	for i, opt := range opts {
 		if reflect.TypeOf(opt) == reflect.TypeOf(prep) {
