@@ -32,7 +32,7 @@ type GroupOption struct {
 }
 
 func (opt *GroupOption) PrepareQuery(query *gorm.DB) *gorm.DB {
-	if opt == nil {
+	if opt == nil || len(opt.Groups) == 0 {
 		return query
 	}
 	for _, group := range opt.Groups {
