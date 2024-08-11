@@ -5,7 +5,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/repository"
 )
 
 // Filter of the objects list
@@ -56,9 +55,6 @@ func (ord *ListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 	query = ord.UpdatedAt.PrepareQuery(query, `updated_at`)
 	return query
 }
-
-// ListOption of the objects list
-type ListOption = repository.ListOption[*Filter, *ListOrder]
 
 // MemberFilter of the objects list
 type MemberFilter struct {
@@ -119,9 +115,3 @@ func (ord *MemberListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 	query = ord.UpdatedAt.PrepareQuery(query, `updated_at`)
 	return query
 }
-
-// Filter of the objects list
-type MemberListOption = repository.ListOption[*MemberFilter, *MemberListOrder]
-type MemberListOptions = repository.ListOptions[*MemberFilter, *MemberListOrder]
-
-var EmptyMemberListOptions = MemberListOptions(nil)
