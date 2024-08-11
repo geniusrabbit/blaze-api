@@ -3,12 +3,48 @@ package repository
 import (
 	"reflect"
 
+	"github.com/demdxx/xtypes"
 	"gorm.io/gorm"
 )
 
 // QOption prepare query
 type QOption interface {
 	PrepareQuery(query *gorm.DB) *gorm.DB
+}
+
+type PreloadOption struct {
+	Fields []string
+}
+
+func (opt *PreloadOption) PrepareQuery(query *gorm.DB) *gorm.DB {
+	if opt == nil {
+		return query
+	}
+	for _, preload := range opt.Fields {
+		query = query.Preload(preload)
+	}
+	return query
+}
+
+type GroupOption struct {
+	Groups        []string
+	SummingFields []string
+}
+
+func (opt *GroupOption) PrepareQuery(query *gorm.DB) *gorm.DB {
+	if opt == nil {
+		return query
+	}
+	for _, group := range opt.Groups {
+		query = query.Group(group)
+	}
+	return query.Select(
+		append(opt.Groups,
+			xtypes.SliceApply(opt.SummingFields, func(field string) string {
+				return "SUM(" + field + ") as " + field
+			})...,
+		),
+	)
 }
 
 // ListOptions for query preparation
