@@ -39,6 +39,12 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			!cdb.Statement.ReflectValue.IsValid() {
 			return
 		}
+
+		ctxlogger.Get(cdb.Statement.Context).
+			Debug("history log",
+				zap.String("schema", cdb.Statement.Schema.Name),
+				zap.Bool("has_primary_key", cdb.Statement.Schema.PrioritizedPrimaryField != nil))
+
 		switch db.Statement.ReflectValue.Kind() {
 		case reflect.Slice, reflect.Array, reflect.Invalid:
 			return
