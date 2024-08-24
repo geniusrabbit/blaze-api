@@ -73,7 +73,7 @@ func NewDefaultProvider(secret string, tokenLifetime time.Duration, isDebug bool
 func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64) (string, time.Time, error) {
 	var (
 		err      error
-		lifetime = gocast.IfThen(provider.TokenLifetime == 0, provider.TokenLifetime, time.Hour)
+		lifetime = gocast.IfThen(provider.TokenLifetime > time.Minute, provider.TokenLifetime, time.Hour)
 		expireAt = time.Now().Add(lifetime)
 	)
 	//Creating Access Token
