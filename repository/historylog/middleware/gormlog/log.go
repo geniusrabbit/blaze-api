@@ -22,7 +22,7 @@ import (
 // Register gorm callbacks for history log
 func Register(db *gorm.DB) (err error) {
 	if cb := db.Callback(); cb != nil {
-		err = multierr.Append(err, cb.Create().Before("gorm:create").Register("historylog:create", Log(db, "create")))
+		err = multierr.Append(err, cb.Create().After("gorm:create").Register("historylog:create", Log(db, "create")))
 		err = multierr.Append(err, cb.Update().Before("gorm:update").Register("historylog:update", Log(db, "update")))
 		err = multierr.Append(err, cb.Delete().Before("gorm:delete").Register("historylog:delete", Log(db, "delete")))
 	}

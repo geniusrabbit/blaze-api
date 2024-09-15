@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/opentracing/opentracing-go"
+	"github.com/vektah/gqlparser/v2/ast"
 
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/server/graphql/directives"
@@ -37,11 +38,11 @@ func GraphQL(provider *jwt.Provider) http.Handler {
 	srv.AddTransport(transport.POST{})
 	srv.AddTransport(transport.MultipartForm{})
 
-	srv.SetQueryCache(lru.New(1000))
+	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.AutomaticPersistedQuery{
-		Cache: lru.New(100),
+		Cache: lru.New[string](100),
 	})
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		span, ctx := opentracing.StartSpanFromContext(r.Context(), "graphql.request")
