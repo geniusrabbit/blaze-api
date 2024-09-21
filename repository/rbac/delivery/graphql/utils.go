@@ -57,10 +57,3 @@ func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Acco
 	}
 	return newObj
 }
-
-func valOrDef[T any](v *T, def T) T {
-	if v == nil {
-		return def
-	}
-	return *v
-}

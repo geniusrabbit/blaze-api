@@ -116,8 +116,8 @@ func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRol
 // CreateRole is the resolver for the createRole field.
 func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRoleInput) (*gqlmodels.RBACRolePayload, error) {
 	roleObj := &model.Role{
-		Name:  valOrDef(input.Name, ""),
-		Title: valOrDef(input.Title, ""),
+		Name:  gocast.PtrAsValue(input.Name, ""),
+		Title: gocast.PtrAsValue(input.Title, ""),
 	}
 	if input.Context != nil {
 		if err := roleObj.Context.SetValue(input.Context.Data); err != nil {
@@ -146,8 +146,8 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 		return nil, err
 	}
 	// Update object fields
-	role.Name = valOrDef(input.Name, role.Name)
-	role.Title = valOrDef(input.Title, role.Title)
+	role.Name = gocast.PtrAsValue(input.Name, role.Name)
+	role.Title = gocast.PtrAsValue(input.Title, role.Title)
 	if input.Context != nil {
 		if err := role.Context.SetValue(input.Context.Data); err != nil {
 			return nil, err
