@@ -2,6 +2,7 @@ package repository
 
 import (
 	"bytes"
+	"slices"
 	"strings"
 
 	"github.com/demdxx/xtypes"
@@ -45,6 +46,10 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	if p == nil || p.After == "" {
 		return q
 	}
+	containsIDColumn := slices.ContainsFunc(orderColumns, func(c OrderingColumn) bool {
+		return c.Name == idCol
+	})
+	// Prepare columns for order
 	columns := strings.Join(
 		xtypes.SliceApply(orderColumns, func(c OrderingColumn) string {
 			if c.DESC {
@@ -57,17 +62,21 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	query := bytes.Buffer{}
 	_, _ = query.WriteString("(")
 	_, _ = query.WriteString(columns)
-	if len(orderColumns) > 1 {
-		_, _ = query.WriteString(`, `)
+	if !containsIDColumn {
+		if len(orderColumns) > 1 {
+			_, _ = query.WriteString(`, `)
+		}
+		_, _ = query.WriteString(idCol)
 	}
-	_, _ = query.WriteString(idCol)
 	_, _ = query.WriteString(") > (")
 	_, _ = query.WriteString(`SELECT `)
 	_, _ = query.WriteString(columns)
-	if len(orderColumns) > 1 {
-		_, _ = query.WriteString(`, `)
+	if !containsIDColumn {
+		if len(orderColumns) > 1 {
+			_, _ = query.WriteString(`, `)
+		}
+		_, _ = query.WriteString(idCol)
 	}
-	_, _ = query.WriteString(idCol)
 	_, _ = query.WriteString(` FROM `)
 	_, _ = query.WriteString(q.Statement.Table)
 	_, _ = query.WriteString(` WHERE `)
