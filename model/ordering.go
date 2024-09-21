@@ -44,3 +44,18 @@ func (ord *Order) Set(s string) *Order {
 	}
 	return ord
 }
+
+// IsDefined returns true if the order is defined
+func (ord *Order) IsDefined() bool {
+	return ord != nil && *ord != 0
+}
+
+// IsDesc returns true if the order is descending
+func (ord *Order) IsDesc() bool {
+	return ord != nil && *ord < 0
+}
+
+// IsAsc returns true if the order is ascending
+func (ord *Order) IsAsc() bool {
+	return ord != nil && *ord > 0
+}

@@ -12,6 +12,11 @@ type QOption interface {
 	PrepareQuery(query *gorm.DB) *gorm.DB
 }
 
+// AfterOption prepare query after
+type AfterOption interface {
+	PrepareAfterQuery(query *gorm.DB, idCol string, orderColumns []OrderingColumn) *gorm.DB
+}
+
 type PreloadOption struct {
 	Fields []string
 }
@@ -69,6 +74,15 @@ func (opts ListOptions) With(prep QOption) ListOptions {
 func (opts ListOptions) PrepareQuery(query *gorm.DB) *gorm.DB {
 	for _, opt := range opts {
 		query = opt.PrepareQuery(query)
+	}
+	return query
+}
+
+func (opts ListOptions) PrepareAfterQuery(query *gorm.DB, idCol string, orderColumns []OrderingColumn) *gorm.DB {
+	for _, opt := range opts {
+		if afterOpt, ok := opt.(AfterOption); ok {
+			return afterOpt.PrepareAfterQuery(query, idCol, orderColumns)
+		}
 	}
 	return query
 }

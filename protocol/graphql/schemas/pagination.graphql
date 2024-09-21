@@ -51,6 +51,11 @@ input Page {
   after: String
 
   """
+  Start after some records
+  """
+  offset: Int
+
+  """
   Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
   """
   startPage: Int
