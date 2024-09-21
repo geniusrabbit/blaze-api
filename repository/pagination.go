@@ -63,7 +63,7 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	_, _ = query.WriteString("(")
 	_, _ = query.WriteString(columns)
 	if !containsIDColumn {
-		if len(orderColumns) > 1 {
+		if len(orderColumns) > 0 {
 			_, _ = query.WriteString(`, `)
 		}
 		_, _ = query.WriteString(idCol)
@@ -72,7 +72,7 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	_, _ = query.WriteString(`SELECT `)
 	_, _ = query.WriteString(columns)
 	if !containsIDColumn {
-		if len(orderColumns) > 1 {
+		if len(orderColumns) > 0 {
 			_, _ = query.WriteString(`, `)
 		}
 		_, _ = query.WriteString(idCol)
