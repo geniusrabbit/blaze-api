@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"bytes"
-	"slices"
 	"strings"
 
+	"github.com/WinterYukky/gorm-extra-clause-plugin/exclause"
+	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 	"gorm.io/gorm"
 )
@@ -46,57 +46,14 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	if p == nil || p.After == "" {
 		return q
 	}
-	containsIDColumn := slices.ContainsFunc(orderColumns, func(c OrderingColumn) bool {
-		return c.Name == idCol
-	})
-	// Prepare columns for order
-	columns := strings.Join(
-		xtypes.SliceApply(orderColumns, func(c OrderingColumn) string {
-			if c.DESC {
-				return "-" + c.Name
-			}
-			return c.Name
-		}), ", ")
-	// Query example:
-	// (name, id) > (SELECT name, id FROM table WHERE id = 'id.value')
-	query := bytes.Buffer{}
-	_, _ = query.WriteString("(")
-	_, _ = query.WriteString(columns)
-	if !containsIDColumn {
-		if len(orderColumns) > 0 {
-			_, _ = query.WriteString(`, `)
-		}
-		_, _ = query.WriteString(idCol)
-	}
-	_, _ = query.WriteString(") > (")
-	_, _ = query.WriteString(`SELECT `)
-	_, _ = query.WriteString(columns)
-	if !containsIDColumn {
-		if len(orderColumns) > 0 {
-			_, _ = query.WriteString(`, `)
-		}
-		_, _ = query.WriteString(idCol)
-	}
-	_, _ = query.WriteString(` FROM `)
-	_, _ = query.WriteString(queryTable(q))
-	_, _ = query.WriteString(` WHERE `)
-	_, _ = query.WriteString(idCol)
-	_, _ = query.WriteString(` = '`)
-	_, _ = query.WriteString(p.After)
-	_, _ = query.WriteString(`')`)
-	q = q.Where(query.String())
-	return q
-}
+	order := strings.Join(xtypes.SliceApply(orderColumns,
+		func(c OrderingColumn) string { return c.Name + gocast.IfThen(c.DESC, ` DESC`, ``) }), ", ")
 
-func queryTable(q *gorm.DB) string {
-	if q.Statement.Table != "" {
-		return q.Statement.Table
-	}
-	if q.Statement.Model != nil {
-		m, _ := q.Statement.Model.(interface{ TableName() string })
-		if m != nil {
-			return m.TableName()
-		}
-	}
-	return q.Statement.Table
+	cte := q.Select(`*, ROW_NUMBER() OVER(ORDER BY ` + order + `) AS rn`)
+	cteAfter := `SELECT rn FROM ctePageAll WHERE ` + idCol + ` = '` + p.After + `'`
+	q = q.Clauses(exclause.NewWith("ctePageAll", cte)).
+		Clauses(exclause.NewWith("ctePage1", cteAfter)).
+		Table("ctePageAll").
+		Where("rn > (SELECT rn FROM ctePage1)")
+	return q
 }
