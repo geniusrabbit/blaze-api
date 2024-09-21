@@ -78,7 +78,7 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 		_, _ = query.WriteString(idCol)
 	}
 	_, _ = query.WriteString(` FROM `)
-	_, _ = query.WriteString(q.Statement.Table)
+	_, _ = query.WriteString(queryTable(q))
 	_, _ = query.WriteString(` WHERE `)
 	_, _ = query.WriteString(idCol)
 	_, _ = query.WriteString(` = '`)
@@ -86,4 +86,17 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	_, _ = query.WriteString(`')`)
 	q = q.Where(query.String())
 	return q
+}
+
+func queryTable(q *gorm.DB) string {
+	if q.Statement.Table != "" {
+		return q.Statement.Table
+	}
+	if q.Statement.Model != nil {
+		m, _ := q.Statement.Model.(interface{ TableName() string })
+		if m != nil {
+			return m.TableName()
+		}
+	}
+	return q.Statement.Table
 }
