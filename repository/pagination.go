@@ -42,18 +42,25 @@ func (p *Pagination) PrepareQuery(q *gorm.DB) *gorm.DB {
 	return q
 }
 
+// PrepareAfterQuery prepare query with pagination
+// Requered gorm plugin to support with clause
+//
+//	 @plugin extraClausePlugin "github.com/WinterYukky/gorm-extra-clause-plugin"
+//		db.Use(extraClausePlugin.New())
 func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []OrderingColumn) *gorm.DB {
-	if p == nil || p.After == "" {
+	if p == nil || p.After == "" || len(orderColumns) == 0 {
 		return q
 	}
 	order := strings.Join(xtypes.SliceApply(orderColumns,
 		func(c OrderingColumn) string { return c.Name + gocast.IfThen(c.DESC, ` DESC`, ``) }), ", ")
 
-	cte := q.Select(`*, ROW_NUMBER() OVER(ORDER BY ` + order + `) AS rn`)
-	cteAfter := `SELECT rn FROM ctePageAll WHERE ` + idCol + ` = '` + p.After + `'`
-	q = q.Clauses(exclause.NewWith("ctePageAll", cte)).
-		Clauses(exclause.NewWith("ctePage1", cteAfter)).
-		Table("ctePageAll").
-		Where("rn > (SELECT rn FROM ctePage1)")
+	cte := q.Session(&gorm.Session{}).Select(`*, ROW_NUMBER() OVER(ORDER BY ` + order + `) AS rn`).Limit(-1)
+	cteAfter := `SELECT rn FROM ctepageall WHERE ` + idCol + ` = '` + p.After + `'`
+	q = q.Clauses(
+		exclause.NewWith("ctepageall", cte),
+		exclause.NewWith("ctepage1", cteAfter),
+	)
+	q = q.Table("ctepageall")
+	q = q.Where("rn > (SELECT rn FROM ctepage1)")
 	return q
 }
