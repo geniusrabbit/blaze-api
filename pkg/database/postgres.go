@@ -14,6 +14,7 @@ import (
 
 func init() {
 	dialectors["postgres"] = openPostgres
+	dialectors["postgresql"] = openPostgres
 }
 
 func openPostgres(dsn string) gorm.Dialector {
