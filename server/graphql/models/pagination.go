@@ -10,8 +10,9 @@ func (p *Page) Pagination() *repository.Pagination {
 		return nil
 	}
 	return &repository.Pagination{
-		After: gocast.PtrAsValue(p.After, ""),
-		Page:  gocast.PtrAsValue(p.StartPage, 1),
-		Size:  gocast.PtrAsValue(p.Size, 0),
+		After:  gocast.PtrAsValue(p.After, ""),
+		Offset: gocast.PtrAsValue(p.Offset, 0),
+		Page:   gocast.PtrAsValue(p.StartPage, 1),
+		Size:   gocast.PtrAsValue(p.Size, 0),
 	}
 }
