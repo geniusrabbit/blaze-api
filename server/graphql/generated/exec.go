@@ -4104,7 +4104,7 @@ extend type Mutation {
   """
   revokeDirectAccessToken(
     filter: DirectAccessTokenListFilter!
-  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.revoke.*"])
+  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.delete.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/directives.graphql", Input: `"Prevents access to a field if the user is not authenticated"
@@ -4270,7 +4270,7 @@ extend type Query {
     filter: HistoryActionListFilter = null,
     order: HistoryActionListOrder = null,
     page: Page = null
-  ): HistoryActionConnection @hasPermissions(permissions: ["history_action.list"])
+  ): HistoryActionConnection @hasPermissions(permissions: ["history_log.list.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../protocol/graphql/schemas/options.graphql", Input: `enum OptionType {
@@ -4451,6 +4451,11 @@ input Page {
   Start after the cursor ID
   """
   after: String
+
+  """
+  Start after some records
+  """
+  offset: Int
 
   """
   Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
@@ -4697,1225 +4702,2971 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) dir_acl_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["permissions"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
-		arg0, err = ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.dir_acl_argsPermissions(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["permissions"] = arg0
 	return args, nil
+}
+func (ec *executionContext) dir_acl_argsPermissions(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) ([]string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["permissions"]
+	if !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
+	if tmp, ok := rawArgs["permissions"]; ok {
+		return ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) dir_hasPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["permissions"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
-		arg0, err = ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.dir_hasPermissions_argsPermissions(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["permissions"] = arg0
 	return args, nil
+}
+func (ec *executionContext) dir_hasPermissions_argsPermissions(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) ([]string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["permissions"]
+	if !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
+	if tmp, ok := rawArgs["permissions"]; ok {
+		return ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) dir_skipNoPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["permissions"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
-		arg0, err = ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.dir_skipNoPermissions_argsPermissions(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["permissions"] = arg0
 	return args, nil
+}
+func (ec *executionContext) dir_skipNoPermissions_argsPermissions(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) ([]string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["permissions"]
+	if !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("permissions"))
+	if tmp, ok := rawArgs["permissions"]; ok {
+		return ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_approveAccountMember_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["memberID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_approveAccountMember_argsMemberID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["memberID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_approveAccountMember_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_approveAccountMember_argsMemberID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["memberID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
+	if tmp, ok := rawArgs["memberID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_approveAccountMember_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_approveAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_approveAccount_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_approveAccount_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_approveAccount_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_approveAccount_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_approveUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_approveUser_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_approveUser_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_approveUser_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_approveUser_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createAuthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.AuthClientInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_createAuthClient_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_createAuthClient_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.AuthClientInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.AuthClientInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput(ctx, tmp)
+	}
+
+	var zeroVal models.AuthClientInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.RBACRoleInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRBACRoleInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_createRole_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_createRole_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.RBACRoleInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.RBACRoleInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRBACRoleInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleInput(ctx, tmp)
+	}
+
+	var zeroVal models.RBACRoleInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.UserInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUserInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_createUser_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_createUser_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.UserInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.UserInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUserInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserInput(ctx, tmp)
+	}
+
+	var zeroVal models.UserInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_deleteAuthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_deleteAuthClient_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_deleteAuthClient_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteAuthClient_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteAuthClient_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_deleteRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_deleteRole_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_deleteRole_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteRole_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteRole_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_disconnectSocialAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_disconnectSocialAccount_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_disconnectSocialAccount_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_generateDirectAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *uint64
-	if tmp, ok := rawArgs["userID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
-		arg0, err = ec.unmarshalOID642ᚖuint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_generateDirectAccessToken_argsUserID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["userID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["description"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_generateDirectAccessToken_argsDescription(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["description"] = arg1
-	var arg2 *time.Time
-	if tmp, ok := rawArgs["expiresAt"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
-		arg2, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Mutation_generateDirectAccessToken_argsExpiresAt(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["expiresAt"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_generateDirectAccessToken_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userID"]
+	if !ok {
+		var zeroVal *uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+	if tmp, ok := rawArgs["userID"]; ok {
+		return ec.unmarshalOID642ᚖuint64(ctx, tmp)
+	}
+
+	var zeroVal *uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_generateDirectAccessToken_argsDescription(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["description"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+	if tmp, ok := rawArgs["description"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_generateDirectAccessToken_argsExpiresAt(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*time.Time, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["expiresAt"]
+	if !ok {
+		var zeroVal *time.Time
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
+	if tmp, ok := rawArgs["expiresAt"]; ok {
+		return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
+	}
+
+	var zeroVal *time.Time
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_inviteAccountMember_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["accountID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_inviteAccountMember_argsAccountID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["accountID"] = arg0
-	var arg1 models.InviteMemberInput
-	if tmp, ok := rawArgs["member"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("member"))
-		arg1, err = ec.unmarshalNInviteMemberInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐInviteMemberInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_inviteAccountMember_argsMember(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["member"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_inviteAccountMember_argsAccountID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["accountID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
+	if tmp, ok := rawArgs["accountID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_inviteAccountMember_argsMember(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.InviteMemberInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["member"]
+	if !ok {
+		var zeroVal models.InviteMemberInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("member"))
+	if tmp, ok := rawArgs["member"]; ok {
+		return ec.unmarshalNInviteMemberInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐInviteMemberInput(ctx, tmp)
+	}
+
+	var zeroVal models.InviteMemberInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["login"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("login"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_login_argsLogin(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["login"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["password"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_login_argsPassword(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["password"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_login_argsLogin(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["login"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("login"))
+	if tmp, ok := rawArgs["login"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_login_argsPassword(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["password"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+	if tmp, ok := rawArgs["password"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_registerAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.AccountCreateInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNAccountCreateInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountCreateInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_registerAccount_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_registerAccount_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.AccountCreateInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.AccountCreateInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNAccountCreateInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountCreateInput(ctx, tmp)
+	}
+
+	var zeroVal models.AccountCreateInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_rejectAccountMember_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["memberID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_rejectAccountMember_argsMemberID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["memberID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_rejectAccountMember_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_rejectAccountMember_argsMemberID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["memberID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
+	if tmp, ok := rawArgs["memberID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_rejectAccountMember_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_rejectAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_rejectAccount_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_rejectAccount_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_rejectAccount_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_rejectAccount_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_rejectUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_rejectUser_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["msg"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_rejectUser_argsMsg(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["msg"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_rejectUser_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_rejectUser_argsMsg(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["msg"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("msg"))
+	if tmp, ok := rawArgs["msg"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_removeAccountMember_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["memberID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_removeAccountMember_argsMemberID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["memberID"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_removeAccountMember_argsMemberID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["memberID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
+	if tmp, ok := rawArgs["memberID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_resetUserPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["email"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_resetUserPassword_argsEmail(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["email"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_resetUserPassword_argsEmail(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["email"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+	if tmp, ok := rawArgs["email"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_revokeDirectAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 models.DirectAccessTokenListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalNDirectAccessTokenListFilter2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_revokeDirectAccessToken_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_revokeDirectAccessToken_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.DirectAccessTokenListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal models.DirectAccessTokenListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalNDirectAccessTokenListFilter2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx, tmp)
+	}
+
+	var zeroVal models.DirectAccessTokenListFilter
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_setOption_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_setOption_argsName(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["name"] = arg0
-	var arg1 models.OptionInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNOptionInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_setOption_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_setOption_argsName(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["name"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["name"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setOption_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.OptionInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.OptionInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNOptionInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionInput(ctx, tmp)
+	}
+
+	var zeroVal models.OptionInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_switchAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_switchAccount_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_switchAccount_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateAccountMember_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["memberID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_updateAccountMember_argsMemberID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["memberID"] = arg0
-	var arg1 models.MemberInput
-	if tmp, ok := rawArgs["member"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("member"))
-		arg1, err = ec.unmarshalNMemberInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_updateAccountMember_argsMember(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["member"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateAccountMember_argsMemberID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["memberID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("memberID"))
+	if tmp, ok := rawArgs["memberID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateAccountMember_argsMember(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.MemberInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["member"]
+	if !ok {
+		var zeroVal models.MemberInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("member"))
+	if tmp, ok := rawArgs["member"]; ok {
+		return ec.unmarshalNMemberInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberInput(ctx, tmp)
+	}
+
+	var zeroVal models.MemberInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_updateAccount_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 models.AccountInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNAccountInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_updateAccount_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateAccount_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateAccount_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.AccountInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.AccountInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNAccountInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountInput(ctx, tmp)
+	}
+
+	var zeroVal models.AccountInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateAuthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_updateAuthClient_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 models.AuthClientInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_updateAuthClient_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateAuthClient_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateAuthClient_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.AuthClientInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.AuthClientInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput(ctx, tmp)
+	}
+
+	var zeroVal models.AuthClientInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_updateRole_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 models.RBACRoleInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNRBACRoleInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_updateRole_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateRole_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRole_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.RBACRoleInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.RBACRoleInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRBACRoleInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleInput(ctx, tmp)
+	}
+
+	var zeroVal models.RBACRoleInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateUserPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["token"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_updateUserPassword_argsToken(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["token"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["email"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_updateUserPassword_argsEmail(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["email"] = arg1
-	var arg2 string
-	if tmp, ok := rawArgs["password"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Mutation_updateUserPassword_argsPassword(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["password"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateUserPassword_argsToken(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["token"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+	if tmp, ok := rawArgs["token"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUserPassword_argsEmail(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["email"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+	if tmp, ok := rawArgs["email"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUserPassword_argsPassword(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["password"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+	if tmp, ok := rawArgs["password"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Mutation_updateUser_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 models.UserInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNUserInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Mutation_updateUser_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["input"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateUser_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUser_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.UserInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal models.UserInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUserInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserInput(ctx, tmp)
+	}
+
+	var zeroVal models.UserInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query___type_argsName(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["name"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query___type_argsName(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["name"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["name"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_account_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_account_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_account_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_authClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_authClient_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_authClient_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_checkPermission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_checkPermission_argsName(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["name"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["key"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_checkPermission_argsKey(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["key"] = arg1
-	var arg2 *string
-	if tmp, ok := rawArgs["targetID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetID"))
-		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_checkPermission_argsTargetID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["targetID"] = arg2
-	var arg3 *string
-	if tmp, ok := rawArgs["idKey"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idKey"))
-		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg3, err := ec.field_Query_checkPermission_argsIDKey(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["idKey"] = arg3
 	return args, nil
+}
+func (ec *executionContext) field_Query_checkPermission_argsName(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["name"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["name"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_checkPermission_argsKey(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["key"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+	if tmp, ok := rawArgs["key"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_checkPermission_argsTargetID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["targetID"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("targetID"))
+	if tmp, ok := rawArgs["targetID"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_checkPermission_argsIDKey(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["idKey"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("idKey"))
+	if tmp, ok := rawArgs["idKey"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_currentSocialAccounts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.SocialAccountListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_currentSocialAccounts_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.SocialAccountListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_currentSocialAccounts_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Query_currentSocialAccounts_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.SocialAccountListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.SocialAccountListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.SocialAccountListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_currentSocialAccounts_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.SocialAccountListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.SocialAccountListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.SocialAccountListOrder
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_getDirectAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_getDirectAccessToken_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_getDirectAccessToken_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listAccountRolesAndPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["accountID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listAccountRolesAndPermissions_argsAccountID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["accountID"] = arg0
-	var arg1 *models.RBACRoleListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listAccountRolesAndPermissions_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Query_listAccountRolesAndPermissions_argsAccountID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["accountID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
+	if tmp, ok := rawArgs["accountID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listAccountRolesAndPermissions_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.RBACRoleListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.RBACRoleListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.RBACRoleListOrder
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listAccounts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.AccountListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listAccounts_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.AccountListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listAccounts_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listAccounts_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listAccounts_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.AccountListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.AccountListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.AccountListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listAccounts_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.AccountListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.AccountListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.AccountListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listAccounts_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listAuthClients_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.AuthClientListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOAuthClientListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listAuthClients_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.AuthClientListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOAuthClientListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listAuthClients_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listAuthClients_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listAuthClients_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.AuthClientListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.AuthClientListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOAuthClientListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.AuthClientListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listAuthClients_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.AuthClientListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.AuthClientListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOAuthClientListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.AuthClientListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listAuthClients_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listDirectAccessTokens_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.DirectAccessTokenListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalODirectAccessTokenListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listDirectAccessTokens_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.DirectAccessTokenListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalODirectAccessTokenListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listDirectAccessTokens_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listDirectAccessTokens_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listDirectAccessTokens_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.DirectAccessTokenListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.DirectAccessTokenListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalODirectAccessTokenListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.DirectAccessTokenListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listDirectAccessTokens_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.DirectAccessTokenListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.DirectAccessTokenListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalODirectAccessTokenListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.DirectAccessTokenListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listDirectAccessTokens_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listHistory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.HistoryActionListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOHistoryActionListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listHistory_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.HistoryActionListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOHistoryActionListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listHistory_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listHistory_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listHistory_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.HistoryActionListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.HistoryActionListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOHistoryActionListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.HistoryActionListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listHistory_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.HistoryActionListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.HistoryActionListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOHistoryActionListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.HistoryActionListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listHistory_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listMembers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.MemberListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOMemberListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listMembers_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.MemberListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOMemberListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listMembers_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listMembers_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listMembers_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.MemberListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.MemberListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOMemberListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.MemberListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listMembers_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.MemberListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.MemberListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOMemberListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.MemberListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listMembers_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listMyPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["patterns"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("patterns"))
-		arg0, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listMyPermissions_argsPatterns(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["patterns"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_listMyPermissions_argsPatterns(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) ([]string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["patterns"]
+	if !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("patterns"))
+	if tmp, ok := rawArgs["patterns"]; ok {
+		return ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listOptions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.OptionListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOOptionListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listOptions_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.OptionListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOOptionListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listOptions_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listOptions_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listOptions_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.OptionListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.OptionListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOOptionListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.OptionListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listOptions_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.OptionListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.OptionListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOOptionListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.OptionListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listOptions_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listPermissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["patterns"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("patterns"))
-		arg0, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listPermissions_argsPatterns(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["patterns"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_listPermissions_argsPatterns(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) ([]string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["patterns"]
+	if !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("patterns"))
+	if tmp, ok := rawArgs["patterns"]; ok {
+		return ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listRoles_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.RBACRoleListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalORBACRoleListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listRoles_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.RBACRoleListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listRoles_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listRoles_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listRoles_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.RBACRoleListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.RBACRoleListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalORBACRoleListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.RBACRoleListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listRoles_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.RBACRoleListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.RBACRoleListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalORBACRoleListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.RBACRoleListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listRoles_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listSocialAccounts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.SocialAccountListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listSocialAccounts_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.SocialAccountListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listSocialAccounts_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listSocialAccounts_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listSocialAccounts_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.SocialAccountListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.SocialAccountListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOSocialAccountListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.SocialAccountListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listSocialAccounts_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.SocialAccountListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.SocialAccountListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOSocialAccountListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.SocialAccountListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listSocialAccounts_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_listUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *models.UserListFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOUserListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserListFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_listUsers_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["filter"] = arg0
-	var arg1 *models.UserListOrder
-	if tmp, ok := rawArgs["order"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
-		arg1, err = ec.unmarshalOUserListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserListOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_listUsers_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["order"] = arg1
-	var arg2 *models.Page
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg2, err = ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_listUsers_argsPage(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["page"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_listUsers_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.UserListFilter, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["filter"]
+	if !ok {
+		var zeroVal *models.UserListFilter
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOUserListFilter2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserListFilter(ctx, tmp)
+	}
+
+	var zeroVal *models.UserListFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listUsers_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.UserListOrder, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["order"]
+	if !ok {
+		var zeroVal *models.UserListOrder
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOUserListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserListOrder(ctx, tmp)
+	}
+
+	var zeroVal *models.UserListOrder
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_listUsers_argsPage(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*models.Page, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["page"]
+	if !ok {
+		var zeroVal *models.Page
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+	if tmp, ok := rawArgs["page"]; ok {
+		return ec.unmarshalOPage2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐPage(ctx, tmp)
+	}
+
+	var zeroVal *models.Page
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_option_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_option_argsName(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["name"] = arg0
-	var arg1 models.OptionType
-	if tmp, ok := rawArgs["optionType"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("optionType"))
-		arg1, err = ec.unmarshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_option_argsOptionType(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["optionType"] = arg1
-	var arg2 uint64
-	if tmp, ok := rawArgs["targetID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetID"))
-		arg2, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg2, err := ec.field_Query_option_argsTargetID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["targetID"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_option_argsName(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["name"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["name"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_option_argsOptionType(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (models.OptionType, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["optionType"]
+	if !ok {
+		var zeroVal models.OptionType
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("optionType"))
+	if tmp, ok := rawArgs["optionType"]; ok {
+		return ec.unmarshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, tmp)
+	}
+
+	var zeroVal models.OptionType
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_option_argsTargetID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["targetID"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("targetID"))
+	if tmp, ok := rawArgs["targetID"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_role_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_role_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_role_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_socialAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_socialAccount_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_socialAccount_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uint64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID642uint64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field_Query_user_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["id"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["username"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg1, err := ec.field_Query_user_argsUsername(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["username"] = arg1
 	return args, nil
+}
+func (ec *executionContext) field_Query_user_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (uint64, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal uint64
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID642uint64(ctx, tmp)
+	}
+
+	var zeroVal uint64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_user_argsUsername(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["username"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["username"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 bool
-	if tmp, ok := rawArgs["includeDeprecated"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
-		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field___Type_enumValues_argsIncludeDeprecated(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["includeDeprecated"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field___Type_enumValues_argsIncludeDeprecated(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (bool, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["includeDeprecated"]
+	if !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		return ec.unmarshalOBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 bool
-	if tmp, ok := rawArgs["includeDeprecated"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
-		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
+	arg0, err := ec.field___Type_fields_argsIncludeDeprecated(ctx, rawArgs)
+	if err != nil {
+		return nil, err
 	}
 	args["includeDeprecated"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (bool, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["includeDeprecated"]
+	if !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		return ec.unmarshalOBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
 }
 
 // endregion ***************************** args.gotpl *****************************
@@ -10926,13 +12677,16 @@ func (ec *executionContext) _Mutation_registerAccount(ctx context.Context, field
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().RegisterAccount(rctx, fc.Args["input"].(models.AccountCreateInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.register"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AccountCreatePayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AccountCreatePayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11010,13 +12764,16 @@ func (ec *executionContext) _Mutation_updateAccount(ctx context.Context, field g
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().UpdateAccount(rctx, fc.Args["id"].(uint64), fc.Args["input"].(models.AccountInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.update.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11094,13 +12851,16 @@ func (ec *executionContext) _Mutation_approveAccount(ctx context.Context, field 
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().ApproveAccount(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.approve.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11178,13 +12938,16 @@ func (ec *executionContext) _Mutation_rejectAccount(ctx context.Context, field g
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().RejectAccount(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.reject.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11262,13 +13025,16 @@ func (ec *executionContext) _Mutation_inviteAccountMember(ctx context.Context, f
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().InviteAccountMember(rctx, fc.Args["accountID"].(uint64), fc.Args["member"].(models.InviteMemberInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.member.invite.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.MemberPayload
+				return zeroVal, err
 			}
 			if ec.directives.Acl == nil {
-				return nil, errors.New("directive acl is not implemented")
+				var zeroVal *models.MemberPayload
+				return zeroVal, errors.New("directive acl is not implemented")
 			}
 			return ec.directives.Acl(ctx, nil, directive0, permissions)
 		}
@@ -11346,13 +13112,16 @@ func (ec *executionContext) _Mutation_updateAccountMember(ctx context.Context, f
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().UpdateAccountMember(rctx, fc.Args["memberID"].(uint64), fc.Args["member"].(models.MemberInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.member.update.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.MemberPayload
+				return zeroVal, err
 			}
 			if ec.directives.Acl == nil {
-				return nil, errors.New("directive acl is not implemented")
+				var zeroVal *models.MemberPayload
+				return zeroVal, errors.New("directive acl is not implemented")
 			}
 			return ec.directives.Acl(ctx, nil, directive0, permissions)
 		}
@@ -11430,13 +13199,16 @@ func (ec *executionContext) _Mutation_removeAccountMember(ctx context.Context, f
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().RemoveAccountMember(rctx, fc.Args["memberID"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.member.delete.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.MemberPayload
+				return zeroVal, err
 			}
 			if ec.directives.Acl == nil {
-				return nil, errors.New("directive acl is not implemented")
+				var zeroVal *models.MemberPayload
+				return zeroVal, errors.New("directive acl is not implemented")
 			}
 			return ec.directives.Acl(ctx, nil, directive0, permissions)
 		}
@@ -11514,13 +13286,16 @@ func (ec *executionContext) _Mutation_approveAccountMember(ctx context.Context, 
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().ApproveAccountMember(rctx, fc.Args["memberID"].(uint64), fc.Args["msg"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.member.approve.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.MemberPayload
+				return zeroVal, err
 			}
 			if ec.directives.Acl == nil {
-				return nil, errors.New("directive acl is not implemented")
+				var zeroVal *models.MemberPayload
+				return zeroVal, errors.New("directive acl is not implemented")
 			}
 			return ec.directives.Acl(ctx, nil, directive0, permissions)
 		}
@@ -11598,13 +13373,16 @@ func (ec *executionContext) _Mutation_rejectAccountMember(ctx context.Context, f
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().RejectAccountMember(rctx, fc.Args["memberID"].(uint64), fc.Args["msg"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.member.reject.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.MemberPayload
+				return zeroVal, err
 			}
 			if ec.directives.Acl == nil {
-				return nil, errors.New("directive acl is not implemented")
+				var zeroVal *models.MemberPayload
+				return zeroVal, errors.New("directive acl is not implemented")
 			}
 			return ec.directives.Acl(ctx, nil, directive0, permissions)
 		}
@@ -11682,13 +13460,16 @@ func (ec *executionContext) _Mutation_disconnectSocialAccount(ctx context.Contex
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().DisconnectSocialAccount(rctx, fc.Args["id"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.disconnect.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.SocialAccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.SocialAccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11766,13 +13547,16 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["input"].(models.UserInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.create.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.UserPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.UserPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11850,13 +13634,16 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(uint64), fc.Args["input"].(models.UserInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.update.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.UserPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.UserPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -11934,13 +13721,16 @@ func (ec *executionContext) _Mutation_approveUser(ctx context.Context, field gra
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().ApproveUser(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.approve.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.UserPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.UserPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12018,13 +13808,16 @@ func (ec *executionContext) _Mutation_rejectUser(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().RejectUser(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.reject.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.UserPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.UserPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12102,13 +13895,16 @@ func (ec *executionContext) _Mutation_resetUserPassword(ctx context.Context, fie
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().ResetUserPassword(rctx, fc.Args["email"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.StatusResponse
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.StatusResponse
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12186,13 +13982,16 @@ func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, fi
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().UpdateUserPassword(rctx, fc.Args["token"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.password.reset.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.StatusResponse
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.StatusResponse
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12270,13 +14069,16 @@ func (ec *executionContext) _Mutation_createAuthClient(ctx context.Context, fiel
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().CreateAuthClient(rctx, fc.Args["input"].(models.AuthClientInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.create.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12354,13 +14156,16 @@ func (ec *executionContext) _Mutation_updateAuthClient(ctx context.Context, fiel
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().UpdateAuthClient(rctx, fc.Args["id"].(string), fc.Args["input"].(models.AuthClientInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.update.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12438,13 +14243,16 @@ func (ec *executionContext) _Mutation_deleteAuthClient(ctx context.Context, fiel
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().DeleteAuthClient(rctx, fc.Args["id"].(string), fc.Args["msg"].(*string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.delete.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12522,13 +14330,16 @@ func (ec *executionContext) _Mutation_generateDirectAccessToken(ctx context.Cont
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().GenerateDirectAccessToken(rctx, fc.Args["userID"].(*uint64), fc.Args["description"].(string), fc.Args["expiresAt"].(*time.Time))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.create.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.DirectAccessTokenPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.DirectAccessTokenPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12601,13 +14412,16 @@ func (ec *executionContext) _Mutation_revokeDirectAccessToken(ctx context.Contex
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().RevokeDirectAccessToken(rctx, fc.Args["filter"].(models.DirectAccessTokenListFilter))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.revoke.*"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.delete.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.StatusResponse
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.StatusResponse
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12682,13 +14496,16 @@ func (ec *executionContext) _Mutation_setOption(ctx context.Context, field graph
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().SetOption(rctx, fc.Args["name"].(string), fc.Args["input"].(models.OptionInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"option.update"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.OptionPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.OptionPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12766,13 +14583,16 @@ func (ec *executionContext) _Mutation_createRole(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().CreateRole(rctx, fc.Args["input"].(models.RBACRoleInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.create.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12850,13 +14670,16 @@ func (ec *executionContext) _Mutation_updateRole(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().UpdateRole(rctx, fc.Args["id"].(uint64), fc.Args["input"].(models.RBACRoleInput))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.update.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -12934,13 +14757,16 @@ func (ec *executionContext) _Mutation_deleteRole(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().DeleteRole(rctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.delete.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14434,13 +16260,16 @@ func (ec *executionContext) _Query_currentSession(ctx context.Context, field gra
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().CurrentSession(rctx)
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.SessionToken
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.SessionToken
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14509,13 +16338,16 @@ func (ec *executionContext) _Query_currentAccount(ctx context.Context, field gra
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().CurrentAccount(rctx)
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14582,13 +16414,16 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().Account(rctx, fc.Args["id"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14666,13 +16501,16 @@ func (ec *executionContext) _Query_listAccounts(ctx context.Context, field graph
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListAccounts(rctx, fc.Args["filter"].(*models.AccountListFilter), fc.Args["order"].(*models.AccountListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.Account, models.AccountEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.Account, models.AccountEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14749,13 +16587,16 @@ func (ec *executionContext) _Query_listAccountRolesAndPermissions(ctx context.Co
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListAccountRolesAndPermissions(rctx, fc.Args["accountID"].(uint64), fc.Args["order"].(*models.RBACRoleListOrder))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14832,13 +16673,16 @@ func (ec *executionContext) _Query_listMembers(ctx context.Context, field graphq
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListMembers(rctx, fc.Args["filter"].(*models.MemberListFilter), fc.Args["order"].(*models.MemberListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account.member.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.Member, models.MemberEdge]
+				return zeroVal, err
 			}
 			if ec.directives.Acl == nil {
-				return nil, errors.New("directive acl is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.Member, models.MemberEdge]
+				return zeroVal, errors.New("directive acl is not implemented")
 			}
 			return ec.directives.Acl(ctx, nil, directive0, permissions)
 		}
@@ -14915,13 +16759,16 @@ func (ec *executionContext) _Query_socialAccount(ctx context.Context, field grap
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().SocialAccount(rctx, fc.Args["id"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.SocialAccountPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.SocialAccountPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -14999,13 +16846,16 @@ func (ec *executionContext) _Query_currentSocialAccounts(ctx context.Context, fi
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().CurrentSocialAccounts(rctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15085,13 +16935,16 @@ func (ec *executionContext) _Query_listSocialAccounts(ctx context.Context, field
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListSocialAccounts(rctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"account_social.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15171,13 +17024,16 @@ func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphq
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().CurrentUser(rctx)
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.UserPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.UserPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15244,13 +17100,16 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().User(rctx, fc.Args["id"].(uint64), fc.Args["username"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.UserPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.UserPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15328,13 +17187,16 @@ func (ec *executionContext) _Query_listUsers(ctx context.Context, field graphql.
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListUsers(rctx, fc.Args["filter"].(*models.UserListFilter), fc.Args["order"].(*models.UserListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"user.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.User, models.UserEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.User, models.UserEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15411,13 +17273,16 @@ func (ec *executionContext) _Query_authClient(ctx context.Context, field graphql
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().AuthClient(rctx, fc.Args["id"].(string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.AuthClientPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15495,13 +17360,16 @@ func (ec *executionContext) _Query_listAuthClients(ctx context.Context, field gr
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListAuthClients(rctx, fc.Args["filter"].(*models.AuthClientListFilter), fc.Args["order"].(*models.AuthClientListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"auth_client.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15578,13 +17446,16 @@ func (ec *executionContext) _Query_getDirectAccessToken(ctx context.Context, fie
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().GetDirectAccessToken(rctx, fc.Args["id"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.DirectAccessTokenPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.DirectAccessTokenPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15657,13 +17528,16 @@ func (ec *executionContext) _Query_listDirectAccessTokens(ctx context.Context, f
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListDirectAccessTokens(rctx, fc.Args["filter"].(*models.DirectAccessTokenListFilter), fc.Args["order"].(*models.DirectAccessTokenListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"directaccesstoken.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15740,13 +17614,16 @@ func (ec *executionContext) _Query_listHistory(ctx context.Context, field graphq
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListHistory(rctx, fc.Args["filter"].(*models.HistoryActionListFilter), fc.Args["order"].(*models.HistoryActionListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"history_action.list"})
+			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"history_log.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15823,13 +17700,16 @@ func (ec *executionContext) _Query_option(ctx context.Context, field graphql.Col
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().Option(rctx, fc.Args["name"].(string), fc.Args["optionType"].(models.OptionType), fc.Args["targetID"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"option.view"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.OptionPayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.OptionPayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15907,13 +17787,16 @@ func (ec *executionContext) _Query_listOptions(ctx context.Context, field graphq
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListOptions(rctx, fc.Args["filter"].(*models.OptionListFilter), fc.Args["order"].(*models.OptionListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"option.list"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.Option, models.OptionEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.Option, models.OptionEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -15990,13 +17873,16 @@ func (ec *executionContext) _Query_role(ctx context.Context, field graphql.Colle
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().Role(rctx, fc.Args["id"].(uint64))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.view.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *models.RBACRolePayload
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -16074,13 +17960,16 @@ func (ec *executionContext) _Query_checkPermission(ctx context.Context, field gr
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().CheckPermission(rctx, fc.Args["name"].(string), fc.Args["key"].(*string), fc.Args["targetID"].(*string), fc.Args["idKey"].(*string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.check"})
 			if err != nil {
-				return nil, err
+				var zeroVal *string
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *string
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -16147,13 +18036,16 @@ func (ec *executionContext) _Query_listRoles(ctx context.Context, field graphql.
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListRoles(rctx, fc.Args["filter"].(*models.RBACRoleListFilter), fc.Args["order"].(*models.RBACRoleListOrder), fc.Args["page"].(*models.Page))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"role.list.*"})
 			if err != nil {
-				return nil, err
+				var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -16230,13 +18122,16 @@ func (ec *executionContext) _Query_listPermissions(ctx context.Context, field gr
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListPermissions(rctx, fc.Args["patterns"].([]string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"permission.list"})
 			if err != nil {
-				return nil, err
+				var zeroVal []*models.RBACPermission
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal []*models.RBACPermission
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -16315,13 +18210,16 @@ func (ec *executionContext) _Query_listMyPermissions(ctx context.Context, field 
 			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Query().ListMyPermissions(rctx, fc.Args["patterns"].([]string))
 		}
+
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []interface{}{"permission.list"})
 			if err != nil {
-				return nil, err
+				var zeroVal []*models.RBACPermission
+				return zeroVal, err
 			}
 			if ec.directives.HasPermissions == nil {
-				return nil, errors.New("directive hasPermissions is not implemented")
+				var zeroVal []*models.RBACPermission
+				return zeroVal, errors.New("directive hasPermissions is not implemented")
 			}
 			return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
 		}
@@ -22816,7 +24714,7 @@ func (ec *executionContext) unmarshalInputPage(ctx context.Context, obj interfac
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"after", "startPage", "size"}
+	fieldsInOrder := [...]string{"after", "offset", "startPage", "size"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22830,6 +24728,13 @@ func (ec *executionContext) unmarshalInputPage(ctx context.Context, obj interfac
 				return it, err
 			}
 			it.After = data
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Offset = data
 		case "startPage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startPage"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
