@@ -24,3 +24,4 @@ _testmain.go
 *.test
 
 .DS_Store
+.idea

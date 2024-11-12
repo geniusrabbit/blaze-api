@@ -426,6 +426,8 @@ type OptionPayload struct {
 type Page struct {
 	// Start after the cursor ID
 	After *string `json:"after,omitempty"`
+	// Start after some records
+	Offset *int `json:"offset,omitempty"`
 	// Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
 	StartPage *int `json:"startPage,omitempty"`
 	// Maximum number of items to return
