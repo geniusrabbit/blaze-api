@@ -31,23 +31,23 @@ func (tp *RBACType) RBACResourceName() string {
 }
 
 // RBACAccountID returns the account ID for the RBAC
-func (tp *RBACType) WithAccountID(accountID uint64) RBACType {
+func (tp *RBACType) WithAccountID(accountID uint64) *RBACType {
 	nType := *tp
 	nType.AccountID = accountID
-	return nType
+	return &nType
 }
 
 // RBACUserID returns the user ID for the RBAC
-func (tp *RBACType) WithUserID(userID uint64) RBACType {
+func (tp *RBACType) WithUserID(userID uint64) *RBACType {
 	nType := *tp
 	nType.UserID = userID
-	return nType
+	return &nType
 }
 
 // RBACWithUserAccountID returns the user ID and account ID for the RBAC
-func (tp *RBACType) WithUserAccountID(userID, accountID uint64) RBACType {
+func (tp *RBACType) WithUserAccountID(userID, accountID uint64) *RBACType {
 	nType := *tp
 	nType.UserID = userID
 	nType.AccountID = accountID
-	return nType
+	return &nType
 }
