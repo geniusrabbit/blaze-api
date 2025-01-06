@@ -180,10 +180,14 @@ func (s *DatabaseStorage) DeleteAccessTokenSession(ctx context.Context, signatur
 }
 
 // CreateRefreshTokenSession updates session values
-func (s *DatabaseStorage) CreateRefreshTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
-	ctxlogger.Get(ctx).Debug("CreateRefreshTokenSession", zap.String("refresh_token", signature))
+func (s *DatabaseStorage) CreateRefreshTokenSession(ctx context.Context, signature, accessSignature string, request fosite.Requester) error {
+	ctxlogger.Get(ctx).Debug("CreateRefreshTokenSession",
+		zap.String("refresh_signature", signature),
+		zap.String("refresh_access_signature", accessSignature),
+	)
 	err := s.updateSessionCB(request.GetID(), func(auth *model.AuthSession) {
 		auth.RefreshToken = null.StringFrom(signature)
+		auth.RefreshTokenExpiresAt = request.GetSession().GetExpiresAt(fosite.RefreshToken)
 	})
 	return err
 }
@@ -208,6 +212,13 @@ func (s *DatabaseStorage) GetRefreshTokenSession(ctx context.Context, signature 
 func (s *DatabaseStorage) DeleteRefreshTokenSession(ctx context.Context, signature string) error {
 	ctxlogger.Get(ctx).Debug("DeleteRefreshTokenSession", zap.String("refresh_token", signature))
 	return s.dropSession(ctx, signature, `refresh_token`)
+}
+
+// RotateRefreshToken invalid method
+func (s *DatabaseStorage) RotateRefreshToken(ctx context.Context, requestID string, refreshTokenSignature string) (err error) {
+	ctxlogger.Get(ctx).Debug("RotateRefreshToken",
+		zap.String("request_id", requestID))
+	panic("RotateRefreshToken is not emplimented")
 }
 
 // CreateImplicitAccessTokenSession invalid method
