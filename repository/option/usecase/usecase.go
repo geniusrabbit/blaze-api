@@ -10,6 +10,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/option"
 )
 
@@ -90,5 +91,10 @@ func (a *Usecase) Delete(ctx context.Context, name string, otype model.OptionTyp
 	if !acl.HaveAccessDelete(ctx, targetObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "delete")
 	}
-	return a.baseRepo.Delete(ctx, targetObj.Name, targetObj.Type, targetObj.TargetID)
+	return a.baseRepo.Delete(
+		historylog.WithPK(ctx, targetObj.Name),
+		targetObj.Name,
+		targetObj.Type,
+		targetObj.TargetID,
+	)
 }

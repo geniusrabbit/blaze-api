@@ -15,6 +15,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
@@ -189,7 +190,7 @@ func (a *UserUsecase) Update(ctx context.Context, userObj *model.User) error {
 	if !acl.HaveAccessUpdate(ctx, userObj) {
 		return acl.ErrNoPermissions
 	}
-	return a.userRepo.Update(ctx, userObj)
+	return a.userRepo.Update(historylog.WithPK(ctx, userObj.ID), userObj)
 }
 
 // Delete delites record by ID
@@ -201,7 +202,7 @@ func (a *UserUsecase) Delete(ctx context.Context, id uint64) error {
 	if !acl.HaveAccessDelete(ctx, userObj) {
 		return acl.ErrNoPermissions
 	}
-	return a.userRepo.Delete(ctx, id)
+	return a.userRepo.Delete(historylog.WithPK(ctx, id), id)
 }
 
 func (a *UserUsecase) getUserByID(ctx context.Context, id uint64) (*model.User, error) {

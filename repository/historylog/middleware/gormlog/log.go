@@ -40,31 +40,54 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			return
 		}
 
-		switch cdb.Statement.ReflectValue.Kind() {
-		case reflect.Slice, reflect.Array, reflect.Invalid:
+		if cdb.Statement.Schema.PrioritizedPrimaryField == nil {
 			return
 		}
-		field := cdb.Statement.Schema.PrioritizedPrimaryField
-		if field == nil {
-			return
-		}
-		ctx := cdb.Statement.Context
-		pkVal, _ := field.ValueOf(ctx, cdb.Statement.ReflectValue)
-		user, acc := session.UserAccount(ctx)
 
-		data := make(map[string]any, len(cdb.Statement.Schema.Fields))
-		for _, field := range cdb.Statement.Schema.Fields {
-			fLowName := strings.ToLower(field.DBName)
-			// NOTE: Skip password and secret fields from history log as security reason
-			if !strings.Contains(fLowName, "password") && !strings.Contains(fLowName, "secret") {
-				data[field.DBName], _ = field.ValueOf(ctx, cdb.Statement.ReflectValue)
-			}
+		var (
+			pkVal any
+			ctx   = cdb.Statement.Context
+			field = cdb.Statement.Schema.PrioritizedPrimaryField
+			rv    = cdb.Statement.ReflectValue
+			data  = make(map[string]any, len(cdb.Statement.Schema.Fields))
+		)
+		if rv.Kind() == reflect.Ptr {
+			rv = reflect.Indirect(rv)
 		}
+		if rv.Kind() == reflect.Struct {
+			pkVal, _ = field.ValueOf(ctx, cdb.Statement.ReflectValue)
+
+			for _, field := range cdb.Statement.Schema.Fields {
+				fLowName := strings.ToLower(field.DBName)
+				// NOTE: Skip password and secret fields from history log as security reason
+				if !strings.Contains(fLowName, "password") && !strings.Contains(fLowName, "secret") {
+					data[field.DBName], _ = field.ValueOf(ctx, cdb.Statement.ReflectValue)
+				}
+			}
+		} else {
+			pkVal = historylog.PKFromContext(ctx)
+		}
+
+		// Skip if primary key not found
+		if pkVal == nil {
+			ctxlogger.Get(ctx).Warn("history log: primary key not found",
+				zap.String("action", name),
+				zap.Any("dest", cdb.Statement.Dest),
+				zap.Any("vars", cdb.Statement.Vars),
+				zap.String("obj_type", cdb.Statement.Schema.Name),
+				zap.String("message", historylog.MessageFromContext(ctx)),
+			)
+			return
+		}
+
+		user, acc := session.UserAccount(ctx)
 
 		jdata, _ := gosql.NewNullableJSON[map[string]any](data)
 		if jdata == nil {
 			jdata = &gosql.NullableJSON[map[string]any]{}
 		}
+
+		// Create history log
 		err := db.Create(&model.HistoryAction{
 			ID:         uuid.New(),
 			RequestID:  requestid.Get(ctx),
@@ -73,11 +96,12 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			UserID:     user.ID,
 			AccountID:  acc.ID,
 			ObjectType: cdb.Statement.Schema.Name,
-			ObjectID:   gocast.Number[uint64](pkVal),
+			ObjectID:   gocast.Uint64(pkVal),
 			ObjectIDs:  gocast.Str(pkVal),
 			Data:       *jdata,
 			ActionAt:   time.Now(),
 		}).Error
+
 		if err != nil {
 			ctxlogger.Get(ctx).
 				Error("history log", zap.String("name", name), zap.Error(err))

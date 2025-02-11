@@ -7,6 +7,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/pkg/errors"
 )
 
@@ -80,7 +81,7 @@ func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj
 	if !acl.HaveAccessUpdate(ctx, authclientObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "update authclient")
 	}
-	return a.authclientRepo.Update(ctx, id, authclientObj)
+	return a.authclientRepo.Update(historylog.WithPK(ctx, id), id, authclientObj)
 }
 
 // Delete delites record by ID
@@ -92,5 +93,5 @@ func (a *AuthclientUsecase) Delete(ctx context.Context, id string) error {
 	if !acl.HaveAccessDelete(ctx, authclientObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "delete authclient")
 	}
-	return a.authclientRepo.Delete(ctx, id)
+	return a.authclientRepo.Delete(historylog.WithPK(ctx, id), id)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	rbacrepo "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/pkg/errors"
@@ -94,7 +95,7 @@ func (a *RoleUsecase) Update(ctx context.Context, id uint64, roleObj *model.Role
 	if !acl.HaveAccessUpdate(ctx, upRoleObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "update role/permission")
 	}
-	return a.roleRepo.Update(ctx, id, &upRoleObj)
+	return a.roleRepo.Update(historylog.WithPK(ctx, id), id, &upRoleObj)
 }
 
 // Delete delites record by ID
@@ -106,7 +107,7 @@ func (a *RoleUsecase) Delete(ctx context.Context, id uint64) error {
 	if !acl.HaveAccessDelete(ctx, roleObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "delete role/permission")
 	}
-	return a.roleRepo.Delete(ctx, id)
+	return a.roleRepo.Delete(historylog.WithPK(ctx, id), id)
 }
 
 func prepareFilter(ctx context.Context, filter *rbac.Filter, accessName string) *rbac.Filter {

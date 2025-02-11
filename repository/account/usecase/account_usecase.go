@@ -15,6 +15,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
@@ -105,7 +106,11 @@ func (a *AccountUsecase) Store(ctx context.Context, accountObj *model.Account) (
 	if !acl.HaveAccessUpdate(ctx, accountObj) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "update account")
 	}
-	return accountObj.ID, a.accountRepo.Update(ctx, accountObj.ID, accountObj)
+	return accountObj.ID, a.accountRepo.Update(
+		historylog.WithPK(ctx, accountObj.ID),
+		accountObj.ID,
+		accountObj,
+	)
 }
 
 // Register new account with owner if not exists
@@ -155,7 +160,7 @@ func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
 	if !acl.HaveAccessDelete(ctx, accountObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "delete account")
 	}
-	return a.accountRepo.Delete(ctx, id)
+	return a.accountRepo.Delete(historylog.WithPK(ctx, id), id)
 }
 
 // FetchListMembers returns the list of members from account
