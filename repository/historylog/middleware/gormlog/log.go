@@ -35,8 +35,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 		if false ||
 			cdb.Statement == nil ||
 			cdb.Statement.Schema == nil ||
-			cdb.Statement.Schema.Name == "HistoryAction" ||
-			!cdb.Statement.ReflectValue.IsValid() {
+			cdb.Statement.Schema.Name == "HistoryAction" {
 			return
 		}
 
@@ -55,13 +54,13 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			rv = reflect.Indirect(rv)
 		}
 		if rv.Kind() == reflect.Struct {
-			pkVal, _ = field.ValueOf(ctx, cdb.Statement.ReflectValue)
+			pkVal, _ = field.ValueOf(ctx, rv)
 
 			for _, field := range cdb.Statement.Schema.Fields {
 				fLowName := strings.ToLower(field.DBName)
 				// NOTE: Skip password and secret fields from history log as security reason
 				if !strings.Contains(fLowName, "password") && !strings.Contains(fLowName, "secret") {
-					data[field.DBName], _ = field.ValueOf(ctx, cdb.Statement.ReflectValue)
+					data[field.DBName], _ = field.ValueOf(ctx, rv)
 				}
 			}
 		} else {
