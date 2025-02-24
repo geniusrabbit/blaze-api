@@ -38,8 +38,8 @@ func (a *Usecase) Get(ctx context.Context, name string, otype model.OptionType, 
 	if err != nil {
 		return nil, err
 	}
-	if !acl.HaveAccessView(ctx, targetObj) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view")
+	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermGet+`.*`) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "get")
 	}
 	return targetObj, nil
 }
@@ -75,7 +75,7 @@ func (a *Usecase) Set(ctx context.Context, targetObj *model.Option) error {
 	case targetObj.Type == model.AccountOptionType && targetObj.TargetID == 0:
 		targetObj.TargetID = session.Account(ctx).ID
 	}
-	if !acl.HaveAccessCreate(ctx, targetObj) {
+	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermSet+`.*`) {
 		return errors.Wrap(acl.ErrNoPermissions, "create")
 	}
 	err = a.baseRepo.Set(ctx, targetObj)
