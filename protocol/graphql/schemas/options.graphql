@@ -78,27 +78,6 @@ input OptionListOrder {
 }
 
 ###############################################################################
-# Mutations
-###############################################################################
-
-input OptionInput {
-  """
-  The type of the option.
-  """
-  optionType: OptionType!
-
-  """
-  The target ID of the option.
-  """
-  targetID: ID64!
-
-  """
-  Value of the option.
-  """
-  value: NullableJSON
-}
-
-###############################################################################
 # Query declarations
 ###############################################################################
 
@@ -106,7 +85,7 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, optionType: OptionType!, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
+  option(name: String!, optionType: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
 
   """
   List of the option values which can be filtered and ordered by some fields
@@ -122,5 +101,5 @@ extend type Mutation {
   """
   Set the option value
   """
-  setOption(name: String!, input: OptionInput!): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
+  setOption(name: String!, value: NullableJSON, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
 }

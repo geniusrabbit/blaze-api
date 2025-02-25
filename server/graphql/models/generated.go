@@ -392,15 +392,6 @@ type OptionEdge struct {
 	Node   *Option `json:"node"`
 }
 
-type OptionInput struct {
-	// The type of the option.
-	OptionType OptionType `json:"optionType"`
-	// The target ID of the option.
-	TargetID uint64 `json:"targetID"`
-	// Value of the option.
-	Value *types.NullableJSON `json:"value,omitempty"`
-}
-
 type OptionListFilter struct {
 	OptionType  []OptionType `json:"optionType,omitempty"`
 	TargetID    []uint64     `json:"targetID,omitempty"`
@@ -711,7 +702,7 @@ func (e ActiveStatus) String() string {
 	return string(e)
 }
 
-func (e *ActiveStatus) UnmarshalGQL(v interface{}) error {
+func (e *ActiveStatus) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -758,7 +749,7 @@ func (e ApproveStatus) String() string {
 	return string(e)
 }
 
-func (e *ApproveStatus) UnmarshalGQL(v interface{}) error {
+func (e *ApproveStatus) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -805,7 +796,7 @@ func (e AvailableStatus) String() string {
 	return string(e)
 }
 
-func (e *AvailableStatus) UnmarshalGQL(v interface{}) error {
+func (e *AvailableStatus) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -856,7 +847,7 @@ func (e MessangerType) String() string {
 	return string(e)
 }
 
-func (e *MessangerType) UnmarshalGQL(v interface{}) error {
+func (e *MessangerType) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -901,7 +892,7 @@ func (e OptionType) String() string {
 	return string(e)
 }
 
-func (e *OptionType) UnmarshalGQL(v interface{}) error {
+func (e *OptionType) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -945,7 +936,7 @@ func (e Ordering) String() string {
 	return string(e)
 }
 
-func (e *Ordering) UnmarshalGQL(v interface{}) error {
+func (e *Ordering) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -989,7 +980,7 @@ func (e ResponseStatus) String() string {
 	return string(e)
 }
 
-func (e *ResponseStatus) UnmarshalGQL(v interface{}) error {
+func (e *ResponseStatus) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")

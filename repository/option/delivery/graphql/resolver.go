@@ -12,6 +12,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
 // QueryResolver implements GQL API methods
@@ -27,14 +28,14 @@ func NewQueryResolver() *QueryResolver {
 }
 
 // Set Option is the resolver for the setOption field.
-func (r *QueryResolver) Set(ctx context.Context, name string, input *models.OptionInput) (*models.OptionPayload, error) {
+func (r *QueryResolver) Set(ctx context.Context, name string, value *types.NullableJSON, typeArg models.OptionType, targetID uint64) (*models.OptionPayload, error) {
 	opt := model.Option{
 		Name:     name,
-		Type:     input.OptionType.ModelType(),
-		TargetID: input.TargetID,
+		Type:     typeArg.ModelType(),
+		TargetID: targetID,
 	}
-	if input.Value != nil {
-		opt.Value = gosql.NullableJSON[any](*input.Value)
+	if value != nil {
+		opt.Value = gosql.NullableJSON[any](*value)
 	}
 	err := r.uc.Set(ctx, &opt)
 	if err != nil {

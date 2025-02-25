@@ -76,7 +76,7 @@ func (a *Usecase) Set(ctx context.Context, targetObj *model.Option) error {
 		targetObj.TargetID = session.Account(ctx).ID
 	}
 	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermSet+`.*`) {
-		return errors.Wrap(acl.ErrNoPermissions, "create")
+		return errors.Wrap(acl.ErrNoPermissions, "set")
 	}
 	err = a.baseRepo.Set(ctx, targetObj)
 	return err
