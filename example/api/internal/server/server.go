@@ -15,11 +15,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/middleware"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
-	"github.com/geniusrabbit/blaze-api/server/graphql"
+	"github.com/geniusrabbit/blaze-api/repository/option/repository"
+	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
 )
 
 type (
@@ -48,7 +50,8 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 		Handle("/", playground.Handler("Query console", "/graphql"))
 	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
 	mux.Handle("/metrics", promhttp.Handler())
-	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider))
+	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,
+		usecase.NewUsecase(repository.New(nil))))
 
 	if s.InitWrap != nil {
 		s.InitWrap(mux)

@@ -18,17 +18,37 @@ import (
 // Repository DAO which provides functionality of working with RBAC song-tabulatures
 type Repository struct {
 	repository.Repository
+	defaultSystemOptions map[string]any
 }
 
 // New role repository
-func New() *Repository {
-	return &Repository{}
+func New(defSysOpts map[string]any) *Repository {
+	return &Repository{
+		defaultSystemOptions: defSysOpts,
+	}
 }
 
 // Get returns option by ID
 func (r *Repository) Get(ctx context.Context, name string, otype model.OptionType, targetID uint64) (*model.Option, error) {
 	object := &model.Option{Name: name, Type: otype, TargetID: targetID}
-	res := r.Slave(ctx).Model(object).Where(`name=? AND type=? AND target_id=?`, name, otype, targetID).Find(object)
+	res := r.Slave(ctx).Model(object).
+		Where(`name=? AND type=? AND target_id=?`, name, otype, targetID).Find(object)
+
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) || errors.Is(res.Error, sql.ErrNoRows) {
+		if otype == model.SystemOptionType && targetID == 0 && r.defaultSystemOptions != nil {
+			object.Name = name
+			object.Type = model.SystemOptionType
+			object.TargetID = 0
+
+			if value, ok := r.defaultSystemOptions[name]; ok {
+				if err := object.Value.SetValue(value); err != nil {
+					return nil, err
+				}
+				return object, nil
+			}
+		}
+	}
+
 	if err := res.Error; err != nil {
 		return nil, err
 	}

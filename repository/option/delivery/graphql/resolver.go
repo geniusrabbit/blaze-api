@@ -8,8 +8,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/option"
-	"github.com/geniusrabbit/blaze-api/repository/option/repository"
-	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -21,10 +19,8 @@ type QueryResolver struct {
 }
 
 // NewQueryResolver returns new API resolver
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{
-		uc: usecase.NewUsecase(repository.New()),
-	}
+func NewQueryResolver(uc option.Usecase) *QueryResolver {
+	return &QueryResolver{uc: uc}
 }
 
 // Set Option is the resolver for the setOption field.

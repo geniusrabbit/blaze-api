@@ -14,22 +14,23 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/generated"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/resolvers"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/server/graphql/directives"
-	"github.com/geniusrabbit/blaze-api/server/graphql/generated"
-	"github.com/geniusrabbit/blaze-api/server/graphql/resolvers"
 )
 
 // GraphQL mux handler
-func GraphQL(provider *jwt.Provider) http.Handler {
+func GraphQL(provider *jwt.Provider, options option.Usecase) http.Handler {
 	srv := handler.New(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolvers.NewResolver(provider),
+			Resolvers: resolvers.NewResolver(provider, options),
 			Directives: generated.DirectiveRoot{
 				HasPermissions:    directives.HasPermissions,
-				Auth:              directives.Auth,
 				Acl:               directives.HasPermissions,
+				Auth:              directives.Auth,
 				SkipNoPermissions: directives.SkipNoPermissions,
 			},
 		}),

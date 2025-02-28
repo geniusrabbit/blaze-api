@@ -6,6 +6,7 @@ import (
 	authclient_graphql "github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql"
 	directaccesstoken_graphql "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/delivery/graphql"
 	historylog_graphql "github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql"
+	"github.com/geniusrabbit/blaze-api/repository/option"
 	option_graphql "github.com/geniusrabbit/blaze-api/repository/option/delivery/graphql"
 	rbac_graphql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
 	rbac "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
@@ -30,7 +31,7 @@ type Resolver struct {
 	directaccesstoken *directaccesstoken_graphql.QueryResolver
 }
 
-func NewResolver(provider *jwt.Provider) *Resolver {
+func NewResolver(provider *jwt.Provider, options option.Usecase) *Resolver {
 	return &Resolver{
 		users:             user_graphql.NewQueryResolver(),
 		accAuth:           account_graphql.NewAuthResolver(provider, rbac.New()),
@@ -40,7 +41,7 @@ func NewResolver(provider *jwt.Provider) *Resolver {
 		roles:             rbac_graphql.NewQueryResolver(),
 		authclients:       authclient_graphql.NewQueryResolver(),
 		historylogs:       historylog_graphql.NewQueryResolver(),
-		options:           option_graphql.NewQueryResolver(),
+		options:           option_graphql.NewQueryResolver(options),
 		directaccesstoken: directaccesstoken_graphql.NewQueryResolver(),
 	}
 }

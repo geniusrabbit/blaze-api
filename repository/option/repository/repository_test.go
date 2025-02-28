@@ -7,6 +7,7 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/geniusrabbit/gosql/v2"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
@@ -29,7 +30,9 @@ type testSuite struct {
 
 func (s *testSuite) SetupSuite() {
 	s.DatabaseSuite.SetupSuite()
-	s.testRepo = New()
+	s.testRepo = New(map[string]any{
+		"opt.default": 1,
+	})
 }
 
 func (s *testSuite) TestGet() {
@@ -42,6 +45,22 @@ func (s *testSuite) TestGet() {
 	role, err := s.testRepo.Get(s.Ctx, "opt.name", model.UserOptionType, 1)
 	s.NoError(err)
 	s.Equal("opt.name", role.Name)
+}
+
+func (s *testSuite) TestGetDefault() {
+	s.Mock.ExpectQuery("SELECT *").
+		WithArgs("opt.default", sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnError(gorm.ErrRecordNotFound)
+	role, err := s.testRepo.Get(s.Ctx, "opt.default", model.SystemOptionType, 0)
+
+	if s.NoError(err) {
+		s.Equal("opt.default", role.Name)
+		s.Equal(model.SystemOptionType, role.Type)
+		s.Equal(uint64(0), role.TargetID)
+		if s.NotNil(role.Value.Data) {
+			s.Equal(1, *role.Value.Data)
+		}
+	}
 }
 
 func (s *testSuite) TestFetchList() {
