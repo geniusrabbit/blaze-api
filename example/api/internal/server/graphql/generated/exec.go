@@ -254,10 +254,10 @@ type ComplexityRoot struct {
 	}
 
 	Option struct {
-		Name       func(childComplexity int) int
-		OptionType func(childComplexity int) int
-		TargetID   func(childComplexity int) int
-		Value      func(childComplexity int) int
+		Name     func(childComplexity int) int
+		TargetID func(childComplexity int) int
+		Type     func(childComplexity int) int
+		Value    func(childComplexity int) int
 	}
 
 	OptionConnection struct {
@@ -274,8 +274,8 @@ type ComplexityRoot struct {
 
 	OptionPayload struct {
 		ClientMutationID func(childComplexity int) int
+		Name             func(childComplexity int) int
 		Option           func(childComplexity int) int
-		OptionName       func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -327,7 +327,7 @@ type ComplexityRoot struct {
 		ListRoles                      func(childComplexity int, filter *models.RBACRoleListFilter, order *models.RBACRoleListOrder, page *models.Page) int
 		ListSocialAccounts             func(childComplexity int, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) int
 		ListUsers                      func(childComplexity int, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) int
-		Option                         func(childComplexity int, name string, optionType models.OptionType, targetID uint64) int
+		Option                         func(childComplexity int, name string, typeArg models.OptionType, targetID uint64) int
 		Role                           func(childComplexity int, id uint64) int
 		ServiceVersion                 func(childComplexity int) int
 		SocialAccount                  func(childComplexity int, id uint64) int
@@ -514,7 +514,7 @@ type QueryResolver interface {
 	GetDirectAccessToken(ctx context.Context, id uint64) (*models.DirectAccessTokenPayload, error)
 	ListDirectAccessTokens(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*models1.DirectAccessTokenConnection, error)
 	ListHistory(ctx context.Context, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) (*connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge], error)
-	Option(ctx context.Context, name string, optionType models.OptionType, targetID uint64) (*models.OptionPayload, error)
+	Option(ctx context.Context, name string, typeArg models.OptionType, targetID uint64) (*models.OptionPayload, error)
 	ListOptions(ctx context.Context, filter *models.OptionListFilter, order *models.OptionListOrder, page *models.Page) (*connectors.CollectionConnection[models.Option, models.OptionEdge], error)
 	Role(ctx context.Context, id uint64) (*models.RBACRolePayload, error)
 	CheckPermission(ctx context.Context, name string, key *string, targetID *string, idKey *string) (*string, error)
@@ -1608,19 +1608,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Option.Name(childComplexity), true
 
-	case "Option.optionType":
-		if e.complexity.Option.OptionType == nil {
-			break
-		}
-
-		return e.complexity.Option.OptionType(childComplexity), true
-
 	case "Option.targetID":
 		if e.complexity.Option.TargetID == nil {
 			break
 		}
 
 		return e.complexity.Option.TargetID(childComplexity), true
+
+	case "Option.type":
+		if e.complexity.Option.Type == nil {
+			break
+		}
+
+		return e.complexity.Option.Type(childComplexity), true
 
 	case "Option.value":
 		if e.complexity.Option.Value == nil {
@@ -1678,19 +1678,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.OptionPayload.ClientMutationID(childComplexity), true
 
+	case "OptionPayload.name":
+		if e.complexity.OptionPayload.Name == nil {
+			break
+		}
+
+		return e.complexity.OptionPayload.Name(childComplexity), true
+
 	case "OptionPayload.option":
 		if e.complexity.OptionPayload.Option == nil {
 			break
 		}
 
 		return e.complexity.OptionPayload.Option(childComplexity), true
-
-	case "OptionPayload.optionName":
-		if e.complexity.OptionPayload.OptionName == nil {
-			break
-		}
-
-		return e.complexity.OptionPayload.OptionName(childComplexity), true
 
 	case "PageInfo.count":
 		if e.complexity.PageInfo.Count == nil {
@@ -2060,7 +2060,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Option(childComplexity, args["name"].(string), args["optionType"].(models.OptionType), args["targetID"].(uint64)), true
+		return e.complexity.Query.Option(childComplexity, args["name"].(string), args["type"].(models.OptionType), args["targetID"].(uint64)), true
 
 	case "Query.role":
 		if e.complexity.Query.Role == nil {
@@ -4284,7 +4284,7 @@ extend type Query {
 Option type definition represents a single option of the user or the system.
 """
 type Option {
-  optionType: OptionType!
+  type:       OptionType!
   targetID:   ID64!
   name:       String!
   value:      NullableJSON
@@ -4329,8 +4329,14 @@ type OptionPayload {
   """
   clientMutationId: String!
 
-  optionName: String!
+  """
+  Option name
+  """
+  name: String!
 
+  """
+  Option value
+  """
   option: Option
 }
 
@@ -4339,17 +4345,17 @@ type OptionPayload {
 ###############################################################################
 
 input OptionListFilter {
-  optionType: [OptionType!]
-  targetID: [ID64!]
-  name: [String!]
-  namePattern: [String!]
+  type:         [OptionType!]
+  targetID:     [ID64!]
+  name:         [String!]
+  namePattern:  [String!]
 }
 
 input OptionListOrder {
-  optionType: Ordering
-  targetID: Ordering
-  name: Ordering
-  value: Ordering
+  type:         Ordering
+  targetID:     Ordering
+  name:         Ordering
+  value:        Ordering
 }
 
 ###############################################################################
@@ -4360,7 +4366,7 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, optionType: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
+  option(name: String!, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
 
   """
   List of the option values which can be filtered and ordered by some fields
@@ -7065,11 +7071,11 @@ func (ec *executionContext) field_Query_option_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
-	arg1, err := ec.field_Query_option_argsOptionType(ctx, rawArgs)
+	arg1, err := ec.field_Query_option_argsType(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["optionType"] = arg1
+	args["type"] = arg1
 	arg2, err := ec.field_Query_option_argsTargetID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -7095,17 +7101,17 @@ func (ec *executionContext) field_Query_option_argsName(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_option_argsOptionType(
+func (ec *executionContext) field_Query_option_argsType(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (models.OptionType, error) {
-	if _, ok := rawArgs["optionType"]; !ok {
+	if _, ok := rawArgs["type"]; !ok {
 		var zeroVal models.OptionType
 		return zeroVal, nil
 	}
 
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("optionType"))
-	if tmp, ok := rawArgs["optionType"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+	if tmp, ok := rawArgs["type"]; ok {
 		return ec.unmarshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, tmp)
 	}
 
@@ -14225,8 +14231,8 @@ func (ec *executionContext) fieldContext_Mutation_setOption(ctx context.Context,
 			switch field.Name {
 			case "clientMutationId":
 				return ec.fieldContext_OptionPayload_clientMutationId(ctx, field)
-			case "optionName":
-				return ec.fieldContext_OptionPayload_optionName(ctx, field)
+			case "name":
+				return ec.fieldContext_OptionPayload_name(ctx, field)
 			case "option":
 				return ec.fieldContext_OptionPayload_option(ctx, field)
 			}
@@ -14508,8 +14514,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteRole(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Option_optionType(ctx context.Context, field graphql.CollectedField, obj *models.Option) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Option_optionType(ctx, field)
+func (ec *executionContext) _Option_type(ctx context.Context, field graphql.CollectedField, obj *models.Option) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Option_type(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14522,7 +14528,7 @@ func (ec *executionContext) _Option_optionType(ctx context.Context, field graphq
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.OptionType, nil
+		return obj.Type, nil
 	})
 
 	if resTmp == nil {
@@ -14536,7 +14542,7 @@ func (ec *executionContext) _Option_optionType(ctx context.Context, field graphq
 	return ec.marshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Option_optionType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Option_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Option",
 		Field:      field,
@@ -14793,8 +14799,8 @@ func (ec *executionContext) fieldContext_OptionConnection_list(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "optionType":
-				return ec.fieldContext_Option_optionType(ctx, field)
+			case "type":
+				return ec.fieldContext_Option_type(ctx, field)
 			case "targetID":
 				return ec.fieldContext_Option_targetID(ctx, field)
 			case "name":
@@ -14942,8 +14948,8 @@ func (ec *executionContext) fieldContext_OptionEdge_node(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "optionType":
-				return ec.fieldContext_Option_optionType(ctx, field)
+			case "type":
+				return ec.fieldContext_Option_type(ctx, field)
 			case "targetID":
 				return ec.fieldContext_Option_targetID(ctx, field)
 			case "name":
@@ -14998,8 +15004,8 @@ func (ec *executionContext) fieldContext_OptionPayload_clientMutationId(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _OptionPayload_optionName(ctx context.Context, field graphql.CollectedField, obj *models.OptionPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_OptionPayload_optionName(ctx, field)
+func (ec *executionContext) _OptionPayload_name(ctx context.Context, field graphql.CollectedField, obj *models.OptionPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OptionPayload_name(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -15012,7 +15018,7 @@ func (ec *executionContext) _OptionPayload_optionName(ctx context.Context, field
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.OptionName, nil
+		return obj.Name, nil
 	})
 
 	if resTmp == nil {
@@ -15026,7 +15032,7 @@ func (ec *executionContext) _OptionPayload_optionName(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_OptionPayload_optionName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OptionPayload_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "OptionPayload",
 		Field:      field,
@@ -15072,8 +15078,8 @@ func (ec *executionContext) fieldContext_OptionPayload_option(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "optionType":
-				return ec.fieldContext_Option_optionType(ctx, field)
+			case "type":
+				return ec.fieldContext_Option_type(ctx, field)
 			case "targetID":
 				return ec.fieldContext_Option_targetID(ctx, field)
 			case "name":
@@ -17379,7 +17385,7 @@ func (ec *executionContext) _Query_option(ctx context.Context, field graphql.Col
 	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Option(rctx, fc.Args["name"].(string), fc.Args["optionType"].(models.OptionType), fc.Args["targetID"].(uint64))
+			return ec.resolvers.Query().Option(rctx, fc.Args["name"].(string), fc.Args["type"].(models.OptionType), fc.Args["targetID"].(uint64))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -17429,8 +17435,8 @@ func (ec *executionContext) fieldContext_Query_option(ctx context.Context, field
 			switch field.Name {
 			case "clientMutationId":
 				return ec.fieldContext_OptionPayload_clientMutationId(ctx, field)
-			case "optionName":
-				return ec.fieldContext_OptionPayload_optionName(ctx, field)
+			case "name":
+				return ec.fieldContext_OptionPayload_name(ctx, field)
 			case "option":
 				return ec.fieldContext_OptionPayload_option(ctx, field)
 			}
@@ -18001,6 +18007,8 @@ func (ec *executionContext) fieldContext_Query___type(ctx context.Context, field
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -18013,8 +18021,6 @@ func (ec *executionContext) fieldContext_Query___type(ctx context.Context, field
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -21740,6 +21746,47 @@ func (ec *executionContext) fieldContext___Directive_description(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext___Directive_isRepeatable(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRepeatable, nil
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext___Directive_isRepeatable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) ___Directive_locations(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext___Directive_locations(ctx, field)
 	if err != nil {
@@ -21843,47 +21890,6 @@ func (ec *executionContext) fieldContext___Directive_args(ctx context.Context, f
 	if fc.Args, err = ec.field___Directive_args_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___Directive_isRepeatable(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsRepeatable, nil
-	})
-
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext___Directive_isRepeatable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "__Directive",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
 	}
 	return fc, nil
 }
@@ -22233,6 +22239,8 @@ func (ec *executionContext) fieldContext___Field_type(_ context.Context, field g
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -22245,8 +22253,6 @@ func (ec *executionContext) fieldContext___Field_type(_ context.Context, field g
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -22456,6 +22462,8 @@ func (ec *executionContext) fieldContext___InputValue_type(_ context.Context, fi
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -22468,8 +22476,6 @@ func (ec *executionContext) fieldContext___InputValue_type(_ context.Context, fi
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -22676,6 +22682,8 @@ func (ec *executionContext) fieldContext___Schema_types(_ context.Context, field
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -22688,8 +22696,6 @@ func (ec *executionContext) fieldContext___Schema_types(_ context.Context, field
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -22741,6 +22747,8 @@ func (ec *executionContext) fieldContext___Schema_queryType(_ context.Context, f
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -22753,8 +22761,6 @@ func (ec *executionContext) fieldContext___Schema_queryType(_ context.Context, f
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -22803,6 +22809,8 @@ func (ec *executionContext) fieldContext___Schema_mutationType(_ context.Context
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -22815,8 +22823,6 @@ func (ec *executionContext) fieldContext___Schema_mutationType(_ context.Context
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -22865,6 +22871,8 @@ func (ec *executionContext) fieldContext___Schema_subscriptionType(_ context.Con
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -22877,8 +22885,6 @@ func (ec *executionContext) fieldContext___Schema_subscriptionType(_ context.Con
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -22928,12 +22934,12 @@ func (ec *executionContext) fieldContext___Schema_directives(_ context.Context, 
 				return ec.fieldContext___Directive_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Directive_description(ctx, field)
+			case "isRepeatable":
+				return ec.fieldContext___Directive_isRepeatable(ctx, field)
 			case "locations":
 				return ec.fieldContext___Directive_locations(ctx, field)
 			case "args":
 				return ec.fieldContext___Directive_args(ctx, field)
-			case "isRepeatable":
-				return ec.fieldContext___Directive_isRepeatable(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Directive", field.Name)
 		},
@@ -23058,6 +23064,44 @@ func (ec *executionContext) fieldContext___Type_description(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext___Type_specifiedByURL(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SpecifiedByURL(), nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext___Type_fields(ctx, field)
 	if err != nil {
@@ -23160,6 +23204,8 @@ func (ec *executionContext) fieldContext___Type_interfaces(_ context.Context, fi
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -23172,8 +23218,6 @@ func (ec *executionContext) fieldContext___Type_interfaces(_ context.Context, fi
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -23222,6 +23266,8 @@ func (ec *executionContext) fieldContext___Type_possibleTypes(_ context.Context,
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -23234,8 +23280,6 @@ func (ec *executionContext) fieldContext___Type_possibleTypes(_ context.Context,
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
@@ -23395,6 +23439,8 @@ func (ec *executionContext) fieldContext___Type_ofType(_ context.Context, field 
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -23407,50 +23453,10 @@ func (ec *executionContext) fieldContext___Type_ofType(_ context.Context, field 
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "isOneOf":
 				return ec.fieldContext___Type_isOneOf(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___Type_specifiedByURL(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SpecifiedByURL(), nil
-	})
-
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "__Type",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -24429,20 +24435,20 @@ func (ec *executionContext) unmarshalInputOptionListFilter(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"optionType", "targetID", "name", "namePattern"}
+	fieldsInOrder := [...]string{"type", "targetID", "name", "namePattern"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "optionType":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("optionType"))
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
 			data, err := ec.unmarshalOOptionType2ᚕgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionTypeᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.OptionType = data
+			it.Type = data
 		case "targetID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetID"))
 			data, err := ec.unmarshalOID642ᚕuint64ᚄ(ctx, v)
@@ -24477,20 +24483,20 @@ func (ec *executionContext) unmarshalInputOptionListOrder(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"optionType", "targetID", "name", "value"}
+	fieldsInOrder := [...]string{"type", "targetID", "name", "value"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "optionType":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("optionType"))
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
 			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.OptionType = data
+			it.Type = data
 		case "targetID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetID"))
 			data, err := ec.unmarshalOOrdering2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOrdering(ctx, v)
@@ -26375,8 +26381,8 @@ func (ec *executionContext) _Option(ctx context.Context, sel ast.SelectionSet, o
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Option")
-		case "optionType":
-			out.Values[i] = ec._Option_optionType(ctx, field, obj)
+		case "type":
+			out.Values[i] = ec._Option_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -26529,8 +26535,8 @@ func (ec *executionContext) _OptionPayload(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "optionName":
-			out.Values[i] = ec._OptionPayload_optionName(ctx, field, obj)
+		case "name":
+			out.Values[i] = ec._OptionPayload_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -28200,6 +28206,11 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			}
 		case "description":
 			out.Values[i] = ec.___Directive_description(ctx, field, obj)
+		case "isRepeatable":
+			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "locations":
 			out.Values[i] = ec.___Directive_locations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -28207,11 +28218,6 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			}
 		case "args":
 			out.Values[i] = ec.___Directive_args(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "isRepeatable":
-			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -28474,6 +28480,8 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec.___Type_name(ctx, field, obj)
 		case "description":
 			out.Values[i] = ec.___Type_description(ctx, field, obj)
+		case "specifiedByURL":
+			out.Values[i] = ec.___Type_specifiedByURL(ctx, field, obj)
 		case "fields":
 			out.Values[i] = ec.___Type_fields(ctx, field, obj)
 		case "interfaces":
@@ -28486,8 +28494,6 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec.___Type_inputFields(ctx, field, obj)
 		case "ofType":
 			out.Values[i] = ec.___Type_ofType(ctx, field, obj)
-		case "specifiedByURL":
-			out.Values[i] = ec.___Type_specifiedByURL(ctx, field, obj)
 		case "isOneOf":
 			out.Values[i] = ec.___Type_isOneOf(ctx, field, obj)
 		default:

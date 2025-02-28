@@ -9,7 +9,7 @@ enum OptionType {
 Option type definition represents a single option of the user or the system.
 """
 type Option {
-  optionType: OptionType!
+  type:       OptionType!
   targetID:   ID64!
   name:       String!
   value:      NullableJSON
@@ -54,8 +54,14 @@ type OptionPayload {
   """
   clientMutationId: String!
 
-  optionName: String!
+  """
+  Option name
+  """
+  name: String!
 
+  """
+  Option value
+  """
   option: Option
 }
 
@@ -64,17 +70,17 @@ type OptionPayload {
 ###############################################################################
 
 input OptionListFilter {
-  optionType: [OptionType!]
-  targetID: [ID64!]
-  name: [String!]
-  namePattern: [String!]
+  type:         [OptionType!]
+  targetID:     [ID64!]
+  name:         [String!]
+  namePattern:  [String!]
 }
 
 input OptionListOrder {
-  optionType: Ordering
-  targetID: Ordering
-  name: Ordering
-  value: Ordering
+  type:         Ordering
+  targetID:     Ordering
+  name:         Ordering
+  value:        Ordering
 }
 
 ###############################################################################
@@ -85,7 +91,7 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, optionType: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
+  option(name: String!, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
 
   """
   List of the option values which can be filtered and ordered by some fields

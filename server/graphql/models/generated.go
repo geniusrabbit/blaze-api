@@ -380,10 +380,10 @@ type Mutation struct {
 
 // Option type definition represents a single option of the user or the system.
 type Option struct {
-	OptionType OptionType          `json:"optionType"`
-	TargetID   uint64              `json:"targetID"`
-	Name       string              `json:"name"`
-	Value      *types.NullableJSON `json:"value,omitempty"`
+	Type     OptionType          `json:"type"`
+	TargetID uint64              `json:"targetID"`
+	Name     string              `json:"name"`
+	Value    *types.NullableJSON `json:"value,omitempty"`
 }
 
 // The edge type for Option.
@@ -393,24 +393,26 @@ type OptionEdge struct {
 }
 
 type OptionListFilter struct {
-	OptionType  []OptionType `json:"optionType,omitempty"`
+	Type        []OptionType `json:"type,omitempty"`
 	TargetID    []uint64     `json:"targetID,omitempty"`
 	Name        []string     `json:"name,omitempty"`
 	NamePattern []string     `json:"namePattern,omitempty"`
 }
 
 type OptionListOrder struct {
-	OptionType *Ordering `json:"optionType,omitempty"`
-	TargetID   *Ordering `json:"targetID,omitempty"`
-	Name       *Ordering `json:"name,omitempty"`
-	Value      *Ordering `json:"value,omitempty"`
+	Type     *Ordering `json:"type,omitempty"`
+	TargetID *Ordering `json:"targetID,omitempty"`
+	Name     *Ordering `json:"name,omitempty"`
+	Value    *Ordering `json:"value,omitempty"`
 }
 
 type OptionPayload struct {
 	// A unique identifier for the client performing the mutation.
-	ClientMutationID string  `json:"clientMutationId"`
-	OptionName       string  `json:"optionName"`
-	Option           *Option `json:"option,omitempty"`
+	ClientMutationID string `json:"clientMutationId"`
+	// Option name
+	Name string `json:"name"`
+	// Option value
+	Option *Option `json:"option,omitempty"`
 }
 
 // Information for paginating

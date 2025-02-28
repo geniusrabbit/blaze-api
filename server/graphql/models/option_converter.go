@@ -37,7 +37,7 @@ func (fl *OptionListFilter) Filter() *option.Filter {
 		return nil
 	}
 	return &option.Filter{
-		Type:        xtypes.SliceApply(fl.OptionType, func(tp OptionType) model.OptionType { return tp.ModelType() }),
+		Type:        xtypes.SliceApply(fl.Type, func(tp OptionType) model.OptionType { return tp.ModelType() }),
 		TargetID:    fl.TargetID,
 		Name:        fl.Name,
 		NamePattern: fl.NamePattern,
@@ -59,10 +59,10 @@ func FromOption(opt *model.Option) *Option {
 		return nil
 	}
 	return &Option{
-		Name:       opt.Name,
-		OptionType: FromOptionType(opt.Type),
-		TargetID:   opt.TargetID,
-		Value:      types.MustNullableJSONFrom(opt.Value.Data),
+		Name:     opt.Name,
+		Type:     FromOptionType(opt.Type),
+		TargetID: opt.TargetID,
+		Value:    types.MustNullableJSONFrom(opt.Value.Data),
 	}
 }
 

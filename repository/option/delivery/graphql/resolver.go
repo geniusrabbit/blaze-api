@@ -39,7 +39,7 @@ func (r *QueryResolver) Set(ctx context.Context, name string, value *types.Nulla
 	}
 	return &models.OptionPayload{
 		ClientMutationID: requestid.Get(ctx),
-		OptionName:       name,
+		Name:             name,
 		Option:           models.FromOption(&opt),
 	}, nil
 }
@@ -52,7 +52,7 @@ func (r *QueryResolver) Get(ctx context.Context, name string, otype models.Optio
 	}
 	return &models.OptionPayload{
 		ClientMutationID: requestid.Get(ctx),
-		OptionName:       name,
+		Name:             name,
 		Option:           models.FromOption(opt),
 	}, nil
 }
