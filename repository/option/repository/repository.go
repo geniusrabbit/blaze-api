@@ -34,7 +34,7 @@ func (r *Repository) Get(ctx context.Context, name string, otype model.OptionTyp
 	res := r.Slave(ctx).Model(object).
 		Where(`name=? AND type=? AND target_id=?`, name, otype, targetID).Find(object)
 
-	if errors.Is(res.Error, gorm.ErrRecordNotFound) || errors.Is(res.Error, sql.ErrNoRows) {
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) || errors.Is(res.Error, sql.ErrNoRows) || object.Value.Data == nil {
 		if otype == model.SystemOptionType && targetID == 0 && r.defaultSystemOptions != nil {
 			object.Name = name
 			object.Type = model.SystemOptionType
