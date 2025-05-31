@@ -53,7 +53,9 @@ func FacebookUserData(ctx context.Context, token *oauth2.Token, oauth2conf *oaut
 	if fbUserDetailsRespError != nil {
 		return nil, errors.Wrap(fbUserDetailsRespError, "Error occurred while getting information from Facebook")
 	}
-	defer fbUserDetailsResp.Body.Close()
+	defer func() {
+		_ = fbUserDetailsResp.Body.Close()
+	}()
 
 	decoderErr := json.NewDecoder(fbUserDetailsResp.Body).Decode(&fbUserDetails)
 	if decoderErr != nil {
