@@ -537,7 +537,7 @@ func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
 }
 
-func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
+func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
@@ -1268,7 +1268,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_approveAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_approveAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1280,7 +1280,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_approveAccountMember_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_approveAccountMember_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1292,7 +1292,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_approveUser_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_approveUser_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1304,7 +1304,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_createAuthClient_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createAuthClient_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1316,7 +1316,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_createRole_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createRole_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1328,7 +1328,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_createUser_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createUser_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1340,7 +1340,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deleteAuthClient_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deleteAuthClient_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1352,7 +1352,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_deleteRole_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_deleteRole_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1364,7 +1364,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_disconnectSocialAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_disconnectSocialAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1376,7 +1376,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_generateDirectAccessToken_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_generateDirectAccessToken_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1388,7 +1388,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_inviteAccountMember_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_inviteAccountMember_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1400,7 +1400,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_login_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1426,7 +1426,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_registerAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_registerAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1438,7 +1438,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_rejectAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_rejectAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1450,7 +1450,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_rejectAccountMember_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_rejectAccountMember_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1462,7 +1462,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_rejectUser_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_rejectUser_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1474,7 +1474,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_removeAccountMember_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_removeAccountMember_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1486,7 +1486,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_resetUserPassword_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_resetUserPassword_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1498,7 +1498,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_revokeDirectAccessToken_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_revokeDirectAccessToken_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1510,7 +1510,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_setOption_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_setOption_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1522,7 +1522,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_switchAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_switchAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1534,7 +1534,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1546,7 +1546,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateAccountMember_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateAccountMember_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1558,7 +1558,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateAuthClient_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateAuthClient_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1570,7 +1570,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateRole_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateRole_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1582,7 +1582,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateUser_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateUser_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1594,7 +1594,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Mutation_updateUserPassword_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_updateUserPassword_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1830,7 +1830,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_account_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_account_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1842,7 +1842,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_authClient_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_authClient_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1854,7 +1854,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_checkPermission_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_checkPermission_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1880,7 +1880,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_currentSocialAccounts_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_currentSocialAccounts_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1899,7 +1899,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_getDirectAccessToken_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_getDirectAccessToken_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1911,7 +1911,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listAccountRolesAndPermissions_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listAccountRolesAndPermissions_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1923,7 +1923,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listAccounts_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listAccounts_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1935,7 +1935,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listAuthClients_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listAuthClients_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1947,7 +1947,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listDirectAccessTokens_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listDirectAccessTokens_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1959,7 +1959,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listHistory_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listHistory_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1971,7 +1971,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listMembers_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listMembers_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1983,7 +1983,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listMyPermissions_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listMyPermissions_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1995,7 +1995,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listOptions_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listOptions_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2007,7 +2007,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listPermissions_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listPermissions_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2019,7 +2019,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listRoles_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listRoles_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2031,7 +2031,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listSocialAccounts_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listSocialAccounts_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2043,7 +2043,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_listUsers_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_listUsers_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2055,7 +2055,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_option_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_option_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2067,7 +2067,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_role_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_role_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2086,7 +2086,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_socialAccount_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_socialAccount_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2098,7 +2098,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_user_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_user_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -28641,6 +28641,7 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -28701,6 +28702,7 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (str
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -28716,6 +28718,7 @@ func (ec *executionContext) unmarshalNID642uint64(ctx context.Context, v any) (u
 }
 
 func (ec *executionContext) marshalNID642uint64(ctx context.Context, sel ast.SelectionSet, v uint64) graphql.Marshaler {
+	_ = sel
 	res := types.MarshalID64(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -28731,6 +28734,7 @@ func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, 
 }
 
 func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -29107,6 +29111,7 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) 
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -29118,9 +29123,7 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 
 func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
@@ -29154,6 +29157,7 @@ func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v an
 }
 
 func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	_ = sel
 	res := types.MarshalTime(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -29169,6 +29173,7 @@ func (ec *executionContext) unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(c
 }
 
 func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, sel ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+	_ = sel
 	res := types.MarshalUUID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -29271,6 +29276,7 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Con
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -29282,9 +29288,7 @@ func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Conte
 
 func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
@@ -29461,6 +29465,7 @@ func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v a
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -29599,9 +29604,7 @@ func (ec *executionContext) unmarshalOApproveStatus2ᚕgithubᚗcomᚋgeniusrabb
 		return nil, nil
 	}
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]models.ApproveStatus, len(vSlice))
 	for i := range vSlice {
@@ -29807,6 +29810,8 @@ func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (
 }
 
 func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalBoolean(v)
 	return res
 }
@@ -29823,6 +29828,8 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
 }
@@ -30080,9 +30087,7 @@ func (ec *executionContext) unmarshalOID642ᚕuint64ᚄ(ctx context.Context, v a
 		return nil, nil
 	}
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]uint64, len(vSlice))
 	for i := range vSlice {
@@ -30125,6 +30130,8 @@ func (ec *executionContext) marshalOID642ᚖuint64(ctx context.Context, sel ast.
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := types.MarshalID64(*v)
 	return res
 }
@@ -30141,6 +30148,8 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
 }
@@ -30320,9 +30329,7 @@ func (ec *executionContext) unmarshalOOptionType2ᚕgithubᚗcomᚋgeniusrabbit�
 		return nil, nil
 	}
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]models.OptionType, len(vSlice))
 	for i := range vSlice {
@@ -30800,9 +30807,7 @@ func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v
 		return nil, nil
 	}
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
@@ -30845,6 +30850,8 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
 }
@@ -30861,6 +30868,8 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	if v == nil {
 		return graphql.Null
 	}
+	_ = sel
+	_ = ctx
 	res := types.MarshalTime(*v)
 	return res
 }
@@ -30870,9 +30879,7 @@ func (ec *executionContext) unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUI
 		return nil, nil
 	}
 	var vSlice []any
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
+	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]uuid.UUID, len(vSlice))
 	for i := range vSlice {
