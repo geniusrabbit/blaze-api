@@ -51,6 +51,9 @@ func (p *Pagination) PrepareAfterQuery(q *gorm.DB, idCol string, orderColumns []
 	if p == nil || p.After == "" || len(orderColumns) == 0 {
 		return q
 	}
+	// if q.Dialector.Name() != "postgres" {
+	// 	panic("After pagination is only supported for Postgres")
+	// }
 	order := strings.Join(xtypes.SliceApply(orderColumns,
 		func(c OrderingColumn) string { return c.Name + gocast.IfThen(c.DESC, ` DESC`, ``) }), ", ")
 

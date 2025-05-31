@@ -97,7 +97,7 @@ func (c *CollectionConnection[GQLM, EdgeT]) PageInfo() *gqlmodels.PageInfo {
 			HasNextPage:     false,
 			HasPreviousPage: false,
 			Total:           c.TotalCount(),
-			Page:            0,
+			Page:            1,
 			Count:           0,
 		}
 		if edges := c.Edges(); len(edges) > 0 {
@@ -107,9 +107,9 @@ func (c *CollectionConnection[GQLM, EdgeT]) PageInfo() *gqlmodels.PageInfo {
 			c.pageInfo.EndCursor = gocast.Str(cur2)
 		}
 		if c.page != nil && c.page.Size != nil {
-			c.pageInfo.Page = gocast.PtrAsValue(c.page.StartPage, 0)
+			c.pageInfo.Page = max(1, gocast.PtrAsValue(c.page.StartPage, 1))
 			c.pageInfo.Count = c.pageInfo.Total/(*c.page.Size) + gocast.Int(c.pageInfo.Total%(*c.page.Size) > 0)
-			c.pageInfo.HasNextPage = c.pageInfo.Total > c.pageInfo.Page
+			c.pageInfo.HasNextPage = c.pageInfo.Count > c.pageInfo.Page
 			c.pageInfo.HasPreviousPage = c.pageInfo.Page > 1
 		}
 	}
