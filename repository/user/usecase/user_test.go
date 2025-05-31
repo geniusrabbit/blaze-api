@@ -135,7 +135,7 @@ func (s *userTestSuite) TestCreate() {
 
 func (s *userTestSuite) TestUpdate() {
 	s.userRepo.EXPECT().
-		Update(s.ctx, gomock.AssignableToTypeOf(&model.User{})).
+		Update(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(&model.User{})).
 		Return(nil)
 
 	err := s.userUsecase.Update(s.ctx, &model.User{ID: 101, Email: "test@mail.com"})
@@ -144,7 +144,7 @@ func (s *userTestSuite) TestUpdate() {
 
 func (s *userTestSuite) TestDelete() {
 	s.userRepo.EXPECT().
-		Delete(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
+		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
 		Return(nil)
 
 	err := s.userUsecase.Delete(s.ctx, 1)

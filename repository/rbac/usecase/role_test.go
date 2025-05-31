@@ -92,7 +92,8 @@ func (s *testSuite) TestCreate() {
 
 func (s *testSuite) TestUpdate() {
 	s.roleRepo.EXPECT().
-		Update(s.ctx, uint64(101), gomock.AssignableToTypeOf(&model.Role{})).
+		Update(gomock.AssignableToTypeOf(s.ctx),
+			uint64(101), gomock.AssignableToTypeOf(&model.Role{})).
 		Return(nil)
 
 	err := s.roleUsecase.Update(s.ctx, 101, &model.Role{Title: "test-test"})
@@ -101,10 +102,10 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.roleRepo.EXPECT().
-		Get(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
+		Get(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
 		Return(&model.Role{ID: 1}, nil)
 	s.roleRepo.EXPECT().
-		Delete(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
+		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
 		Return(nil)
 
 	err := s.roleUsecase.Delete(s.ctx, 1)

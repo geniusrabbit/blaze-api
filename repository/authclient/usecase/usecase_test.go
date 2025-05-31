@@ -82,7 +82,8 @@ func (s *testSuite) TestCreate() {
 
 func (s *testSuite) TestUpdate() {
 	s.authclientRepo.EXPECT().
-		Update(s.ctx, "101", gomock.AssignableToTypeOf(&model.AuthClient{})).
+		Update(gomock.AssignableToTypeOf(s.ctx),
+			"101", gomock.AssignableToTypeOf(&model.AuthClient{})).
 		Return(nil)
 
 	err := s.authclientUsecase.Update(s.ctx, "101", &model.AuthClient{Title: "test-test"})
@@ -91,10 +92,10 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.authclientRepo.EXPECT().
-		Get(s.ctx, "1").
+		Get(gomock.AssignableToTypeOf(s.ctx), "1").
 		Return(&model.AuthClient{ID: "1"}, nil)
 	s.authclientRepo.EXPECT().
-		Delete(s.ctx, gomock.AssignableToTypeOf("101")).
+		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf("101")).
 		Return(nil)
 
 	err := s.authclientUsecase.Delete(s.ctx, "1")

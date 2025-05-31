@@ -106,7 +106,8 @@ func (s *testSuite) TestStore() {
 
 func (s *testSuite) TestUpdate() {
 	s.accountRepo.EXPECT().
-		Update(s.ctx, uint64(101), gomock.AssignableToTypeOf(&model.Account{})).
+		Update(gomock.AssignableToTypeOf(s.ctx),
+			uint64(101), gomock.AssignableToTypeOf(&model.Account{})).
 		Return(nil)
 
 	_, err := s.accountUsecase.Store(s.ctx, &model.Account{ID: 101, Title: "test-test"})
@@ -115,10 +116,10 @@ func (s *testSuite) TestUpdate() {
 
 func (s *testSuite) TestDelete() {
 	s.accountRepo.EXPECT().
-		Get(s.ctx, uint64(1)).
+		Get(gomock.AssignableToTypeOf(s.ctx), uint64(1)).
 		Return(&model.Account{ID: 1}, nil)
 	s.accountRepo.EXPECT().
-		Delete(s.ctx, gomock.AssignableToTypeOf(uint64(1))).
+		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(1))).
 		Return(nil)
 
 	err := s.accountUsecase.Delete(s.ctx, 1)

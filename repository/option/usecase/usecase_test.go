@@ -95,10 +95,10 @@ func (s *testSuite) TestCreate() {
 
 func (s *testSuite) TestDelete() {
 	s.baseRepo.EXPECT().
-		Get(s.ctx, testOption.Name, testOption.Type, testOption.TargetID).
+		Get(gomock.AssignableToTypeOf(s.ctx), testOption.Name, testOption.Type, testOption.TargetID).
 		Return(&testOption, nil)
 	s.baseRepo.EXPECT().
-		Delete(s.ctx, testOption.Name, testOption.Type, testOption.TargetID).
+		Delete(gomock.AssignableToTypeOf(s.ctx), testOption.Name, testOption.Type, testOption.TargetID).
 		Return(nil)
 
 	err := s.testUsecase.Delete(s.ctx, testOption.Name, testOption.Type, testOption.TargetID)
