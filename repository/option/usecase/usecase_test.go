@@ -84,12 +84,23 @@ func (s *testSuite) TestCount() {
 	s.Equal(int64(2), count)
 }
 
-func (s *testSuite) TestCreate() {
+func (s *testSuite) TestSet() {
 	s.baseRepo.EXPECT().
 		Set(s.ctx, gomock.AssignableToTypeOf(&model.Option{})).
 		Return(nil)
 
 	err := s.testUsecase.Set(s.ctx, &model.Option{Name: "test1"})
+	s.NoError(err)
+}
+
+func (s *testSuite) TestSetOption() {
+	s.baseRepo.EXPECT().
+		Set(s.ctx, gomock.AssignableToTypeOf(&model.Option{})).
+		Return(nil)
+
+	err := s.testUsecase.SetOption(s.ctx,
+		testOption.Name, testOption.Type, testOption.TargetID,
+		map[string]any{"val": 2})
 	s.NoError(err)
 }
 

@@ -82,6 +82,19 @@ func (a *Usecase) Set(ctx context.Context, targetObj *model.Option) error {
 	return err
 }
 
+// SetOption sets option value by name, type and targetID
+func (a *Usecase) SetOption(ctx context.Context, name string, otype model.OptionType, targetID uint64, value any) error {
+	obj := &model.Option{
+		Type:     otype,
+		TargetID: targetID,
+		Name:     name,
+	}
+	if err := obj.Value.SetValue(value); err != nil {
+		return errors.Wrap(err, "set option value")
+	}
+	return a.baseRepo.Set(ctx, obj)
+}
+
 // Delete delites record by ID
 func (a *Usecase) Delete(ctx context.Context, name string, otype model.OptionType, targetID uint64) error {
 	targetObj, err := a.Get(ctx, name, otype, targetID)

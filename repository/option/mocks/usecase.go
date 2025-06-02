@@ -109,3 +109,17 @@ func (mr *MockUsecaseMockRecorder) Set(ctx, opt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockUsecase)(nil).Set), ctx, opt)
 }
+
+// SetOption mocks base method.
+func (m *MockUsecase) SetOption(ctx context.Context, name string, otype model.OptionType, targetID uint64, value any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetOption", ctx, name, otype, targetID, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetOption indicates an expected call of SetOption.
+func (mr *MockUsecaseMockRecorder) SetOption(ctx, name, otype, targetID, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOption", reflect.TypeOf((*MockUsecase)(nil).SetOption), ctx, name, otype, targetID, value)
+}

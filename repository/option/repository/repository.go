@@ -89,6 +89,8 @@ func (r *Repository) Count(ctx context.Context, filter *option.Filter) (int64, e
 func (r *Repository) Set(ctx context.Context, obj *model.Option) error {
 	if obj.CreatedAt.IsZero() {
 		obj.CreatedAt = time.Now()
+	}
+	if obj.UpdatedAt.IsZero() {
 		obj.UpdatedAt = obj.CreatedAt
 	}
 	return r.Master(ctx).Clauses(clause.OnConflict{
