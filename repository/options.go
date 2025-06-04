@@ -38,6 +38,8 @@ func (opt *PreloadOption) PrepareQuery(query *gorm.DB) *gorm.DB {
 type GroupOption struct {
 	Groups        []string
 	SummingFields []string
+	// Additiona data for the technical use if need to save some information for later use
+	Ext any
 }
 
 func (opt *GroupOption) PrepareQuery(query *gorm.DB) *gorm.DB {
