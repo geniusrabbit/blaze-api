@@ -1,6 +1,8 @@
 package model
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -16,9 +18,9 @@ const (
 // PrepareQuery returns the query with applied order
 func OrderFromStr(s string) Order {
 	switch s {
-	case "ASC":
+	case "ASC", "asc", "+":
 		return OrderAsc
-	case "DESC":
+	case "DESC", "desc", "-":
 		return OrderDesc
 	}
 	return OrderUndefined
@@ -29,15 +31,20 @@ func (ord *Order) PrepareQuery(q *gorm.DB, column string) *gorm.DB {
 	if ord == nil || *ord == 0 {
 		return q
 	}
-	return q.Order(clause.OrderByColumn{Column: clause.Column{Name: column}, Desc: *ord == OrderDesc})
+	return q.Order(clause.OrderByColumn{
+		Column: clause.Column{
+			Name: column,
+			Raw:  strings.ContainsAny(column, " \t\n\r()<>=!@#$%^&*|`~{}[]'\"+-*/\\"),
+		},
+		Desc: *ord == OrderDesc})
 }
 
 // Set sets the order value from string
 func (ord *Order) Set(s string) *Order {
 	switch s {
-	case "ASC":
+	case "ASC", "asc", "+":
 		*ord = OrderAsc
-	case "DESC":
+	case "DESC", "desc", "-":
 		*ord = OrderDesc
 	default:
 		*ord = 0

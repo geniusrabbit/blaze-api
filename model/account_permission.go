@@ -18,7 +18,7 @@ func PermissionCheckAccountFromContext(ctx context.Context) *Account {
 	return nil
 }
 
-type permissionChecker interface {
+type PermissionChecker interface {
 	CheckPermissions(ctx context.Context, resource any, patterns ...string) bool
 	CheckedPermissions(ctx context.Context, resource any, patterns ...string) rbac.Permission
 	ChildRoles() []rbac.Role
@@ -27,7 +27,7 @@ type permissionChecker interface {
 	HasPermission(patterns ...string) bool
 }
 
-type groupPermissionChecker []permissionChecker
+type groupPermissionChecker []PermissionChecker
 
 func (groups groupPermissionChecker) CheckPermissions(ctx context.Context, resource any, patterns ...string) bool {
 	for _, group := range groups {
@@ -89,4 +89,4 @@ func (groups groupPermissionChecker) HasPermission(patterns ...string) bool {
 	return false
 }
 
-var _ permissionChecker = groupPermissionChecker{}
+var _ PermissionChecker = groupPermissionChecker{}

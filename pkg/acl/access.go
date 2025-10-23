@@ -73,6 +73,16 @@ func HaveAccessDelete(ctx context.Context, obj any) bool {
 	return IsNoPermCheck(ctx) || session.Account(ctx).CheckPermissions(ctx, obj, PermDelete+`.*`)
 }
 
+// HaveAccessApprove of the object returns `true` if user can approve the object
+func HaveAccessApprove(ctx context.Context, obj any) bool {
+	return IsNoPermCheck(ctx) || session.Account(ctx).CheckPermissions(ctx, obj, PermApprove+`.*`)
+}
+
+// HaveAccessReject of the object returns `true` if user can reject the object
+func HaveAccessReject(ctx context.Context, obj any) bool {
+	return IsNoPermCheck(ctx) || session.Account(ctx).CheckPermissions(ctx, obj, PermReject+`.*`)
+}
+
 // HaveAccountLink of the object to the current account
 func HaveAccountLink(ctx context.Context, obj any) bool {
 	if IsNoPermCheck(ctx) {

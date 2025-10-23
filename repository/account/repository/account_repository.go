@@ -74,6 +74,8 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *model.Acco
 	if err = query.Find(memeber, `account_id=? AND user_id=?`, accountObj.ID, userObj.ID).Error; err != nil {
 		return errors.WithStack(err)
 	}
+
+	// If member is not found, we return without permissions
 	err = query.Table((*model.M2MAccountMemberRole)(nil).TableName()).
 		Where(`member_id=?`, memeber.ID).Select(`role_id`).Find(&roles).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && !errors.Is(err, sql.ErrNoRows) {

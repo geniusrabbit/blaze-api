@@ -41,7 +41,7 @@ type Account struct {
 	// for this client, typically email addresses.
 	Contacts gosql.NullableStringArray `json:"contacts" gorm:"column:contacts;type:text[]"`
 
-	Permissions permissionChecker `json:"-" gorm:"-"`
+	Permissions PermissionChecker `json:"-" gorm:"-"`
 	Admins      []uint64          `json:"-" gorm:"-"`
 
 	CreatedAt time.Time      `json:"created_at"`
@@ -77,7 +77,7 @@ func (acc *Account) ExtendAdminUsers(ids ...uint64) {
 	if acc == nil {
 		return
 	}
-	acc.Admins = xtypes.SliceUnique[uint64](append(acc.Admins, ids...))
+	acc.Admins = xtypes.SliceUnique(append(acc.Admins, ids...))
 }
 
 // CheckPermissions for some specific resource
@@ -121,8 +121,17 @@ func (acc *Account) IsOwnerUser(userID uint64) bool {
 	return acc.IsAdminUser(userID)
 }
 
+// SetPermissions of the account for the user
+func (acc *Account) SetPermissions(perm PermissionChecker) {
+	if perm == nil {
+		acc.Permissions = nil
+		return
+	}
+	acc.Permissions = perm
+}
+
 // ExtendPermissions of the account for the user
-func (acc *Account) ExtendPermissions(perm permissionChecker) {
+func (acc *Account) ExtendPermissions(perm PermissionChecker) {
 	if perm == nil {
 		return
 	}
