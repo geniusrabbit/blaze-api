@@ -12,15 +12,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/database"
 	"github.com/golang-migrate/migrate"
 	mdatabase "github.com/golang-migrate/migrate/database"
-	"github.com/golang-migrate/migrate/database/mysql"
-	"github.com/golang-migrate/migrate/database/postgres"
-	"github.com/golang-migrate/migrate/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/source/file"
-	_ "github.com/lib/pq"
 )
 
 // Migrate database schema from many source directories and one target database
-func Migrate(connet string, dataSources []MigrateSource) error {
+func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) error {
 	// Parse connection string
 	connURL, err := url.Parse(connet)
 	if err != nil {
@@ -28,7 +24,7 @@ func Migrate(connet string, dataSources []MigrateSource) error {
 	}
 
 	// Open database connection
-	db, err := database.Connect(context.Background(), connet, false)
+	db, err := database.Connect(ctx, connet, false)
 	if err != nil {
 		return err
 	}
@@ -65,16 +61,7 @@ func Migrate(connet string, dataSources []MigrateSource) error {
 				err    error
 			)
 			// Configure the database driver
-			switch connURL.Scheme {
-			case "postgres", "postgresql", "pg":
-				driver, err = postgres.WithInstance(conn, &postgres.Config{MigrationsTable: migrateTable})
-			case "sqlite3", "sqlite":
-				driver, err = sqlite3.WithInstance(conn, &sqlite3.Config{MigrationsTable: migrateTable})
-			case "mysql":
-				driver, err = mysql.WithInstance(conn, &mysql.Config{MigrationsTable: migrateTable})
-			default:
-				err = fmt.Errorf("unsupported database driver: %s", connURL.Scheme)
-			}
+			driver, err = migrateDriver(connURL.Scheme, conn, migrateTable)
 			if err != nil {
 				return err
 			}

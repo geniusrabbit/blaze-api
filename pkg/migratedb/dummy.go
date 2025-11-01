@@ -2,8 +2,10 @@
 
 package migratedb
 
+import "context"
+
 // Migrate dummy action
-func Migrate(connet string, dataSources []MigrateSource) error {
+func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) error {
 	// Do nothing...
 	return nil
 }

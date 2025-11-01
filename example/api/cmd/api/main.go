@@ -15,7 +15,6 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
-	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/migratedb"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/devtoken"
@@ -25,6 +24,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/version"
 	"github.com/geniusrabbit/blaze-api/pkg/database"
+	"github.com/geniusrabbit/blaze-api/pkg/migratedb"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
 	"github.com/geniusrabbit/blaze-api/pkg/zlogger"
@@ -47,7 +47,7 @@ func init() {
 	}
 
 	// Migrate database schemas
-	fatalError(migratedb.Migrate(conf.System.Storage.MasterConnect, []migratedb.MigrateSource{
+	fatalError(migratedb.Migrate(context.Background(), conf.System.Storage.MasterConnect, []migratedb.MigrateSource{
 		{
 			URI:                   []string{"file:///data/migrations/initial"},
 			SchemaMigrationsTable: "schema_migrations_prod",
