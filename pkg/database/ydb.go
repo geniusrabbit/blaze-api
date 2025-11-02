@@ -20,7 +20,7 @@ func init() {
 type ydbDialector struct{ defaultDialector }
 
 func (d *ydbDialector) PrepareDB(ctx context.Context, db *gorm.DB) (*gorm.DB, error) {
-	return db.Set("gorm:table_options", ""), nil
+	return db.Set("gorm:ignore_alter_column", true), nil
 }
 
 // openYDB opens YDB database connection
