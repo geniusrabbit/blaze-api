@@ -4,14 +4,18 @@
 package database
 
 import (
+	"context"
+
 	"gorm.io/driver/clickhouse"
 	"gorm.io/gorm"
 )
 
 func init() {
-	dialectors["clickhouse"] = openClickhouse
+	registerDialector(&clickhouseDialector{}, "ch", "clickhouse")
 }
 
-func openClickhouse(dsn string) gorm.Dialector {
-	return clickhouse.Open(dsn)
+type clickhouseDialector struct{ defaultDialector }
+
+func (d *clickhouseDialector) Dialector(ctx context.Context, dns string, config *gorm.Config) (gorm.Dialector, error) {
+	return clickhouse.Open(dns), nil
 }

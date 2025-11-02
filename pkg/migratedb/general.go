@@ -24,7 +24,7 @@ func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) er
 	}
 
 	// Open database connection
-	db, err := database.Connect(ctx, connet, false)
+	db, err := database.Connect(ctx, connet)
 	if err != nil {
 		return err
 	}

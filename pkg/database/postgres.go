@@ -4,6 +4,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
@@ -13,14 +14,15 @@ import (
 )
 
 func init() {
-	dialectors["postgres"] = openPostgres
-	dialectors["postgresql"] = openPostgres
+	registerDialector(&postgresDialector{}, "postgres", "postgresql")
 }
 
-func openPostgres(dsn string) gorm.Dialector {
+type postgresDialector struct{ defaultDialector }
+
+func (d *postgresDialector) Dialector(ctx context.Context, dsn string, config *gorm.Config) (gorm.Dialector, error) {
 	parsedDSN, err := url.Parse(dsn)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	sslmode := "disable"
 	if sslmodeVar := parsedDSN.Query().Get("sslmode"); sslmodeVar != "" {
@@ -34,5 +36,5 @@ func openPostgres(dsn string) gorm.Dialector {
 		strings.TrimLeft(parsedDSN.Path, "/"),
 		sslmode,
 	)
-	return postgres.Open(newDSN)
+	return postgres.Open(newDSN), nil
 }

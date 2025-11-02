@@ -4,6 +4,7 @@
 package database
 
 import (
+	"context"
 	"net/url"
 	"time"
 
@@ -13,16 +14,23 @@ import (
 )
 
 func init() {
-	dialectors["ydb"] = openYDB
-	dialectors["ydbs"] = openYDB
-	dialectors["yadb"] = openYDB
-	dialectors["yadbs"] = openYDB
+	registerDialector(&ydbDialector{}, "ydb", "ydbs", "yadb", "yadbs")
+}
+
+type ydbDialector struct{ defaultDialector }
+
+func (d *ydbDialector) PrepareDB(ctx context.Context, db *gorm.DB) (*gorm.DB, error) {
+	return db.Set("gorm:table_options", ""), nil
 }
 
 // openYDB opens YDB database connection
 // Replace schema ydb:// or yadb:// on grpc:// and ydbs:// or yadbs:// on grpcs://
-func openYDB(dsn string) gorm.Dialector {
-	u, _ := url.Parse(dsn)
+func (d *ydbDialector) Dialector(ctx context.Context, dsn string, config *gorm.Config) (gorm.Dialector, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return nil, err
+	}
+
 	switch u.Scheme {
 	case "ydb", "yadb":
 		u.Scheme = "grpc"
@@ -63,8 +71,12 @@ func openYDB(dsn string) gorm.Dialector {
 		query.Del("conn_max_idle_time")
 	}
 
+	query.Del("debug")
 	u.RawQuery = query.Encode()
 
+	// Disable automatic ping to YDB as it is not required
+	config.DisableAutomaticPing = true
+
 	// Open YDB connection
-	return ydb.Open(u.String(), opts...)
+	return ydb.Open(u.String(), opts...), nil
 }

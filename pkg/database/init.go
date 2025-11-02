@@ -3,51 +3,44 @@ package database
 import (
 	"context"
 	"fmt"
-	"strings"
+	"net/url"
 
+	"github.com/demdxx/gocast/v2"
 	"gorm.io/gorm"
-
-	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 )
 
-type openFnk func(dsn string) gorm.Dialector
-
-var dialectors = map[string]openFnk{}
-
-// ConnectMasterSlave databases
-func ConnectMasterSlave(ctx context.Context, master, slave string, debug bool) (*gorm.DB, *gorm.DB, error) {
-	mdb, err := Connect(ctx, master, debug)
-	if err != nil {
-		return nil, nil, fmt.Errorf("master: %s", err.Error())
-	}
-	sdb, err := Connect(ctx, slave, debug)
-	if err != nil {
-		return nil, nil, fmt.Errorf("slave: %s", err.Error())
-	}
-	return mdb, sdb, nil
+type dialectorExt interface {
+	IsDebug(ctx context.Context, dns string) bool
+	PrepareDB(ctx context.Context, db *gorm.DB) (*gorm.DB, error)
+	Dialector(ctx context.Context, dns string, config *gorm.Config) (gorm.Dialector, error)
 }
 
-// Connect to database
-func Connect(ctx context.Context, connection string, debug bool) (*gorm.DB, error) {
-	var (
-		i      = strings.Index(connection, "://")
-		driver = connection[:i]
-	)
-	if driver == "mysql" {
-		connection = connection[i+3:]
+var dialectors = map[string]dialectorExt{}
+
+//lint:ignore U1000 ignore unused for build tags
+func registerDialector(open dialectorExt, names ...string) {
+	for _, name := range names {
+		dialectors[name] = open
 	}
-	openDriver := dialectors[driver]
-	if openDriver == nil {
-		return nil, fmt.Errorf(`unsupported database driver %s`, driver)
-	}
-	db, err := gorm.Open(openDriver(connection), &gorm.Config{SkipDefaultTransaction: true})
-	if err == nil && debug {
-		db = db.Debug()
-	}
-	return db, err
 }
 
-// WithDatabase puts databases to context
-func WithDatabase(ctx context.Context, master, slave *gorm.DB) context.Context {
-	return database.WithDatabase(ctx, master, slave)
+//lint:ignore U1000 ignore unused for build tags
+type defaultDialector struct{}
+
+func (d *defaultDialector) IsDebug(ctx context.Context, dsn string) bool {
+	connURL, err := url.Parse(dsn)
+	if err != nil {
+		return false
+	}
+	query := connURL.Query()
+	debug := gocast.Bool(query.Get("debug"))
+	return debug
+}
+
+func (d *defaultDialector) PrepareDB(ctx context.Context, db *gorm.DB) (*gorm.DB, error) {
+	return db, nil
+}
+
+func (d *defaultDialector) Dialector(ctx context.Context, dsn string, config *gorm.Config) (gorm.Dialector, error) {
+	return nil, fmt.Errorf("dialector not implemented")
 }

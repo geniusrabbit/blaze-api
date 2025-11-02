@@ -96,8 +96,7 @@ func main() {
 	// Establich connect to the database
 	masterDatabase, slaveDatabase, err := database.ConnectMasterSlave(ctx,
 		conf.System.Storage.MasterConnect,
-		conf.System.Storage.SlaveConnect,
-		conf.IsDebug())
+		conf.System.Storage.SlaveConnect)
 	fatalError(err, "connect to database")
 
 	// Register callback for history log (only for modifications)
