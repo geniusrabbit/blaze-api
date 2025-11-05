@@ -13,6 +13,8 @@ type ModelIDGetter[TID any] interface {
 
 // getModelID extracts the ID from a model that implements ModelIDGetter
 // Returns zero value if the model doesn't implement the interface
+//
+//go:inline
 func getModelID[TID any](obj any) TID {
 	switch v := obj.(type) {
 	case ModelIDGetter[TID]:
@@ -21,12 +23,31 @@ func getModelID[TID any](obj any) TID {
 	return *new(TID)
 }
 
+// ModelIDFieldGetter defines an interface for models that can return their ID field name
+type ModelIDFieldGetter interface {
+	GetIDField() string
+}
+
+// getModelIDField extracts the ID field name from a model that implements ModelIDFieldGetter
+// Returns empty string if the model doesn't implement the interface
+//
+//go:inline
+func getModelIDField(obj any) string {
+	switch v := obj.(type) {
+	case ModelIDFieldGetter:
+		return v.GetIDField()
+	}
+	return "id"
+}
+
 // ModelIDSetter defines an interface for models that can set their ID
 type ModelIDSetter[TID any] interface {
 	SetID(id TID)
 }
 
 // setModelID sets the ID on a model that implements ModelIDSetter
+//
+//go:inline
 func setModelID[TID any](obj any, id TID) {
 	switch v := obj.(type) {
 	case ModelIDSetter[TID]:
@@ -40,6 +61,8 @@ type ModelCreateTimeSetter interface {
 }
 
 // setModelCreatedAt sets the creation time on a model that implements ModelCreateTimeSetter
+//
+//go:inline
 func setModelCreatedAt(obj any, t time.Time) {
 	switch v := obj.(type) {
 	case ModelCreateTimeSetter:
@@ -53,6 +76,8 @@ type ModelUpdateTimeSetter interface {
 }
 
 // setModelUpdatedAt sets the update time on a model that implements ModelUpdateTimeSetter
+//
+//go:inline
 func setModelUpdatedAt(obj any, t time.Time) {
 	switch v := obj.(type) {
 	case ModelUpdateTimeSetter:
@@ -66,6 +91,8 @@ type ModelApproveStatusSetter interface {
 }
 
 // setModelApproveStatus sets the approval status on a model that implements ModelApproveStatusSetter
+//
+//go:inline
 func setModelApproveStatus(obj any, status model.ApproveStatus) {
 	switch v := obj.(type) {
 	case ModelApproveStatusSetter:

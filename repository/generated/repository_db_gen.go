@@ -13,11 +13,12 @@ import (
 
 type Repository[T any, TID any] struct {
 	repository.Repository
+	idField string
 }
 
 // NewRepository creates a new repository instance
 func NewRepository[T any, TID any]() *Repository[T, TID] {
-	return &Repository[T, TID]{}
+	return &Repository[T, TID]{idField: getModelIDField(new(T))}
 }
 
 // Get returns a campaign by ID
@@ -25,7 +26,7 @@ func (r *Repository[T, TID]) Get(ctx context.Context, id TID, qops ...Option) (*
 	obj := new(T)
 	query := r.Slave(ctx).Model(obj)
 	query = Options(qops).PrepareQuery(query)
-	err := query.First(obj, id).Error
+	err := query.First(obj, r.idField+`=?`, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -77,5 +78,5 @@ func (r *Repository[T, TID]) Delete(ctx context.Context, id TID, message string)
 	obj := new(T)
 	return r.Master(
 		historylog.WithMessage(ctx, message),
-	).Delete(obj, id).Error
+	).Delete(obj, r.idField+`=?`, id).Error
 }
