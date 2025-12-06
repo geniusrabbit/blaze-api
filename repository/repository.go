@@ -31,9 +31,19 @@ func (r *Repository) Slave(ctx context.Context) *gorm.DB {
 	return database.Readonly(ctx).WithContext(ctx)
 }
 
+// ReadOnly returns readonly database connection
+func (r *Repository) ReadOnly(ctx context.Context) *gorm.DB {
+	return database.Readonly(ctx).WithContext(ctx)
+}
+
 // Master returns master database executor
 // TODO: rename to Leader
 func (r *Repository) Master(ctx context.Context) *gorm.DB {
+	return database.ContextExecutor(ctx).WithContext(ctx)
+}
+
+// Leader returns master database executor
+func (r *Repository) Leader(ctx context.Context) *gorm.DB {
 	return database.ContextExecutor(ctx).WithContext(ctx)
 }
 

@@ -23,8 +23,8 @@ func (u *Usecase[T, TID]) Get(ctx context.Context, id TID, qops ...Option) (*T, 
 	}
 
 	// Check if user has read permissions for this specific object
-	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermGet+`.*`) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "get")
+	if !acl.HaveAccessView(ctx, targetObj) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "view")
 	}
 	return targetObj, nil
 }

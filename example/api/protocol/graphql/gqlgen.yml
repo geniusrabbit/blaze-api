@@ -6,7 +6,7 @@ schema:
   - ./schemas/*.graphql
   - ../../../../protocol/graphql/schemas/*.graphql
 
-skip_mod_tidy: yes
+skip_mod_tidy: true
 
 # Where should the generated server code go?
 exec:
