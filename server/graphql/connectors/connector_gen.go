@@ -32,6 +32,9 @@ func (d *DataAccessorFunc[M, EdgeT]) CountData(ctx context.Context) (int64, erro
 }
 
 func (d *DataAccessorFunc[M, EdgeT]) ConvertToEdge(obj *M) *EdgeT {
+	if d.ConvertToEdgeFunc == nil {
+		return nil
+	}
 	return d.ConvertToEdgeFunc(obj)
 }
 
@@ -82,7 +85,9 @@ func (c *CollectionConnection[GQLM, EdgeT]) TotalCount() int {
 func (c *CollectionConnection[GQLM, EdgeT]) Edges() []*EdgeT {
 	if c.edges == nil {
 		for _, obj := range c.List() {
-			c.edges = append(c.edges, c.dataAccessor.ConvertToEdge(obj))
+			if edge := c.dataAccessor.ConvertToEdge(obj); edge != nil {
+				c.edges = append(c.edges, edge)
+			}
 		}
 	}
 	return c.edges
