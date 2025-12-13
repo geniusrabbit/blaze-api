@@ -1,5 +1,4 @@
 //go:build nats || allstreams
-// +build nats allstreams
 
 package stream
 

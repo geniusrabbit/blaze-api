@@ -1,5 +1,4 @@
 //go:build kafka || allstreams
-// +build kafka allstreams
 
 package stream
 
