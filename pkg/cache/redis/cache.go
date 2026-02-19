@@ -18,12 +18,13 @@ var errTrySetValue = errors.New(`try set value failed`)
 
 // Cache containse memory cache storage
 type Cache struct {
-	client redis.Cmdable
+	client      redis.Cmdable
+	maxLifetime time.Duration
 }
 
 // New marker wraps redis client
-func New(client redis.Cmdable) *Cache {
-	return &Cache{client: client}
+func New(client redis.Cmdable, maxLifetime time.Duration) *Cache {
+	return &Cache{client: client, maxLifetime: maxLifetime}
 }
 
 // NewByURL marker
@@ -39,21 +40,25 @@ func NewByURL(host string) (*Cache, error) {
 		password, _ = urlHost.User.Password()
 	}
 	query := urlHost.Query()
-	return New(redis.NewClient(&redis.Options{
-		DB:           gocast.Int(strings.Trim(urlHost.Path, `/`)),
-		Addr:         urlHost.Host,
-		Password:     password,
-		PoolSize:     gocast.Int(query.Get(`pool`)),
-		MaxRetries:   gocast.Int(query.Get(`max_retries`)),
-		MinIdleConns: gocast.Int(query.Get(`idle_cons`)),
-	})), nil
+	maxLifetime, _ := time.ParseDuration(query.Get(`max_cache_lifetime`))
+	return New(
+		redis.NewClient(&redis.Options{
+			DB:           gocast.Int(strings.Trim(urlHost.Path, `/`)),
+			Addr:         urlHost.Host,
+			Password:     password,
+			PoolSize:     gocast.Int(query.Get(`pool`)),
+			MaxRetries:   gocast.Int(query.Get(`max_retries`)),
+			MinIdleConns: gocast.Int(query.Get(`idle_cons`)),
+		}),
+		maxLifetime,
+	), nil
 }
 
 // Set cache item
 func (c *Cache) Set(ctx context.Context, key string, value any, lifetime time.Duration) error {
 	data, err := json.Marshal(value)
 	if err == nil {
-		err = c.client.Set(ctx, key, data, lifetime).Err()
+		err = c.client.Set(ctx, key, data, c.prepareLifetime(lifetime)).Err()
 	}
 	return err
 }
@@ -63,7 +68,7 @@ func (c *Cache) TrySet(ctx context.Context, key string, value any, lifetime time
 	res := false
 	data, err := json.Marshal(value)
 	if err == nil {
-		res, err = c.client.SetNX(ctx, key, data, lifetime).Result()
+		res, err = c.client.SetNX(ctx, key, data, c.prepareLifetime(lifetime)).Result()
 		if err == nil && !res {
 			err = errTrySetValue
 		}
@@ -74,9 +79,10 @@ func (c *Cache) TrySet(ctx context.Context, key string, value any, lifetime time
 // Get cached item
 func (c *Cache) Get(ctx context.Context, key string, target any) error {
 	data, err := c.client.Get(ctx, key).Result()
-	if err == nil {
+	switch err {
+	case nil:
 		err = json.Unmarshal([]byte(data), target)
-	} else if err == redis.Nil {
+	case redis.Nil:
 		err = cache.ErrEntryNotFound
 	}
 	return err
@@ -85,4 +91,11 @@ func (c *Cache) Get(ctx context.Context, key string, target any) error {
 // Del removes cache item by key
 func (c *Cache) Del(ctx context.Context, key string) error {
 	return c.client.Del(ctx, key).Err()
+}
+
+func (c *Cache) prepareLifetime(lifetime time.Duration) time.Duration {
+	if c.maxLifetime <= 0 {
+		return lifetime
+	}
+	return min(lifetime, c.maxLifetime)
 }

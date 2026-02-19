@@ -31,7 +31,7 @@ func TestRedisCache(t *testing.T) {
 	mr, err := miniredis.Run()
 	assert.NoError(t, err)
 	defer mr.Close()
-	marker := New(newTestRedis(mr))
+	marker := New(newTestRedis(mr), 0)
 	assert.NoError(t, marker.TrySet(ctx, key, msg, time.Minute))
 	assert.Error(t, marker.TrySet(ctx, key, msg, time.Minute))
 	assert.NoError(t, marker.Del(ctx, key))

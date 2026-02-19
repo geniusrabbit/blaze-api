@@ -95,13 +95,8 @@ func getCacheKey(opCtx *graphql.OperationContext, fc *graphql.FieldContext, obj 
 			v = fc.Args[field]
 		}
 		if v == nil && opCtx != nil && opCtx.Variables != nil {
-			v = opCtx.Variables[field]
-			if v == nil {
-				// common fallback for GraphQL "id" vs Go/DB "ID"
-				v = opCtx.Variables[strings.ToLower(field)]
-				if v == nil {
-					v = opCtx.Variables[strings.ToUpper(field)]
-				}
+			if v = opCtx.Variables[field]; v == nil {
+				v = opCtx.Variables[field]
 			}
 		}
 		keyTmp = strings.ReplaceAll(keyTmp, "{"+field+"}", gocast.Str(v))
