@@ -54,6 +54,16 @@ func (t *DateTime) UnmarshalGQL(v any) error {
 	}
 }
 
+// GobEncode implements method of interface gob.GobEncoder
+func (d DateTime) GobEncode() ([]byte, error) {
+	return (*time.Time)(&d).GobEncode()
+}
+
+// GobDecode implements method of interface gob.GobDecoder
+func (d *DateTime) GobDecode(data []byte) error {
+	return (*time.Time)(d).GobDecode(data)
+}
+
 // MarshalTime redecalre the marshalel of standart scalar type Time
 func MarshalTime(t time.Time) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
