@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ctxGqlApiCacheKey = struct{}{}
+	ctxGqlApiCacheKey = struct{ s string }{s: "gqlApiCache"}
 )
 
 func WithGqlApiCache(ctx context.Context, cache cache.Client) context.Context {
