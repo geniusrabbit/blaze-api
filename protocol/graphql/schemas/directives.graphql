@@ -8,4 +8,11 @@ directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 
 "Prevents access to a field/method if the user doesnt have the matching permissions"
-directive @skipNoPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+directive @skipNoPermissions(permissions: [String!]) on FIELD_DEFINITION | FIELD
+
+"Caches the result of a field/method for a specified time to live (ttl) in seconds"
+directive @cacheData(
+  ttl: Int!
+  key: String
+  fields: [String!]
+) on FIELD_DEFINITION | FIELD

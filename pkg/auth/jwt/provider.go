@@ -63,8 +63,9 @@ func NewDefaultProvider(secret string, tokenLifetime time.Duration, isDebug bool
 		TokenLifetime: tokenLifetime,
 		Secret:        secret,
 		MiddlewareOpts: &jwtmiddleware.Options{
-			Debug:     isDebug,
-			Extractor: tokenextractor.DefaultExtractor,
+			Debug:               isDebug,
+			CredentialsOptional: true,
+			Extractor:           tokenextractor.DefaultExtractor,
 		},
 	}
 }

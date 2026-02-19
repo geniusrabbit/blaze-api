@@ -32,6 +32,7 @@ func GraphQL(provider *jwt.Provider, options option.Usecase) http.Handler {
 				Acl:               directives.HasPermissions,
 				Auth:              directives.Auth,
 				SkipNoPermissions: directives.SkipNoPermissions,
+				CacheData:         directives.CacheData,
 			},
 		}),
 	)

@@ -50,6 +50,7 @@ type ResolverRoot interface {
 type DirectiveRoot struct {
 	Acl               func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
 	Auth              func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	CacheData         func(ctx context.Context, obj any, next graphql.Resolver, ttl int, key *string, fields []string) (res any, err error)
 	HasPermissions    func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
 	SkipNoPermissions func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
 }
@@ -3893,7 +3894,14 @@ directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
 
 "Prevents access to a field/method if the user doesnt have the matching permissions"
-directive @skipNoPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+directive @skipNoPermissions(permissions: [String!]) on FIELD_DEFINITION | FIELD
+
+"Caches the result of a field/method for a specified time to live (ttl) in seconds"
+directive @cacheData(
+  ttl: Int!
+  key: String
+  fields: [String!]
+) on FIELD_DEFINITION | FIELD
 `, BuiltIn: false},
 	{Name: "../../../../../../protocol/graphql/schemas/history.graphql", Input: `"""
 HistoryAction is the model for history actions.
@@ -4471,6 +4479,27 @@ func (ec *executionContext) dir_acl_args(ctx context.Context, rawArgs map[string
 	return args, nil
 }
 
+func (ec *executionContext) dir_cacheData_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ttl", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["ttl"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "key", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["key"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "fields", ec.unmarshalOString2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["fields"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) dir_hasPermissions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4485,7 +4514,7 @@ func (ec *executionContext) dir_hasPermissions_args(ctx context.Context, rawArgs
 func (ec *executionContext) dir_skipNoPermissions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "permissions", ec.unmarshalNString2ᚕstringᚄ)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "permissions", ec.unmarshalOString2ᚕstringᚄ)
 	if err != nil {
 		return nil, err
 	}
@@ -5345,6 +5374,20 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj any, next 
 					return nil, errors.New("directive auth is not implemented")
 				}
 				return ec.directives.Auth(ctx, obj, n)
+			}
+		case "cacheData":
+			rawArgs := d.ArgumentMap(ec.Variables)
+			args, err := ec.dir_cacheData_args(ctx, rawArgs)
+			if err != nil {
+				ec.Error(ctx, err)
+				return nil
+			}
+			n := next
+			next = func(ctx context.Context) (any, error) {
+				if ec.directives.CacheData == nil {
+					return nil, errors.New("directive cacheData is not implemented")
+				}
+				return ec.directives.CacheData(ctx, obj, n, args["ttl"].(int), args["key"].(*string), args["fields"].([]string))
 			}
 		case "hasPermissions":
 			rawArgs := d.ArgumentMap(ec.Variables)
