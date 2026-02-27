@@ -88,15 +88,36 @@ func getCacheKey(opCtx *graphql.OperationContext, fc *graphql.FieldContext, obj 
 		}
 	}
 
+	var objMap map[string]any
+
 	// Replace placeholders using field args first (fallback to variables)
 	for _, field := range fields {
 		var v any
-		if fc != nil && fc.Args != nil {
-			v = fc.Args[field]
-		}
-		if v == nil && opCtx != nil && opCtx.Variables != nil {
-			if v = opCtx.Variables[field]; v == nil {
-				v = opCtx.Variables[field]
+		if strings.HasPrefix(field, ".") || strings.HasPrefix(field, "obj.") {
+			if obj != nil {
+				newField := strings.TrimPrefix(field, ".")
+				newField = strings.TrimPrefix(newField, "obj.")
+				v, _ = gocast.StructFieldValue(obj, newField)
+				if v == nil {
+					if objMap == nil {
+						objMap = gocast.Map[string, any](obj, `json`)
+					}
+					if v, _ = objMap[newField]; v == nil {
+						newField2 := strings.ToLower(newField)
+						if newField2 != newField {
+							v, _ = objMap[newField2]
+						}
+					}
+				}
+			}
+		} else {
+			if fc != nil && fc.Args != nil {
+				v = fc.Args[field]
+			}
+			if v == nil && opCtx != nil && opCtx.Variables != nil {
+				if v = opCtx.Variables[field]; v == nil {
+					v = opCtx.Variables[field]
+				}
 			}
 		}
 		keyTmp = strings.ReplaceAll(keyTmp, "{"+field+"}", gocast.Str(v))
