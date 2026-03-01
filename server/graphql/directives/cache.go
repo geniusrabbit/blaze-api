@@ -30,12 +30,21 @@ func init() {
 	gob.Register(&time.Time{})
 }
 
+type CacheEncodable interface {
+	EncodableCacheValue() ([]byte, error)
+}
+
+type CacheDecodable interface {
+	DecodableCacheValue([]byte) error
+}
+
 // CacheData is a GraphQL directive that caches the result of a field/method for a specified time to live (ttl) in seconds.
 func CacheData(ctx context.Context, obj any, next graphql.Resolver, ttl int, keyTmp *string, fields []string) (res any, err error) {
 	opCtx := graphql.GetOperationContext(ctx)
 	cacheCli := gqlapicache.GetGqlApiCache(ctx)
 
 	if cacheCli == nil {
+		ctxlogger.Get(ctx).Warn("No cache client available in context, skipping cache directive")
 		return next(ctx)
 	}
 
@@ -46,19 +55,37 @@ func CacheData(ctx context.Context, obj any, next graphql.Resolver, ttl int, key
 
 	// Try to get the cached result
 	if err = cacheGet(ctx, cacheCli, cacheKey, &res); err == nil {
+		ctxlogger.Get(ctx).Debug("Cache hit",
+			zap.String("key", cacheKey),
+			zap.Int("ttl", ttl),
+			zap.Any("type", reflect.TypeOf(res)),
+		)
 		return res, nil
 	} else if !errors.Is(err, cache.ErrEntryNotFound) {
-		ctxlogger.Get(ctx).Warn("Cache miss for key:",
-			zap.String("key", cacheKey), zap.Error(err))
+		ctxlogger.Get(ctx).Warn("Cache miss with error",
+			zap.String("key", cacheKey),
+			zap.Int("ttl", ttl),
+			zap.Error(err),
+			zap.Any("type", reflect.TypeOf(res)),
+		)
 	}
 
 	// Call the next resolver in the chain and cache the result
 	if res, err = next(ctx); err == nil {
 		cErr := cacheSet(ctx, cacheCli, cacheKey, res, time.Duration(ttl)*time.Second)
 		if cErr != nil {
-			ctxlogger.Get(ctx).Warn("Failed to set cache for key:",
-				zap.String("key", cacheKey), zap.Error(cErr), zap.Int("ttl", ttl),
-				zap.Any("type", reflect.TypeOf(res)))
+			ctxlogger.Get(ctx).Warn("Failed to set cache",
+				zap.String("key", cacheKey),
+				zap.Int("ttl", ttl),
+				zap.Error(cErr),
+				zap.Any("type", reflect.TypeOf(res)),
+			)
+		} else {
+			ctxlogger.Get(ctx).Debug("Cached result",
+				zap.String("key", cacheKey),
+				zap.Int("ttl", ttl),
+				zap.Any("type", reflect.TypeOf(res)),
+			)
 		}
 	}
 	return res, err
@@ -93,10 +120,10 @@ func getCacheKey(opCtx *graphql.OperationContext, fc *graphql.FieldContext, obj 
 	// Replace placeholders using field args first (fallback to variables)
 	for _, field := range fields {
 		var v any
-		if strings.HasPrefix(field, ".") || strings.HasPrefix(field, "obj.") {
+		if strings.HasPrefix(field, ".") || strings.HasPrefix(field, "this.") {
 			if obj != nil {
 				newField := strings.TrimPrefix(field, ".")
-				newField = strings.TrimPrefix(newField, "obj.")
+				newField = strings.TrimPrefix(newField, "this.")
 				v, _ = gocast.StructFieldValue(obj, newField)
 				if v == nil {
 					if objMap == nil {
@@ -120,13 +147,21 @@ func getCacheKey(opCtx *graphql.OperationContext, fc *graphql.FieldContext, obj 
 				}
 			}
 		}
-		keyTmp = strings.ReplaceAll(keyTmp, "{"+field+"}", gocast.Str(v))
+		keyTmp = strings.ReplaceAll(keyTmp, "{"+field+"}", asKeyValue(v))
 	}
 	return keyTmp
 }
 
 func cacheSet(ctx context.Context, cacheCli cache.Client, key string, value any, ttl time.Duration) error {
-	data, err := marshalObject(gobEnvelope{Value: value})
+	var (
+		data []byte
+		err  error
+	)
+	if encodable, ok := value.(CacheEncodable); ok {
+		data, err = encodable.EncodableCacheValue()
+	} else {
+		data, err = marshalObject(gobEnvelope{Value: value})
+	}
 	if err != nil {
 		return err
 	}
@@ -139,11 +174,15 @@ func cacheGet(ctx context.Context, cacheCli cache.Client, key string, dest *any)
 		return err
 	}
 
-	var env gobEnvelope
-	if err := unmarshalObject(data, &env); err != nil {
-		return err
+	if decodable, ok := (*dest).(CacheDecodable); ok {
+		return decodable.DecodableCacheValue(data)
+	} else {
+		var env gobEnvelope
+		if err := unmarshalObject(data, &env); err != nil {
+			return err
+		}
+		*dest = env.Value
 	}
-	*dest = env.Value
 	return nil
 }
 
@@ -160,4 +199,17 @@ func unmarshalObject(data []byte, obj any) error {
 	buf := strings.NewReader(string(data))
 	dec := gob.NewDecoder(buf)
 	return dec.Decode(obj)
+}
+
+func asKeyValue(obj any) string {
+	if obj == nil {
+		return "null"
+	}
+	type _valueHash interface {
+		KeyHash() string
+	}
+	if v, ok := obj.(_valueHash); ok {
+		return v.KeyHash()
+	}
+	return gocast.Str(obj)
 }

@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/demdxx/gocast/v2"
@@ -129,4 +130,31 @@ func (c *CollectionConnection[GQLM, EdgeT]) List() []*GQLM {
 		panicError(err)
 	}
 	return c.list
+}
+
+type _cacheValue[GQLM any] struct {
+	TotalCount int64               `json:"totalCount"`
+	PageInfo   *gqlmodels.PageInfo `json:"pageInfo"`
+	List       []*GQLM             `json:"list"`
+}
+
+// EncodableCacheValue encodes the collection connection to a byte slice for caching
+func (c *CollectionConnection[GQLM, EdgeT]) EncodableCacheValue() ([]byte, error) {
+	return json.Marshal(&_cacheValue[GQLM]{
+		TotalCount: int64(c.TotalCount()),
+		PageInfo:   c.PageInfo(),
+		List:       c.List(),
+	})
+}
+
+// DecodableCacheValue decodes the byte slice from cache back into the collection connection
+func (c *CollectionConnection[GQLM, EdgeT]) DecodableCacheValue(data []byte) error {
+	var cacheValue _cacheValue[GQLM]
+	if err := json.Unmarshal(data, &cacheValue); err != nil {
+		return err
+	}
+	c.totalCount = cacheValue.TotalCount
+	c.pageInfo = cacheValue.PageInfo
+	c.list = cacheValue.List
+	return nil
 }
