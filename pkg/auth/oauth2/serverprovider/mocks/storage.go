@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	model "github.com/geniusrabbit/blaze-api/model"
+	user "github.com/geniusrabbit/blaze-api/repository/user"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -109,10 +109,10 @@ func (m *MockuserAccessor) EXPECT() *MockuserAccessorMockRecorder {
 }
 
 // GetByPassword mocks base method.
-func (m *MockuserAccessor) GetByPassword(ctx context.Context, email, password string) (*model.User, error) {
+func (m *MockuserAccessor) GetByPassword(ctx context.Context, email, password string) (*user.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByPassword", ctx, email, password)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*user.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

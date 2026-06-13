@@ -3,33 +3,32 @@ package models
 import (
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
-func FromOptionType(tp model.OptionType) OptionType {
+func FromOptionType(tp option.OptionType) OptionType {
 	switch tp {
-	case model.UserOptionType:
+	case option.UserOptionType:
 		return OptionTypeUser
-	case model.AccountOptionType:
+	case option.AccountOptionType:
 		return OptionTypeAccount
-	case model.SystemOptionType:
+	case option.SystemOptionType:
 		return OptionTypeSystem
 	}
 	return OptionTypeUndefined
 }
 
-func (tp OptionType) ModelType() model.OptionType {
+func (tp OptionType) ModelType() option.OptionType {
 	switch tp {
 	case OptionTypeUser:
-		return model.UserOptionType
+		return option.UserOptionType
 	case OptionTypeAccount:
-		return model.AccountOptionType
+		return option.AccountOptionType
 	case OptionTypeSystem:
-		return model.SystemOptionType
+		return option.SystemOptionType
 	}
-	return model.UndefinedOptionType
+	return option.UndefinedOptionType
 }
 
 func (fl *OptionListFilter) Filter() *option.Filter {
@@ -37,7 +36,7 @@ func (fl *OptionListFilter) Filter() *option.Filter {
 		return nil
 	}
 	return &option.Filter{
-		Type:        xtypes.SliceApply(fl.Type, func(tp OptionType) model.OptionType { return tp.ModelType() }),
+		Type:        xtypes.SliceApply(fl.Type, func(tp OptionType) option.OptionType { return tp.ModelType() }),
 		TargetID:    fl.TargetID,
 		Name:        fl.Name,
 		NamePattern: fl.NamePattern,
@@ -54,7 +53,7 @@ func (ol *OptionListOrder) Order() *option.ListOrder {
 	}
 }
 
-func FromOption(opt *model.Option) *Option {
+func FromOption(opt *option.Option) *Option {
 	if opt == nil {
 		return nil
 	}
@@ -66,6 +65,6 @@ func FromOption(opt *model.Option) *Option {
 	}
 }
 
-func FromOptionModelList(opts []*model.Option) []*Option {
+func FromOptionModelList(opts []*option.Option) []*Option {
 	return xtypes.SliceApply(opts, FromOption)
 }

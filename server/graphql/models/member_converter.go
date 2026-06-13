@@ -5,20 +5,21 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/guregu/null"
 )
 
 // FromMemberModel to local graphql model
-func FromMemberModel(ctx context.Context, member *model.AccountMember) *Member {
+func FromMemberModel(ctx context.Context, member *account.AccountMember) *Member {
 	if member == nil {
 		return nil
 	}
 	return &Member{
 		ID:        member.ID,
-		Account:   FromAccountModel(gocast.Or(member.Account, &model.Account{ID: member.AccountID})),
-		User:      FromUserModel(gocast.Or(member.User, &model.User{ID: member.UserID})),
+		Account:   FromAccountModel(gocast.Or(member.Account, &account.Account{ID: member.AccountID})),
+		User:      FromUserModel(gocast.Or(member.User, &user.User{ID: member.UserID})),
 		IsAdmin:   member.IsAdmin,
 		Status:    ApproveStatusFrom(member.Approve),
 		Roles:     FromRBACRoleModelList(ctx, member.Roles),
@@ -27,8 +28,8 @@ func FromMemberModel(ctx context.Context, member *model.AccountMember) *Member {
 	}
 }
 
-func FromMemberModelList(ctx context.Context, list []*model.AccountMember) []*Member {
-	return xtypes.SliceApply(list, func(m *model.AccountMember) *Member {
+func FromMemberModelList(ctx context.Context, list []*account.AccountMember) []*Member {
+	return xtypes.SliceApply(list, func(m *account.AccountMember) *Member {
 		return FromMemberModel(ctx, m)
 	})
 }
@@ -50,13 +51,13 @@ func (ord *MemberListOrder) Order() *account.MemberListOrder {
 		return nil
 	}
 	return &account.MemberListOrder{
-		ID:        model.Order(ord.ID.AsOrder()),
-		AccountID: model.Order(ord.AccountID.AsOrder()),
-		UserID:    model.Order(ord.UserID.AsOrder()),
-		Status:    model.Order(ord.Status.AsOrder()),
-		IsAdmin:   model.Order(ord.IsAdmin.AsOrder()),
-		CreatedAt: model.Order(ord.CreatedAt.AsOrder()),
-		UpdatedAt: model.Order(ord.UpdatedAt.AsOrder()),
+		ID:        pkgModels.Order(ord.ID.AsOrder()),
+		AccountID: pkgModels.Order(ord.AccountID.AsOrder()),
+		UserID:    pkgModels.Order(ord.UserID.AsOrder()),
+		Status:    pkgModels.Order(ord.Status.AsOrder()),
+		IsAdmin:   pkgModels.Order(ord.IsAdmin.AsOrder()),
+		CreatedAt: pkgModels.Order(ord.CreatedAt.AsOrder()),
+		UpdatedAt: pkgModels.Order(ord.UpdatedAt.AsOrder()),
 	}
 }
 

@@ -2,13 +2,12 @@ package models
 
 import (
 	"github.com/demdxx/xtypes"
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
 // FromHistoryAction converts HistoryAction to HistoryAction
-func FromHistoryAction(action *model.HistoryAction) *HistoryAction {
+func FromHistoryAction(action *historylog.HistoryAction) *HistoryAction {
 	if action == nil {
 		return nil
 	}
@@ -31,7 +30,7 @@ func FromHistoryAction(action *model.HistoryAction) *HistoryAction {
 }
 
 // FromHistoryActionModelList converts list of HistoryAction to list of HistoryAction
-func FromHistoryActionModelList(list []*model.HistoryAction) []*HistoryAction {
+func FromHistoryActionModelList(list []*historylog.HistoryAction) []*HistoryAction {
 	return xtypes.SliceApply(list, FromHistoryAction)
 }
 
