@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"gorm.io/gorm"
@@ -55,7 +55,7 @@ func (r *Repository[T, TID]) Count(ctx context.Context, qops ...Option) (count i
 // Create creates a new campaign
 func (r *Repository[T, TID]) Create(ctx context.Context, obj *T, message string) (TID, error) {
 	setModelCreatedAt(obj, time.Now())
-	setModelApproveStatus(obj, model.ApproveStatus(model.PendingApproveStatus))
+	setModelApproveStatus(obj, pkgModels.ApproveStatus(pkgModels.PendingApproveStatus))
 	db := r.Master(historylog.WithMessage(ctx, message))
 	err := db.Create(obj).Error
 	return getModelID[TID](obj), err

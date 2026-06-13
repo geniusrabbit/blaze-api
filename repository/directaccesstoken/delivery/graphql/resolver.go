@@ -8,9 +8,9 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
+	datModels "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/repository"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/usecase"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
@@ -91,14 +91,14 @@ func (r *QueryResolver) Get(ctx context.Context, id uint64) (*models.DirectAcces
 // Tokens created within the last 5 minutes are returned as-is; older tokens have their values masked.
 func (r *QueryResolver) List(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*DirectAccessTokenConnection, error) {
 	return NewDirectAccessTokenConnection(ctx, r.uc, filter, order, page,
-		func(dat *model.DirectAccessToken) *model.DirectAccessToken {
+		func(dat *datModels.DirectAccessToken) *datModels.DirectAccessToken {
 			// Return token unmasked if recently created
 			if dat.CreatedAt.After(time.Now().Add(-time.Minute * 5)) {
 				return dat
 			}
 
 			// Mask token value for older tokens
-			m := new(model.DirectAccessToken)
+			m := new(datModels.DirectAccessToken)
 			*m = *dat
 			m.Token = strings.Repeat("*", len(m.Token))
 			return m

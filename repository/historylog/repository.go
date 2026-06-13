@@ -4,14 +4,13 @@ package historylog
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/repository"
+	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 )
 
-// Repository of access to the changelog
+// Repository of the history actions log
 //
 //go:generate mockgen -source $GOFILE -package mocks -destination mocks/repository.go
 type Repository interface {
-	Count(ctx context.Context, filter *Filter) (int64, error)
-	FetchList(ctx context.Context, filter *Filter, order *Order, pagination *repository.Pagination) ([]*model.HistoryAction, error)
+	Count(ctx context.Context, opts ...QOption) (int64, error)
+	FetchList(ctx context.Context, opts ...QOption) ([]*historylogModels.HistoryAction, error)
 }

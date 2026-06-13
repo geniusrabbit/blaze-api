@@ -11,9 +11,10 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	authclientModels "github.com/geniusrabbit/blaze-api/repository/authclient/models"
 )
 
 // Repository is a DAO which provides functionality for working with accounts.
@@ -79,15 +80,13 @@ func (r *Repository) LoadPermissions(ctx context.Context, accountObj *account.Ac
 }
 
 // FetchList retrieves a list of accounts filtered, ordered, and paginated according to parameters.
-func (r *Repository) FetchList(ctx context.Context, filter *account.Filter, order *account.ListOrder, pagination *account.Pagination) ([]*account.Account, error) {
+func (r *Repository) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
 	var (
 		list  []*account.Account
 		query = r.Slave(ctx).Model((*account.Account)(nil))
 	)
 
-	query = filter.PrepareQuery(query)
-	query = order.PrepareQuery(query)
-	query = pagination.PrepareQuery(query)
+	query = account.ListOptions(opts).PrepareQuery(query)
 	err := query.Find(&list).Error
 
 	// Treat "no records found" as success with empty list.
@@ -98,12 +97,13 @@ func (r *Repository) FetchList(ctx context.Context, filter *account.Filter, orde
 }
 
 // Count returns the number of accounts matching the filter criteria.
-func (r *Repository) Count(ctx context.Context, filter *account.Filter) (int64, error) {
+func (r *Repository) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	var (
 		count int64
 		query = r.Slave(ctx).Model((*account.Account)(nil))
-		err   = filter.PrepareQuery(query).Count(&count).Error
 	)
+	query = account.ListOptions(opts).PrepareQuery(query)
+	err := query.Count(&count).Error
 	return count, err
 }
 
@@ -111,7 +111,7 @@ func (r *Repository) Count(ctx context.Context, filter *account.Filter) (int64, 
 func (r *Repository) Create(ctx context.Context, accountObj *account.Account) (uint64, error) {
 	accountObj.CreatedAt = time.Now()
 	accountObj.UpdatedAt = accountObj.CreatedAt
-	accountObj.Approve = model.UndefinedApproveStatus
+	accountObj.Approve = pkgModels.UndefinedApproveStatus
 	err := r.Master(ctx).Create(accountObj).Error
 	return accountObj.ID, err
 }
@@ -139,8 +139,8 @@ func (r *Repository) GetByToken(ctx context.Context, token string) (*account.Use
 		member  = new(account.AccountMember)
 		// Query to find the account member linked to the given token via auth session.
 		memberRequest = `WITH auth_client AS (` +
-			`  SELECT user_id, account_id FROM ` + (*model.AuthClient)(nil).TableName() + ` WHERE id = (` +
-			`    SELECT client_id FROM ` + (*model.AuthSession)(nil).TableName() + ` WHERE deleted_at IS NULL AND access_token=?` +
+			`  SELECT user_id, account_id FROM ` + (*authclientModels.AuthClient)(nil).TableName() + ` WHERE id = (` +
+			`    SELECT client_id FROM ` + (*authclientModels.AuthSession)(nil).TableName() + ` WHERE deleted_at IS NULL AND access_token=?` +
 			`  )` +
 			`)` +
 			`SELECT am.* FROM ` + (*account.AccountMember)(nil).TableName() + ` AS am, auth_client AS ac` +

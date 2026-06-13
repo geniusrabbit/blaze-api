@@ -8,7 +8,6 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/repository/option/models"
@@ -45,11 +44,11 @@ func (a *Usecase) Get(ctx context.Context, name string, otype models.OptionType,
 }
 
 // FetchList retrieves a list of options filtered and ordered with permission checks
-func (a *Usecase) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *repository.Pagination) ([]*models.Option, error) {
+func (a *Usecase) FetchList(ctx context.Context, opts ...option.QOption) ([]*models.Option, error) {
 	if !acl.HaveAccessList(ctx, &models.Option{}) {
 		return nil, acl.ErrNoPermissions.WithMessage("list")
 	}
-	list, err := a.baseRepo.FetchList(ctx, filter, order, pagination)
+	list, err := a.baseRepo.FetchList(ctx, opts...)
 	for _, obj := range list {
 		if !acl.HaveAccessList(ctx, obj) {
 			return nil, acl.ErrNoPermissions.WithMessage("list")
@@ -59,11 +58,11 @@ func (a *Usecase) FetchList(ctx context.Context, filter *option.Filter, order *o
 }
 
 // Count returns the total count of options matching the filter with permission checks
-func (a *Usecase) Count(ctx context.Context, filter *option.Filter) (int64, error) {
+func (a *Usecase) Count(ctx context.Context, opts ...option.QOption) (int64, error) {
 	if !acl.HaveAccessList(ctx, &models.Option{}) {
 		return 0, acl.ErrNoPermissions.WithMessage("list")
 	}
-	return a.baseRepo.Count(ctx, filter)
+	return a.baseRepo.Count(ctx, opts...)
 }
 
 // Set creates or updates an option with permission checks

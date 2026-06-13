@@ -5,7 +5,8 @@ import (
 	"reflect"
 
 	"github.com/demdxx/gocast/v2"
-	"github.com/geniusrabbit/blaze-api/model"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 type (
@@ -17,14 +18,14 @@ type (
 	}
 )
 
-func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Account) any {
+func ownedObject(ctx context.Context, obj any, user *userModels.User, acc *accountModels.Account) any {
 	switch obj.(type) {
 	case nil:
 		return nil
-	case *model.Account, model.Account:
-		return &model.Account{ID: acc.ID, Admins: []uint64{user.ID}}
-	case *model.User, model.User:
-		return &model.User{ID: user.ID}
+	case *accountModels.Account, accountModels.Account:
+		return &accountModels.Account{ID: acc.ID, Admins: []uint64{user.ID}}
+	case *userModels.User, userModels.User:
+		return &userModels.User{ID: user.ID}
 	}
 
 	// Get object struct type value

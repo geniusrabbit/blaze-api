@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/models"
@@ -41,27 +41,25 @@ func NewMemberRepository() *MemberRepository {
 }
 
 // FetchListMembers returns the list of members from account
-func (r *MemberRepository) FetchListMembers(ctx context.Context, filter *account.MemberFilter, order *account.MemberListOrder, pagination *repository.Pagination) ([]*models.AccountMember, error) {
+func (r *MemberRepository) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*models.AccountMember, error) {
 	var (
 		list  []*models.AccountMember
 		query = r.Slave(ctx).Model((*models.AccountMember)(nil))
 	)
-	query = filter.PrepareQuery(query)
-	query = order.PrepareQuery(query)
-	query = pagination.PrepareQuery(query)
+	query = account.ListOptions(opts).PrepareQuery(query)
 	query = query.Preload(clause.Associations)
 	err := query.Find(&list).Error
 	return list, err
 }
 
 // CountMembers returns the count of members from account
-func (r *MemberRepository) CountMembers(ctx context.Context, filter *account.MemberFilter) (int64, error) {
+func (r *MemberRepository) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
 	var (
 		count int64
-		err   = filter.PrepareQuery(
-			r.Slave(ctx).Model((*models.AccountMember)(nil)),
-		).Count(&count).Error
+		query = r.Slave(ctx).Model((*models.AccountMember)(nil))
 	)
+	query = account.ListOptions(opts).PrepareQuery(query)
+	err := query.Count(&count).Error
 	return count, err
 }
 
@@ -113,15 +111,15 @@ func (r *MemberRepository) IsAdmin(ctx context.Context, userID, accountID uint64
 }
 
 // LinkMember into account
-func (r *MemberRepository) LinkMember(ctx context.Context, accountObj *model.Account, isAdmin bool, members ...*user.User) error {
+func (r *MemberRepository) LinkMember(ctx context.Context, accountObj *models.Account, isAdmin bool, members ...*user.User) error {
 	return r.Master(ctx).Transaction(func(tx *gorm.DB) error {
-		query := tx.Model((*model.AccountMember)(nil)).Clauses(clause.OnConflict{
+		query := tx.Model((*models.AccountMember)(nil)).Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "account_id"}, {Name: "user_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"approve_status", "is_admin"}),
 		})
 		for _, userObj := range members {
-			err := query.Create(&model.AccountMember{
-				Approve:   model.ApprovedApproveStatus,
+			err := query.Create(&models.AccountMember{
+				Approve:   pkgModels.ApprovedApproveStatus,
 				AccountID: accountObj.ID,
 				UserID:    userObj.ID,
 				IsAdmin:   isAdmin,
@@ -135,16 +133,16 @@ func (r *MemberRepository) LinkMember(ctx context.Context, accountObj *model.Acc
 }
 
 // UnlinkMember from the account
-func (r *MemberRepository) UnlinkMember(ctx context.Context, accountObj *model.Account, users ...*user.User) error {
+func (r *MemberRepository) UnlinkMember(ctx context.Context, accountObj *models.Account, users ...*user.User) error {
 	ids := make([]uint64, 0, len(users))
 	for _, user := range users {
 		ids = append(ids, user.ID)
 	}
-	return r.Master(ctx).Model((*model.AccountMember)(nil)).Delete(`id=ANY(?)`, ids).Error
+	return r.Master(ctx).Model((*models.AccountMember)(nil)).Delete(`id=ANY(?)`, ids).Error
 }
 
 // SetMemberRoles into account
-func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *model.Account, user *model.User, roles ...string) error {
+func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *models.Account, user *user.User, roles ...string) error {
 	var (
 		listRoles   []*prbac.Role
 		member, err = r.Member(ctx, user.ID, accountObj.ID)
@@ -174,7 +172,7 @@ func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *model
 			AccountID: []uint64{accountObj.ID},
 			NotUserID: []uint64{user.ID},
 			IsAdmin:   null.BoolFrom(true),
-			Status:    []model.ApproveStatus{model.ApprovedApproveStatus},
+			Status:    []pkgModels.ApproveStatus{pkgModels.ApprovedApproveStatus},
 		})
 		if err != nil {
 			return err

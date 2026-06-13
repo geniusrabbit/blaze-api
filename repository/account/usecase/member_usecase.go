@@ -4,10 +4,10 @@ import (
 	"context"
 	"slices"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/pkg/errors"
 )
@@ -29,23 +29,23 @@ func NewMemberUsecase(userRepo user.Repository, accountRepo account.Repository, 
 }
 
 // FetchListMembers returns the list of members from account
-func (a *MemberUsecase) FetchListMembers(ctx context.Context, filter *account.MemberFilter, order *account.MemberListOrder, pagination *account.Pagination) (_ []*account.AccountMember, err error) {
-	if !acl.HaveAccessList(ctx, &model.AccountMember{}) {
-		if filter, err = adjustMemberListFilter(ctx, "list", filter); err != nil {
+func (a *MemberUsecase) FetchListMembers(ctx context.Context, opts ...account.QOption) (_ []*account.AccountMember, err error) {
+	if !acl.HaveAccessList(ctx, &accountModels.AccountMember{}) {
+		if opts, err = adjustMemberListFilterOpts(ctx, "list", opts); err != nil {
 			return nil, err
 		}
 	}
-	return a.memberRepo.FetchListMembers(ctx, filter, order, pagination)
+	return a.memberRepo.FetchListMembers(ctx, opts...)
 }
 
 // CountMembers returns the count of members from account
-func (a *MemberUsecase) CountMembers(ctx context.Context, filter *account.MemberFilter) (_ int64, err error) {
-	if !acl.HaveAccessCount(ctx, &model.AccountMember{}) {
-		if filter, err = adjustMemberListFilter(ctx, "count", filter); err != nil {
+func (a *MemberUsecase) CountMembers(ctx context.Context, opts ...account.QOption) (_ int64, err error) {
+	if !acl.HaveAccessCount(ctx, &accountModels.AccountMember{}) {
+		if opts, err = adjustMemberListFilterOpts(ctx, "count", opts); err != nil {
 			return 0, err
 		}
 	}
-	return a.memberRepo.CountMembers(ctx, filter)
+	return a.memberRepo.CountMembers(ctx, opts...)
 }
 
 // LinkMember into account
@@ -141,16 +141,16 @@ func (a *MemberUsecase) SetMemberRoles(ctx context.Context, memberID uint64, rol
 	return memeber, a.memberRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
 }
 
-func adjustMemberListFilter(ctx context.Context, action string, filter *account.MemberFilter) (*account.MemberFilter, error) {
-	if filter == nil {
-		filter = &account.MemberFilter{
-			AccountID: []uint64{session.Account(ctx).ID},
+func adjustMemberListFilterOpts(ctx context.Context, action string, opts []account.QOption) ([]account.QOption, error) {
+	accID := session.Account(ctx).ID
+	for _, opt := range opts {
+		if f, ok := opt.(*account.MemberFilter); ok {
+			if l := len(f.AccountID); l > 1 || (l == 1 && f.AccountID[0] != accID) {
+				return nil, errors.Wrap(acl.ErrNoPermissions, action+" member account for that account")
+			}
+			f.AccountID = []uint64{accID}
+			return opts, nil
 		}
-	} else {
-		if l := len(filter.AccountID); l > 1 || (l == 1 && filter.AccountID[0] != session.Account(ctx).ID) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, action+" member account for that account")
-		}
-		filter.AccountID = append(filter.AccountID[:0], session.Account(ctx).ID)
 	}
-	return filter, nil
+	return append(opts, &account.MemberFilter{AccountID: []uint64{accID}}), nil
 }

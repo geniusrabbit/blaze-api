@@ -20,8 +20,8 @@ type Filter struct {
 	ObjectType  []string    // Filter by object types
 }
 
-// Query applies the filter conditions to a GORM query.
-func (filter *Filter) Query(query *gorm.DB) *gorm.DB {
+// PrepareQuery applies the filter conditions to a GORM query.
+func (filter *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if filter == nil {
 		return query
 	}
@@ -65,8 +65,8 @@ type Order struct {
 	ActionAt    models.Order // Sort by action timestamp
 }
 
-// Query applies the sorting conditions to a GORM query.
-func (o *Order) Query(query *gorm.DB) *gorm.DB {
+// PrepareQuery applies the sorting conditions to a GORM query.
+func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if o == nil {
 		return query
 	}

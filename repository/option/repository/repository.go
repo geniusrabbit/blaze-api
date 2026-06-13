@@ -56,14 +56,12 @@ func (r *Repository) Get(ctx context.Context, name string, otype models.OptionTy
 }
 
 // FetchList returns list of
-func (r *Repository) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *option.Pagination) ([]*models.Option, error) {
+func (r *Repository) FetchList(ctx context.Context, opts ...option.QOption) ([]*models.Option, error) {
 	var (
 		list  []*models.Option
 		query = r.Slave(ctx).Model((*models.Option)(nil))
 	)
-	query = filter.PrepareQuery(query)
-	query = order.PrepareQuery(query)
-	query = pagination.PrepareQuery(query)
+	query = option.ListOptions(opts).PrepareQuery(query)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
 		err = nil
@@ -72,12 +70,12 @@ func (r *Repository) FetchList(ctx context.Context, filter *option.Filter, order
 }
 
 // Count returns count of records by filter
-func (r *Repository) Count(ctx context.Context, filter *option.Filter) (int64, error) {
+func (r *Repository) Count(ctx context.Context, opts ...option.QOption) (int64, error) {
 	var (
 		count int64
 		query = r.Slave(ctx).Model((*models.Option)(nil))
 	)
-	query = filter.PrepareQuery(query)
+	query = option.ListOptions(opts).PrepareQuery(query)
 	err := query.Count(&count).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
 		err = nil

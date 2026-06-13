@@ -7,18 +7,14 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/pkg/models"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
 	"github.com/geniusrabbit/blaze-api/repository/user"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	"github.com/geniusrabbit/blaze-api/repository/user/password"
 )
 
-// make pwgen PASSWORD=test
-// go run cmd/pwgen/main.go test
-// PwSalt:   1111111
-// PwCost:   12
 // Password: test
 // PassHash: $2a$12$mbz/OdK.Pal.AwOz13RxX.PDqkthADBr.B4UMXerY4QbQeqAiJGma
 const (
@@ -74,7 +70,7 @@ func (s *testSuite) TestFetchList() {
 		)
 	users, err := s.userRepo.FetchList(s.Ctx,
 		&user.ListFilter{UserID: []uint64{1, 2}},
-		&user.ListOrder{ID: models.OrderAsc},
+		&user.ListOrder{ID: pkgModels.OrderAsc},
 		&repository.Pagination{Size: 100})
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
@@ -114,13 +110,13 @@ func (s *testSuite) TestGetByPassword() {
 // 			sqlmock.NewRows([]string{"id", "status", "user_id", "account_id", "is_admin", "created_at", "updated_at"}).
 // 				AddRow(1, 1, 1, 1, 0, time.Now(), time.Now()),
 // 		)
-// 	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*model.User)(nil).TableName()+`"`).
+// 	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*userModels.User)(nil).TableName()+`"`).
 // 		WithArgs(uint64(1), 1).
 // 		WillReturnRows(
 // 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 // 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
 // 		)
-// 	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*model.Account)(nil).TableName()+`"`).
+// 	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*accountModels.Account)(nil).TableName()+`"`).
 // 		WithArgs(uint64(1), 1).
 // 		WillReturnRows(
 // 			sqlmock.NewRows([]string{"id", "status", "title", "description", "created_at"}).
@@ -139,11 +135,11 @@ func (s *testSuite) TestGetByPassword() {
 
 func (s *testSuite) TestCreate() {
 	s.Mock.ExpectQuery("INSERT INTO").
-		WithArgs("test", sqlmock.AnyArg(), model.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint(101)).
+		WithArgs("test", sqlmock.AnyArg(), pkgModels.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint(101)).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	id, err := s.userRepo.Create(
 		s.Ctx,
-		&model.User{ID: 101, Email: "test"},
+		&userModels.User{ID: 101, Email: "test"},
 		"password")
 	s.Assert().NoError(err)
 	s.Assert().Equal(uint64(101), id)
@@ -151,11 +147,11 @@ func (s *testSuite) TestCreate() {
 
 func (s *testSuite) TestUpdate() {
 	s.Mock.ExpectExec("UPDATE").
-		WithArgs("test", sqlmock.AnyArg(), model.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint64(101)).
+		WithArgs("test", sqlmock.AnyArg(), pkgModels.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.userRepo.Update(
 		s.Ctx,
-		&model.User{
+		&userModels.User{
 			ID:    101,
 			Email: "test",
 		})

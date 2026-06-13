@@ -9,18 +9,17 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/mocks"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 type userTestSuite struct {
 	suite.Suite
 
-	ctx context.Context
-
+	ctx         context.Context
 	userRepo    *mocks.MockRepository
 	userUsecase user.Usecase
 }
@@ -34,7 +33,7 @@ func (s *userTestSuite) SetupSuite() {
 
 func (s *userTestSuite) TestGet() {
 	s.userRepo.EXPECT().Get(s.ctx, uint64(2)).
-		Return(&model.User{ID: 2}, nil)
+		Return(&userModels.User{ID: 2}, nil)
 
 	user, err := s.userUsecase.Get(s.ctx, 2)
 	s.Assert().NoError(err)
@@ -44,7 +43,7 @@ func (s *userTestSuite) TestGet() {
 func (s *userTestSuite) TestGetByEmail() {
 	const email = "test@mail.com"
 	s.userRepo.EXPECT().GetByEmail(s.ctx, email).
-		Return(&model.User{ID: 2, Email: email}, nil)
+		Return(&userModels.User{ID: 2, Email: email}, nil)
 
 	user, err := s.userUsecase.GetByEmail(s.ctx, email)
 	s.Assert().NoError(err)
@@ -54,7 +53,7 @@ func (s *userTestSuite) TestGetByEmail() {
 
 func (s *userTestSuite) TestGetCurrent() {
 	// s.userRepo.EXPECT().Get(s.ctx, uint64(1)).
-	// 	Return(&model.User{ID: 1}, nil)
+	// 	Return(&userModels.User{ID: 1}, nil)
 
 	user, err := s.userUsecase.Get(s.ctx, 1)
 	s.Assert().NoError(err)
@@ -72,7 +71,7 @@ func (s *userTestSuite) TestGetGetError() {
 
 func (s *userTestSuite) TestGetByPassword() {
 	s.userRepo.EXPECT().GetByPassword(s.ctx, "test@mail.com", "password").
-		Return(&model.User{ID: 1}, nil)
+		Return(&userModels.User{ID: 1}, nil)
 
 	user, err := s.userUsecase.GetByPassword(s.ctx, "test@mail.com", "password")
 	s.Assert().NoError(err)
@@ -81,7 +80,7 @@ func (s *userTestSuite) TestGetByPassword() {
 
 // func (s *userTestSuite) TestGetByToken() {
 // 	s.userRepo.EXPECT().GetByToken(s.ctx, "token").
-// 		Return(&model.User{ID: 1}, &model.Account{ID: 1}, nil)
+// 		Return(&userModels.User{ID: 1}, &model.Account{ID: 1}, nil)
 
 // 	user, account, err := s.userUsecase.GetByToken(s.ctx, "token")
 // 	s.Assert().NoError(err)
@@ -94,7 +93,7 @@ func (s *userTestSuite) TestFetchList() {
 		FetchList(s.ctx, &user.ListFilter{},
 			gomock.AssignableToTypeOf(&user.ListOrder{}),
 			gomock.AssignableToTypeOf(&repository.Pagination{})).
-		Return([]*model.User{{ID: 1}, {ID: 2}}, nil)
+		Return([]*userModels.User{{ID: 1}, {ID: 2}}, nil)
 
 	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{}, nil, nil)
 	s.Assert().NoError(err)
@@ -116,7 +115,7 @@ func (s *userTestSuite) TestFetchList_CurrentUser() {
 		FetchList(s.ctx, &user.ListFilter{},
 			gomock.AssignableToTypeOf(&user.ListOrder{}),
 			gomock.AssignableToTypeOf(&repository.Pagination{})).
-		Return([]*model.User{{ID: 1}, {ID: 2}}, nil)
+		Return([]*userModels.User{{ID: 1}, {ID: 2}}, nil)
 
 	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{}, nil, nil)
 	s.Assert().NoError(err)
@@ -125,20 +124,20 @@ func (s *userTestSuite) TestFetchList_CurrentUser() {
 
 func (s *userTestSuite) TestCreate() {
 	s.userRepo.EXPECT().
-		Create(s.ctx, gomock.AssignableToTypeOf(&model.User{}), "password").
+		Create(s.ctx, gomock.AssignableToTypeOf(&userModels.User{}), "password").
 		Return(uint64(101), nil)
 
-	id, err := s.userUsecase.Create(s.ctx, &model.User{Email: "test@mail.com"}, "password")
+	id, err := s.userUsecase.Create(s.ctx, &userModels.User{Email: "test@mail.com"}, "password")
 	s.Assert().NoError(err)
 	s.Assert().Equal(id, uint64(101))
 }
 
 func (s *userTestSuite) TestUpdate() {
 	s.userRepo.EXPECT().
-		Update(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(&model.User{})).
+		Update(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(&userModels.User{})).
 		Return(nil)
 
-	err := s.userUsecase.Update(s.ctx, &model.User{ID: 101, Email: "test@mail.com"})
+	err := s.userUsecase.Update(s.ctx, &userModels.User{ID: 101, Email: "test@mail.com"})
 	s.Assert().NoError(err)
 }
 

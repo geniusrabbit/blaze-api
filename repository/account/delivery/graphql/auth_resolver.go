@@ -9,16 +9,17 @@ import (
 	lrbac "github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	accountrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
 	accountusecase "github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
@@ -141,7 +142,7 @@ func (r *AuthResolver) CurrentSession(ctx context.Context) (*gqlmodels.SessionTo
 func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID uint64, order *gqlmodels.RBACRoleListOrder) (*rbacgql.RBACRoleConnection, error) {
 	var (
 		err     error
-		account *model.Account
+		account *accountModels.Account
 		permIDs []uint64
 	)
 
@@ -172,7 +173,7 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 	return rbacgql.NewRBACRoleConnectionByIDs(ctx, r.roleRepo, permIDs, order), nil
 }
 
-func accountForUser(ctx context.Context, accountRepo account.Repository, user *model.User, accountID uint64) (*model.Account, error) {
+func accountForUser(ctx context.Context, accountRepo account.Repository, user *userModels.User, accountID uint64) (*accountModels.Account, error) {
 	accounts, err := accountRepo.FetchList(ctx,
 		&account.Filter{
 			ID:     gocast.IfThen(accountID > 0, []uint64{accountID}, nil),

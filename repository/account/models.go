@@ -41,5 +41,9 @@ type (
 	Account              = models.Account
 	AccountMember        = models.AccountMember
 	M2MAccountMemberRole = models.M2MAccountMemberRole
+	PermissionChecker    = models.PermissionChecker
 	User                 = user.User
 )
+
+// CtxPermissionCheckAccount is the context key for account permission checks.
+var CtxPermissionCheckAccount = models.CtxPermissionCheckAccount

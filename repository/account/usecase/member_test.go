@@ -7,11 +7,12 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/mocks"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	usermocks "github.com/geniusrabbit/blaze-api/repository/user/mocks"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 type testMemberSuite struct {
@@ -36,12 +37,11 @@ func (s *testMemberSuite) SetupSuite() {
 
 func (s *testMemberSuite) TestFetchListMembers() {
 	s.memberRepo.EXPECT().
-		FetchListMembers(s.ctx, gomock.AssignableToTypeOf((*account.MemberFilter)(nil)), nil, nil).
-		Return([]*model.AccountMember{{ID: 1}, {ID: 2}}, nil)
+		FetchListMembers(s.ctx, gomock.AssignableToTypeOf((*account.MemberFilter)(nil))).
+		Return([]*accountModels.AccountMember{{ID: 1}, {ID: 2}}, nil)
 
 	members, err := s.memberUsecase.FetchListMembers(s.ctx,
 		&account.MemberFilter{AccountID: []uint64{1}, UserID: []uint64{1, 2}},
-		nil, nil,
 	)
 
 	s.NoError(err)
@@ -50,24 +50,24 @@ func (s *testMemberSuite) TestFetchListMembers() {
 
 func (s *testMemberSuite) TestLinkMember() {
 	s.memberRepo.EXPECT().
-		LinkMember(s.ctx, gomock.AssignableToTypeOf(&model.Account{}),
-			true, gomock.AssignableToTypeOf(&model.User{})).
+		LinkMember(s.ctx, gomock.AssignableToTypeOf(&accountModels.Account{}),
+			true, gomock.AssignableToTypeOf(&userModels.User{})).
 		Return(nil)
 
-	account := &model.Account{ID: 1}
-	user := &model.User{ID: 101}
+	account := &accountModels.Account{ID: 1}
+	user := &userModels.User{ID: 101}
 	err := s.memberUsecase.LinkMember(s.ctx, account, true, user)
 	s.NoError(err)
 }
 
 func (s *testMemberSuite) TestUnlinkMember() {
 	s.memberRepo.EXPECT().
-		UnlinkMember(s.ctx, gomock.AssignableToTypeOf(&model.Account{}),
-			gomock.AssignableToTypeOf(&model.User{})).
+		UnlinkMember(s.ctx, gomock.AssignableToTypeOf(&accountModels.Account{}),
+			gomock.AssignableToTypeOf(&userModels.User{})).
 		Return(nil)
 
-	account := &model.Account{ID: 1}
-	user := &model.User{ID: 101}
+	account := &accountModels.Account{ID: 1}
+	user := &userModels.User{ID: 101}
 	err := s.memberUsecase.UnlinkMember(s.ctx, account, user)
 	s.NoError(err)
 }

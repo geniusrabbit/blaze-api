@@ -11,7 +11,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
@@ -48,33 +47,33 @@ func (a *AccountUsecase) Get(ctx context.Context, id uint64) (*account.Account, 
 }
 
 // FetchList of accounts by filter
-func (a *AccountUsecase) FetchList(ctx context.Context, filter *account.Filter, order *account.ListOrder, pagination *repository.Pagination) ([]*account.Account, error) {
+func (a *AccountUsecase) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
 	var err error
 	if !acl.HaveAccessList(ctx, session.Account(ctx)) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
 	// If not `system` access then filter by current user
 	if !acl.HaveAccessList(ctx, &account.Account{}) {
-		if filter, err = adjustListFilter(ctx, filter); err != nil {
+		if opts, err = adjustListFilterOpts(ctx, opts); err != nil {
 			return nil, err
 		}
 	}
-	return a.accountRepo.FetchList(ctx, filter, order, pagination)
+	return a.accountRepo.FetchList(ctx, opts...)
 }
 
 // Count of accounts by filter
-func (a *AccountUsecase) Count(ctx context.Context, filter *account.Filter) (int64, error) {
+func (a *AccountUsecase) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	var err error
 	if !acl.HaveAccessCount(ctx, session.Account(ctx)) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
 	// If not `system` access then filter by current user
 	if !acl.HaveAccessCount(ctx, &account.Account{}) {
-		if filter, err = adjustListFilter(ctx, filter); err != nil {
+		if opts, err = adjustListFilterOpts(ctx, opts); err != nil {
 			return 0, err
 		}
 	}
-	return a.accountRepo.Count(ctx, filter)
+	return a.accountRepo.Count(ctx, opts...)
 }
 
 // Store new object into database
@@ -147,15 +146,18 @@ func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
 	return a.accountRepo.Delete(historylog.WithPK(ctx, id), id)
 }
 
-func adjustListFilter(ctx context.Context, filter *account.Filter) (*account.Filter, error) {
+func adjustListFilterOpts(ctx context.Context, opts []account.QOption) ([]account.QOption, error) {
 	usr := session.User(ctx)
-	if filter == nil {
-		return &account.Filter{UserID: []uint64{usr.ID}}, nil
-	} else if len(filter.UserID) == 0 {
-		filter.UserID = []uint64{usr.ID}
+	for _, opt := range opts {
+		if f, ok := opt.(*account.Filter); ok {
+			if len(f.UserID) == 0 {
+				f.UserID = []uint64{usr.ID}
+			}
+			if len(f.UserID) != 1 || f.UserID[0] != usr.ID {
+				return nil, errors.Wrap(acl.ErrNoPermissions, "list account (too wide filter)")
+			}
+			return opts, nil
+		}
 	}
-	if len(filter.UserID) != 1 || filter.UserID[0] != usr.ID {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list account (too wide filter)")
-	}
-	return filter, nil
+	return append(opts, &account.Filter{UserID: []uint64{usr.ID}}), nil
 }

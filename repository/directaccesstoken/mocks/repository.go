@@ -43,33 +43,43 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // Count mocks base method.
-func (m *MockRepository) Count(ctx context.Context, filter *directaccesstoken.Filter) (int64, error) {
+func (m *MockRepository) Count(ctx context.Context, opts ...directaccesstoken.QOption) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Count", varargs...)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockRepositoryMockRecorder) Count(ctx, filter any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), ctx, filter)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), varargs...)
 }
 
 // FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, filter *directaccesstoken.Filter, order *directaccesstoken.ListOrder, page *directaccesstoken.Pagination) ([]*directaccesstoken.DirectAccessToken, error) {
+func (m *MockRepository) FetchList(ctx context.Context, opts ...directaccesstoken.QOption) ([]*directaccesstoken.DirectAccessToken, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchList", ctx, filter, order, page)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchList", varargs...)
 	ret0, _ := ret[0].([]*directaccesstoken.DirectAccessToken)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockRepositoryMockRecorder) FetchList(ctx, filter, order, page any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), ctx, filter, order, page)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), varargs...)
 }
 
 // Generate mocks base method.
@@ -118,15 +128,20 @@ func (mr *MockRepositoryMockRecorder) GetByToken(ctx, token any) *gomock.Call {
 }
 
 // Revoke mocks base method.
-func (m *MockRepository) Revoke(ctx context.Context, filter *directaccesstoken.Filter) error {
+func (m *MockRepository) Revoke(ctx context.Context, opts ...directaccesstoken.QOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Revoke", ctx, filter)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Revoke", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Revoke indicates an expected call of Revoke.
-func (mr *MockRepositoryMockRecorder) Revoke(ctx, filter any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Revoke(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockRepository)(nil).Revoke), ctx, filter)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockRepository)(nil).Revoke), varargs...)
 }

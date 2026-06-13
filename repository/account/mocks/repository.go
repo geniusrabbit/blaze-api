@@ -42,18 +42,23 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // Count mocks base method.
-func (m *MockRepository) Count(ctx context.Context, filter *account.Filter) (int64, error) {
+func (m *MockRepository) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Count", varargs...)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockRepositoryMockRecorder) Count(ctx, filter any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), ctx, filter)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), varargs...)
 }
 
 // Create mocks base method.
@@ -86,18 +91,23 @@ func (mr *MockRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 }
 
 // FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, filter *account.Filter, order *account.ListOrder, p *account.Pagination) ([]*account.Account, error) {
+func (m *MockRepository) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchList", ctx, filter, order, p)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchList", varargs...)
 	ret0, _ := ret[0].([]*account.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockRepositoryMockRecorder) FetchList(ctx, filter, order, p any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), ctx, filter, order, p)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), varargs...)
 }
 
 // Get mocks base method.
@@ -184,33 +194,43 @@ func (m *MockMemberRepository) EXPECT() *MockMemberRepositoryMockRecorder {
 }
 
 // CountMembers mocks base method.
-func (m *MockMemberRepository) CountMembers(ctx context.Context, filter *account.MemberFilter) (int64, error) {
+func (m *MockMemberRepository) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountMembers", ctx, filter)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CountMembers", varargs...)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountMembers indicates an expected call of CountMembers.
-func (mr *MockMemberRepositoryMockRecorder) CountMembers(ctx, filter any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder) CountMembers(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockMemberRepository)(nil).CountMembers), ctx, filter)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockMemberRepository)(nil).CountMembers), varargs...)
 }
 
 // FetchListMembers mocks base method.
-func (m *MockMemberRepository) FetchListMembers(ctx context.Context, filter *account.MemberFilter, order *account.MemberListOrder, p *account.Pagination) ([]*account.AccountMember, error) {
+func (m *MockMemberRepository) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*account.AccountMember, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchListMembers", ctx, filter, order, p)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchListMembers", varargs...)
 	ret0, _ := ret[0].([]*account.AccountMember)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchListMembers indicates an expected call of FetchListMembers.
-func (mr *MockMemberRepositoryMockRecorder) FetchListMembers(ctx, filter, order, p any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder) FetchListMembers(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockMemberRepository)(nil).FetchListMembers), ctx, filter, order, p)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockMemberRepository)(nil).FetchListMembers), varargs...)
 }
 
 // IsAdmin mocks base method.

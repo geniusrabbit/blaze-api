@@ -3,15 +3,15 @@ package option
 import (
 	"bytes"
 
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/repository"
-	"github.com/geniusrabbit/blaze-api/repository/option/models"
 	"gorm.io/gorm"
+
+	"github.com/geniusrabbit/blaze-api/repository"
+	optionModels "github.com/geniusrabbit/blaze-api/repository/option/models"
 )
 
 // Filter of the objects list
 type Filter struct {
-	Type        []model.OptionType
+	Type        []optionModels.OptionType
 	TargetID    []uint64
 	Name        []string
 	NamePattern []string
@@ -50,11 +50,11 @@ func (fl *Filter) PrepareQuery(q *gorm.DB) *gorm.DB {
 
 // ListOrder object with order values which is not NULL
 type ListOrder struct {
-	Name      models.Order
-	Type      models.Order
-	TargetID  models.Order
-	CreatedAt models.Order
-	UpdatedAt models.Order
+	Name      optionModels.Order
+	Type      optionModels.Order
+	TargetID  optionModels.Order
+	CreatedAt optionModels.Order
+	UpdatedAt optionModels.Order
 }
 
 // PrepareQuery returns the query with applied order

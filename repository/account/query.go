@@ -4,8 +4,9 @@ import (
 	"github.com/guregu/null"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 )
 
 // Filter of the objects list
@@ -13,7 +14,7 @@ type Filter struct {
 	ID     []uint64
 	UserID []uint64
 	Title  []string
-	Status []model.ApproveStatus
+	Status []pkgModels.ApproveStatus
 }
 
 func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -25,7 +26,7 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	}
 	if len(fl.UserID) > 0 {
 		query = query.Where(`id IN (SELECT account_id FROM `+
-			(*model.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, fl.UserID)
+			(*accountModels.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, fl.UserID)
 	}
 	if len(fl.Title) > 0 {
 		query = query.Where(`title IN (?)`, fl.Title)
@@ -38,11 +39,11 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 
 // ListOrder of the objects list
 type ListOrder struct {
-	ID        model.Order
-	Title     model.Order
-	Status    model.Order
-	CreatedAt model.Order
-	UpdatedAt model.Order
+	ID        pkgModels.Order
+	Title     pkgModels.Order
+	Status    pkgModels.Order
+	CreatedAt pkgModels.Order
+	UpdatedAt pkgModels.Order
 }
 
 func (ord *ListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -63,7 +64,7 @@ type MemberFilter struct {
 	AccountID []uint64
 	UserID    []uint64
 	NotUserID []uint64
-	Status    []model.ApproveStatus
+	Status    []pkgModels.ApproveStatus
 	IsAdmin   null.Bool
 }
 
@@ -94,13 +95,13 @@ func (fl *MemberFilter) PrepareQuery(query *gorm.DB) *gorm.DB {
 
 // MemberListOrder of the objects list
 type MemberListOrder struct {
-	ID        model.Order
-	AccountID model.Order
-	UserID    model.Order
-	Status    model.Order
-	IsAdmin   model.Order
-	CreatedAt model.Order
-	UpdatedAt model.Order
+	ID        pkgModels.Order
+	AccountID pkgModels.Order
+	UserID    pkgModels.Order
+	Status    pkgModels.Order
+	IsAdmin   pkgModels.Order
+	CreatedAt pkgModels.Order
+	UpdatedAt pkgModels.Order
 }
 
 func (ord *MemberListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -119,3 +120,10 @@ func (ord *MemberListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 
 // Pagination of the objects list
 type Pagination = repository.Pagination
+
+type (
+	// QOption is the query option interface
+	QOption = repository.QOption
+	// ListOptions is the list of query options
+	ListOptions = repository.ListOptions
+)

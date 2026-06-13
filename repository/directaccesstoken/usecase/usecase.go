@@ -9,7 +9,6 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
 )
@@ -37,27 +36,27 @@ func (u *Usecase) Get(ctx context.Context, id uint64) (*models.DirectAccessToken
 }
 
 // FetchList retrieves a filtered and paginated list of direct access tokens.
-func (u *Usecase) FetchList(ctx context.Context, filter *directaccesstoken.Filter, order *directaccesstoken.ListOrder, page *repository.Pagination) ([]*models.DirectAccessToken, error) {
+func (u *Usecase) FetchList(ctx context.Context, opts ...directaccesstoken.QOption) ([]*models.DirectAccessToken, error) {
 	if !acl.HaveAccessList(ctx, &models.DirectAccessToken{}) {
 		acc := session.Account(ctx)
 		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list access tokens")
 		}
-		filter.AccountID = []uint64{acc.ID}
+		opts = injectAccountFilter(opts, acc.ID)
 	}
-	return u.repo.FetchList(ctx, filter, order, page)
+	return u.repo.FetchList(ctx, opts...)
 }
 
 // Count returns the total count of direct access tokens matching the filter.
-func (u *Usecase) Count(ctx context.Context, filter *directaccesstoken.Filter) (int64, error) {
+func (u *Usecase) Count(ctx context.Context, opts ...directaccesstoken.QOption) (int64, error) {
 	if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{}) {
 		acc := session.Account(ctx)
 		if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
 			return 0, errors.Wrap(acl.ErrNoPermissions, "count access tokens")
 		}
-		filter.AccountID = []uint64{acc.ID}
+		opts = injectAccountFilter(opts, acc.ID)
 	}
-	return u.repo.Count(ctx, filter)
+	return u.repo.Count(ctx, opts...)
 }
 
 // Generate creates a new direct access token.
@@ -72,13 +71,24 @@ func (u *Usecase) Generate(ctx context.Context, userID, accountID uint64, descri
 }
 
 // Revoke revokes direct access tokens matching the filter criteria.
-func (u *Usecase) Revoke(ctx context.Context, filter *directaccesstoken.Filter) error {
+func (u *Usecase) Revoke(ctx context.Context, opts ...directaccesstoken.QOption) error {
 	if !acl.HaveAccessDelete(ctx, &models.DirectAccessToken{}) {
 		acc := session.Account(ctx)
 		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
 			return errors.Wrap(acl.ErrNoPermissions, "revoke access tokens")
 		}
-		filter.AccountID = []uint64{acc.ID}
+		opts = injectAccountFilter(opts, acc.ID)
 	}
-	return u.repo.Revoke(ctx, filter)
+	return u.repo.Revoke(ctx, opts...)
+}
+
+// injectAccountFilter finds or creates a *Filter in opts and sets its AccountID.
+func injectAccountFilter(opts []directaccesstoken.QOption, accountID uint64) []directaccesstoken.QOption {
+	for _, opt := range opts {
+		if f, ok := opt.(*directaccesstoken.Filter); ok {
+			f.AccountID = []uint64{accountID}
+			return opts
+		}
+	}
+	return append(opts, &directaccesstoken.Filter{AccountID: []uint64{accountID}})
 }

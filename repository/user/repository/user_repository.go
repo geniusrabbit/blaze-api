@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/models"
@@ -67,10 +67,10 @@ func (r *Repository) GetByPassword(ctx context.Context, email, password string) 
 }
 
 // FetchList of users by filter
-func (r *Repository) FetchList(ctx context.Context, opts ...user.QOption) ([]*model.User, error) {
+func (r *Repository) FetchList(ctx context.Context, opts ...user.QOption) ([]*models.User, error) {
 	var (
-		list  []*model.User
-		query = r.Slave(ctx).Model((*model.User)(nil))
+		list  []*models.User
+		query = r.Slave(ctx).Model((*models.User)(nil))
 	)
 	query = user.ListOptions(opts).PrepareQuery(query)
 	err := query.Find(&list).Error
@@ -84,7 +84,7 @@ func (r *Repository) FetchList(ctx context.Context, opts ...user.QOption) ([]*mo
 func (r *Repository) Count(ctx context.Context, opts ...user.QOption) (int64, error) {
 	var (
 		count int64
-		query = r.Slave(ctx).Model((*model.User)(nil))
+		query = r.Slave(ctx).Model((*models.User)(nil))
 	)
 	query = user.ListOptions(opts).PrepareQuery(query)
 	err := query.Count(&count).Error
@@ -141,7 +141,7 @@ func (r *Repository) Create(ctx context.Context, userObj *models.User, password 
 	}
 	userObj.CreatedAt = time.Now()
 	userObj.UpdatedAt = userObj.CreatedAt
-	userObj.Approve = model.UndefinedApproveStatus
+	userObj.Approve = pkgModels.UndefinedApproveStatus
 	err := r.Master(ctx).Create(userObj).Error
 	return userObj.ID, err
 }

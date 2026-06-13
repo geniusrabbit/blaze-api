@@ -1,68 +1,16 @@
 package model
 
-import (
-	"strings"
+import pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-)
+// Order type alias for pkg/models.Order
+type Order = pkgModels.Order
 
-type Order int8
-
+// Order constants
 const (
-	OrderUndefined Order = 0
-	OrderAsc       Order = 1
-	OrderDesc      Order = -1
+	OrderUndefined = pkgModels.OrderUndefined
+	OrderAsc       = pkgModels.OrderAsc
+	OrderDesc      = pkgModels.OrderDesc
 )
 
-// PrepareQuery returns the query with applied order
-func OrderFromStr(s string) Order {
-	switch s {
-	case "ASC", "asc", "+":
-		return OrderAsc
-	case "DESC", "desc", "-":
-		return OrderDesc
-	}
-	return OrderUndefined
-}
-
-// PrepareQuery returns the query with applied order
-func (ord *Order) PrepareQuery(q *gorm.DB, column string) *gorm.DB {
-	if ord == nil || *ord == 0 {
-		return q
-	}
-	return q.Order(clause.OrderByColumn{
-		Column: clause.Column{
-			Name: column,
-			Raw:  strings.ContainsAny(column, " \t\n\r()<>=!@#$%^&*|`~{}[]'\"+-*/\\"),
-		},
-		Desc: *ord == OrderDesc})
-}
-
-// Set sets the order value from string
-func (ord *Order) Set(s string) *Order {
-	switch s {
-	case "ASC", "asc", "+":
-		*ord = OrderAsc
-	case "DESC", "desc", "-":
-		*ord = OrderDesc
-	default:
-		*ord = 0
-	}
-	return ord
-}
-
-// IsDefined returns true if the order is defined
-func (ord *Order) IsDefined() bool {
-	return ord != nil && *ord != 0
-}
-
-// IsDesc returns true if the order is descending
-func (ord *Order) IsDesc() bool {
-	return ord != nil && *ord < 0
-}
-
-// IsAsc returns true if the order is ascending
-func (ord *Order) IsAsc() bool {
-	return ord != nil && *ord > 0
-}
+// OrderFromStr converts a string to an Order value
+var OrderFromStr = pkgModels.OrderFromStr

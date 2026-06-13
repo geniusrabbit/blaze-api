@@ -9,11 +9,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/mocks"
-	"github.com/geniusrabbit/blaze-api/repository/rbac/models"
+	rbacModels "github.com/geniusrabbit/blaze-api/repository/rbac/models"
 )
 
 type testSuite struct {
@@ -34,7 +33,7 @@ func (s *testSuite) SetupSuite() {
 
 func (s *testSuite) TestGet() {
 	s.roleRepo.EXPECT().Get(s.ctx, uint64(2)).
-		Return(&model.Role{ID: 2}, nil)
+		Return(&rbacModels.Role{ID: 2}, nil)
 
 	role, err := s.roleUsecase.Get(s.ctx, 2)
 	s.NoError(err)
@@ -44,7 +43,7 @@ func (s *testSuite) TestGet() {
 func (s *testSuite) TestGetByName() {
 	const name = "test"
 	s.roleRepo.EXPECT().GetByName(s.ctx, name).
-		Return(&model.Role{ID: 2, Name: name}, nil)
+		Return(&rbacModels.Role{ID: 2, Name: name}, nil)
 
 	role, err := s.roleUsecase.GetByName(s.ctx, name)
 	s.NoError(err)
@@ -64,7 +63,7 @@ func (s *testSuite) TestGetGetError() {
 func (s *testSuite) TestFetchList() {
 	s.roleRepo.EXPECT().
 		FetchList(s.ctx, gomock.AssignableToTypeOf(&rbac.Filter{}), nil, nil).
-		Return([]*model.Role{{ID: 1}, {ID: 2}}, nil)
+		Return([]*rbacModels.Role{{ID: 1}, {ID: 2}}, nil)
 
 	roles, err := s.roleUsecase.FetchList(s.ctx, &rbac.Filter{ID: []uint64{1, 2}}, nil, nil)
 	s.NoError(err)
@@ -83,10 +82,10 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.roleRepo.EXPECT().
-		Create(s.ctx, gomock.AssignableToTypeOf(&models.Role{}), "").
+		Create(s.ctx, gomock.AssignableToTypeOf(&rbacModels.Role{}), "").
 		Return(uint64(101), nil)
 
-	id, err := s.roleUsecase.Create(s.ctx, &models.Role{ID: 0, Title: "test1"}, "")
+	id, err := s.roleUsecase.Create(s.ctx, &rbacModels.Role{ID: 0, Title: "test1"}, "")
 	s.NoError(err)
 	s.Equal(id, uint64(101))
 }
@@ -94,17 +93,17 @@ func (s *testSuite) TestCreate() {
 func (s *testSuite) TestUpdate() {
 	s.roleRepo.EXPECT().
 		Update(gomock.AssignableToTypeOf(s.ctx),
-			uint64(101), gomock.AssignableToTypeOf(&models.Role{}), "").
+			uint64(101), gomock.AssignableToTypeOf(&rbacModels.Role{}), "").
 		Return(nil)
 
-	err := s.roleUsecase.Update(s.ctx, 101, &models.Role{Title: "test-test"}, "")
+	err := s.roleUsecase.Update(s.ctx, 101, &rbacModels.Role{Title: "test-test"}, "")
 	s.NoError(err)
 }
 
 func (s *testSuite) TestDelete() {
 	s.roleRepo.EXPECT().
 		Get(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
-		Return(&model.Role{ID: 1}, nil)
+		Return(&rbacModels.Role{ID: 1}, nil)
 	s.roleRepo.EXPECT().
 		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101)), "").
 		Return(nil)

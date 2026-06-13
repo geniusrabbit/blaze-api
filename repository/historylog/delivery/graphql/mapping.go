@@ -3,14 +3,14 @@ package graphql
 import (
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
-// FromHistoryAction converts a model.HistoryAction to a gqlmodels.HistoryAction.
-func FromHistoryAction(action *model.HistoryAction) *gqlmodels.HistoryAction {
+// FromHistoryAction converts a historylogModels.HistoryAction to a gqlmodels.HistoryAction.
+func FromHistoryAction(action *historylogModels.HistoryAction) *gqlmodels.HistoryAction {
 	if action == nil {
 		return nil
 	}
@@ -32,8 +32,8 @@ func FromHistoryAction(action *model.HistoryAction) *gqlmodels.HistoryAction {
 	}
 }
 
-// FromHistoryActionModelList converts a slice of model.HistoryAction to a slice of gqlmodels.HistoryAction.
-func FromHistoryActionModelList(list []*model.HistoryAction) []*gqlmodels.HistoryAction {
+// FromHistoryActionModelList converts a slice of historylogModels.HistoryAction to a slice of gqlmodels.HistoryAction.
+func FromHistoryActionModelList(list []*historylogModels.HistoryAction) []*gqlmodels.HistoryAction {
 	return xtypes.SliceApply(list, FromHistoryAction)
 }
 

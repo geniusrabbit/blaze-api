@@ -6,10 +6,10 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/account/models"
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
 	usergql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -45,8 +45,8 @@ func FromMemberModel(ctx context.Context, member *models.AccountMember) *gqlmode
 	}
 	return &gqlmodels.Member{
 		ID:        member.ID,
-		Account:   FromAccountModel(gocast.Or(member.Account, &model.Account{ID: member.AccountID})),
-		User:      usergql.FromUserModel(gocast.Or(member.User, &model.User{ID: member.UserID})),
+			Account:   FromAccountModel(gocast.Or(member.Account, &models.Account{ID: member.AccountID})),
+			User:      usergql.FromUserModel(gocast.Or(member.User, &userModels.User{ID: member.UserID})),
 		IsAdmin:   member.IsAdmin,
 		Status:    gqlmodels.ApproveStatusFrom(member.Approve),
 		Roles:     rbacgql.FromRBACRoleModelList(ctx, member.Roles),

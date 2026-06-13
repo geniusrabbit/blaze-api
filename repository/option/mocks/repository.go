@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	option "github.com/geniusrabbit/blaze-api/repository/option"
+	models "github.com/geniusrabbit/blaze-api/repository/option/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,22 +43,27 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // Count mocks base method.
-func (m *MockRepository) Count(ctx context.Context, filter *option.Filter) (int64, error) {
+func (m *MockRepository) Count(ctx context.Context, opts ...option.QOption) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Count", varargs...)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockRepositoryMockRecorder) Count(ctx, filter any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), ctx, filter)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), varargs...)
 }
 
 // Delete mocks base method.
-func (m *MockRepository) Delete(ctx context.Context, name string, otype option.OptionType, targetID uint64) error {
+func (m *MockRepository) Delete(ctx context.Context, name string, otype models.OptionType, targetID uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, name, otype, targetID)
 	ret0, _ := ret[0].(error)
@@ -71,25 +77,30 @@ func (mr *MockRepositoryMockRecorder) Delete(ctx, name, otype, targetID any) *go
 }
 
 // FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *option.Pagination) ([]*option.Option, error) {
+func (m *MockRepository) FetchList(ctx context.Context, opts ...option.QOption) ([]*models.Option, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchList", ctx, filter, order, pagination)
-	ret0, _ := ret[0].([]*option.Option)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchList", varargs...)
+	ret0, _ := ret[0].([]*models.Option)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockRepositoryMockRecorder) FetchList(ctx, filter, order, pagination any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), ctx, filter, order, pagination)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), varargs...)
 }
 
 // Get mocks base method.
-func (m *MockRepository) Get(ctx context.Context, name string, otype option.OptionType, targetID uint64) (*option.Option, error) {
+func (m *MockRepository) Get(ctx context.Context, name string, otype models.OptionType, targetID uint64) (*models.Option, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, name, otype, targetID)
-	ret0, _ := ret[0].(*option.Option)
+	ret0, _ := ret[0].(*models.Option)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -101,7 +112,7 @@ func (mr *MockRepositoryMockRecorder) Get(ctx, name, otype, targetID any) *gomoc
 }
 
 // Set mocks base method.
-func (m *MockRepository) Set(ctx context.Context, opt *option.Option) error {
+func (m *MockRepository) Set(ctx context.Context, opt *models.Option) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", ctx, opt)
 	ret0, _ := ret[0].(error)

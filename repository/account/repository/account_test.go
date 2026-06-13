@@ -7,8 +7,9 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
@@ -37,18 +38,18 @@ func (s *testSuite) TestGet() {
 }
 
 func (s *testSuite) TestLoadPermissions() {
-	s.Mock.ExpectQuery(`SELECT \* FROM "?`+(*model.AccountMember)(nil).TableName()).
+	s.Mock.ExpectQuery(`SELECT \* FROM "?`+(*accountModels.AccountMember)(nil).TableName()).
 		WithArgs(uint64(1), uint64(1)).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "account_id", "user_id", "is_admin", "created_at"}).
 				AddRow(1, 1, 1, 1, true, time.Now()),
 		)
-	s.Mock.ExpectQuery(`SELECT role_id FROM "?` + (*model.M2MAccountMemberRole)(nil).TableName()).
+	s.Mock.ExpectQuery(`SELECT role_id FROM "?` + (*accountModels.M2MAccountMemberRole)(nil).TableName()).
 		WithArgs(uint64(1)).
 		WillReturnRows(sqlmock.NewRows([]string{"role_id"}))
 
-	account := &account.Account{ID: 1, Approve: model.ApprovedApproveStatus}
-	user := &user.User{ID: 1, Approve: model.ApprovedApproveStatus}
+	account := &account.Account{ID: 1, Approve: pkgModels.ApprovedApproveStatus}
+	user := &user.User{ID: 1, Approve: pkgModels.ApprovedApproveStatus}
 	err := s.accountRepo.LoadPermissions(s.Ctx, account, user)
 	s.NoError(err)
 	s.NotNil(account.Permissions)
@@ -63,7 +64,7 @@ func (s *testSuite) TestFetchList() {
 				AddRow(2, 1, "title2", "description2", time.Now()),
 		)
 	accounts, err := s.accountRepo.FetchList(s.Ctx, &account.Filter{
-		UserID: []uint64{1}, ID: []uint64{1, 2}}, nil, nil)
+		UserID: []uint64{1}, ID: []uint64{1, 2}})
 	s.NoError(err)
 	s.Equal(2, len(accounts))
 }
@@ -87,7 +88,7 @@ func (s *testSuite) TestCreate() {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	id, err := s.accountRepo.Create(
 		s.Ctx,
-		&model.Account{
+		&accountModels.Account{
 			ID:    101,
 			Title: "test",
 		})
@@ -101,7 +102,7 @@ func (s *testSuite) TestUpdate() {
 		WillReturnResult(sqlmock.NewResult(101, 1))
 	err := s.accountRepo.Update(
 		s.Ctx,
-		101, &model.Account{Title: "test"})
+		101, &accountModels.Account{Title: "test"})
 	s.NoError(err)
 }
 

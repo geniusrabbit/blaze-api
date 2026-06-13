@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	repository "github.com/geniusrabbit/blaze-api/repository"
 	option "github.com/geniusrabbit/blaze-api/repository/option"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -43,18 +42,23 @@ func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder {
 }
 
 // Count mocks base method.
-func (m *MockUsecase) Count(ctx context.Context, filter *option.Filter) (int64, error) {
+func (m *MockUsecase) Count(ctx context.Context, opts ...option.QOption) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Count", varargs...)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockUsecaseMockRecorder) Count(ctx, filter any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), ctx, filter)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), varargs...)
 }
 
 // Delete mocks base method.
@@ -72,18 +76,23 @@ func (mr *MockUsecaseMockRecorder) Delete(ctx, name, otype, targetID any) *gomoc
 }
 
 // FetchList mocks base method.
-func (m *MockUsecase) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *repository.Pagination) ([]*option.Option, error) {
+func (m *MockUsecase) FetchList(ctx context.Context, opts ...option.QOption) ([]*option.Option, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchList", ctx, filter, order, pagination)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchList", varargs...)
 	ret0, _ := ret[0].([]*option.Option)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockUsecaseMockRecorder) FetchList(ctx, filter, order, pagination any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), ctx, filter, order, pagination)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), varargs...)
 }
 
 // Get mocks base method.

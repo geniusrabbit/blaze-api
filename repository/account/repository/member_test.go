@@ -7,9 +7,11 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 type testMemberSuite struct {
@@ -51,7 +53,7 @@ func (s *testMemberSuite) TestFetchListMembers() {
 				AddRow(101, 1, "mail@", time.Now()).
 				AddRow(102, 1, "mail@", time.Now()),
 		)
-	members, err := s.memberRepo.FetchListMembers(s.Ctx, nil, nil, nil)
+	members, err := s.memberRepo.FetchListMembers(s.Ctx)
 	s.NoError(err)
 	s.Equal(2, len(members))
 }
@@ -61,8 +63,8 @@ func (s *testMemberSuite) TestIsMember() {
 	s.Mock.ExpectQuery("SELECT").
 		WithArgs(uint64(202), uint64(101)).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(uint64(1)))
-	account := &model.Account{ID: 202}
-	user := &model.User{ID: 101}
+	account := &accountModels.Account{ID: 202}
+	user := &userModels.User{ID: 101}
 	ok := s.memberRepo.IsMember(ctx, user.ID, account.ID)
 	s.True(ok)
 }
@@ -72,8 +74,8 @@ func (s *testMemberSuite) TestIsAdmin() {
 	s.Mock.ExpectQuery("SELECT").
 		WithArgs(uint64(202), uint64(101)).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "is_admin"}).AddRow(uint64(1), true))
-	account := &model.Account{ID: 202}
-	user := &model.User{ID: 101}
+	account := &accountModels.Account{ID: 202}
+	user := &userModels.User{ID: 101}
 	ok := s.memberRepo.IsAdmin(ctx, user.ID, account.ID)
 	s.True(ok)
 }
@@ -82,15 +84,15 @@ func (s *testMemberSuite) TestLinkMember() {
 	s.Mock.ExpectBegin()
 	// stmt := s.Mock.ExpectPrepare("INSERT INTO")
 	s.Mock.ExpectQuery("INSERT INTO").
-		WithArgs(model.ApprovedApproveStatus, uint64(101), uint64(101), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(pkgModels.ApprovedApproveStatus, uint64(101), uint64(101), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
 	s.Mock.ExpectQuery("INSERT INTO").
-		WithArgs(model.ApprovedApproveStatus, uint64(101), uint64(102), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(pkgModels.ApprovedApproveStatus, uint64(101), uint64(102), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(102))
 	s.Mock.ExpectCommit()
 
-	account := &model.Account{ID: 101, Title: "test"}
-	users := []*model.User{{ID: 101}, {ID: 102}}
+	account := &accountModels.Account{ID: 101, Title: "test"}
+	users := []*userModels.User{{ID: 101}, {ID: 102}}
 	err := s.memberRepo.LinkMember(s.Ctx, account, true, users...)
 	s.NoError(err)
 }
@@ -100,8 +102,8 @@ func (s *testMemberSuite) TestUnlinkMember() {
 	s.Mock.ExpectExec("UPDATE").
 		WithArgs(sqlmock.AnyArg(), uint64(101), uint64(102)).
 		WillReturnResult(sqlmock.NewResult(101, 2))
-	account := &model.Account{ID: 101, Title: "test"}
-	users := []*model.User{{ID: 101}, {ID: 102}}
+	account := &accountModels.Account{ID: 101, Title: "test"}
+	users := []*userModels.User{{ID: 101}, {ID: 102}}
 	err := s.memberRepo.UnlinkMember(ctx, account, users...)
 	s.NoError(err)
 }

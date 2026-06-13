@@ -5,10 +5,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/tokenextractor"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	accountRepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 // DirectTokenAuthorizer implements authorization using direct token authentication.
@@ -30,7 +31,7 @@ func (au *DirectTokenAuthorizer) AuthorizerCode() string {
 
 // Authorize validates the request by extracting and verifying the token,
 // then retrieves the associated user and account information.
-func (au *DirectTokenAuthorizer) Authorize(w http.ResponseWriter, r *http.Request) (string, *model.User, *model.Account, error) {
+func (au *DirectTokenAuthorizer) Authorize(w http.ResponseWriter, r *http.Request) (string, *userModels.User, *accountModels.Account, error) {
 	ctx := r.Context()
 
 	// Extract token from the request

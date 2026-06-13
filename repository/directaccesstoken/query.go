@@ -5,7 +5,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 )
@@ -51,12 +50,12 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 
 // ListOrder defines sort order for query results
 type ListOrder struct {
-	ID        model.Order // Sort by ID
-	Token     model.Order // Sort by token
-	UserID    model.Order // Sort by user ID
-	AccountID model.Order // Sort by account ID
-	CreatedAt model.Order // Sort by creation time
-	ExpiresAt model.Order // Sort by expiration time
+	ID        models.Order // Sort by ID
+	Token     models.Order // Sort by token
+	UserID    models.Order // Sort by user ID
+	AccountID models.Order // Sort by account ID
+	CreatedAt models.Order // Sort by creation time
+	ExpiresAt models.Order // Sort by expiration time
 }
 
 // PrepareQuery applies sort order to a GORM query
@@ -75,3 +74,9 @@ func (ord *ListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 
 // Pagination is an alias for repository.Pagination
 type Pagination = repository.Pagination
+
+// Type aliases for list options.
+type (
+	QOption     = repository.QOption
+	ListOptions = repository.ListOptions
+)

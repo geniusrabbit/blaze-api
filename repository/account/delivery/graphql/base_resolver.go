@@ -7,16 +7,17 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/messanger"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	usergql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -86,15 +87,15 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 	}
 
 	var (
-		userObj = input.Owner.Model(model.UndefinedApproveStatus)
-		accObj  = input.Account.Model(model.UndefinedApproveStatus)
+		userObj = input.Owner.Model(pkgModels.UndefinedApproveStatus)
+		accObj  = input.Account.Model(pkgModels.UndefinedApproveStatus)
 	)
 
 	if input.OwnerID != nil && *input.OwnerID > 0 {
 		if userObj != nil {
 			userObj.ID = *input.OwnerID
 		} else {
-			userObj = &model.User{ID: *input.OwnerID}
+				userObj = &userModels.User{ID: *input.OwnerID}
 		}
 	}
 
@@ -153,15 +154,15 @@ func (r *QueryResolver) createUpdateAccount(ctx context.Context, id uint64, inpu
 
 // ApproveAccount is the resolver for the approveAccount field.
 func (r *QueryResolver) ApproveAccount(ctx context.Context, id uint64, msg string) (*gqlmodels.AccountPayload, error) {
-	return r.updateApproveStatus(ctx, id, model.ApprovedApproveStatus, msg)
+	return r.updateApproveStatus(ctx, id, pkgModels.ApprovedApproveStatus, msg)
 }
 
 // RejectAccount is the resolver for the rejectAccount field.
 func (r *QueryResolver) RejectAccount(ctx context.Context, id uint64, msg string) (*gqlmodels.AccountPayload, error) {
-	return r.updateApproveStatus(ctx, id, model.DisapprovedApproveStatus, msg)
+	return r.updateApproveStatus(ctx, id, pkgModels.DisapprovedApproveStatus, msg)
 }
 
-func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, status model.ApproveStatus, msg string) (*gqlmodels.AccountPayload, error) {
+func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg string) (*gqlmodels.AccountPayload, error) {
 	acc, err := r.accounts.Get(ctx, id)
 	if err != nil {
 		return nil, err

@@ -16,14 +16,14 @@ type Repository interface {
 	GetByToken(ctx context.Context, token string) (*DirectAccessToken, error)
 
 	// FetchList retrieves a paginated list of direct access tokens matching the filter and order criteria.
-	FetchList(ctx context.Context, filter *Filter, order *ListOrder, page *Pagination) ([]*DirectAccessToken, error)
+	FetchList(ctx context.Context, opts ...QOption) ([]*DirectAccessToken, error)
 
 	// Count returns the total count of direct access tokens matching the filter criteria.
-	Count(ctx context.Context, filter *Filter) (int64, error)
+	Count(ctx context.Context, opts ...QOption) (int64, error)
 
 	// Generate creates and stores a new direct access token for the specified user and account.
 	Generate(ctx context.Context, userID, accountID uint64, description string, expiresAt time.Time) (*DirectAccessToken, error)
 
 	// Revoke invalidates direct access tokens matching the filter criteria.
-	Revoke(ctx context.Context, filter *Filter) error
+	Revoke(ctx context.Context, opts ...QOption) error
 }

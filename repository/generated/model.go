@@ -3,7 +3,7 @@ package generated
 import (
 	"time"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 )
 
 // ModelIDGetter defines an interface for models that can return their ID
@@ -87,13 +87,13 @@ func setModelUpdatedAt(obj any, t time.Time) {
 
 // ModelApproveStatusSetter defines an interface for models that can set their approval status
 type ModelApproveStatusSetter interface {
-	SetApproveStatus(status model.ApproveStatus)
+	SetApproveStatus(status pkgModels.ApproveStatus)
 }
 
 // setModelApproveStatus sets the approval status on a model that implements ModelApproveStatusSetter
 //
 //go:inline
-func setModelApproveStatus(obj any, status model.ApproveStatus) {
+func setModelApproveStatus(obj any, status pkgModels.ApproveStatus) {
 	switch v := obj.(type) {
 	case ModelApproveStatusSetter:
 		v.SetApproveStatus(status)

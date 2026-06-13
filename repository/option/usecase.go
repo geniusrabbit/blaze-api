@@ -2,8 +2,6 @@ package option
 
 import (
 	"context"
-
-	"github.com/geniusrabbit/blaze-api/repository"
 )
 
 // Usecase defines operations for managing options in the system.
@@ -14,10 +12,10 @@ type Usecase interface {
 	Get(ctx context.Context, name string, otype OptionType, targetID uint64) (*Option, error)
 
 	// FetchList retrieves a list of options filtered, ordered, and paginated according to the parameters.
-	FetchList(ctx context.Context, filter *Filter, order *ListOrder, pagination *repository.Pagination) ([]*Option, error)
+	FetchList(ctx context.Context, opts ...QOption) ([]*Option, error)
 
 	// Count returns the total number of options matching the filter criteria.
-	Count(ctx context.Context, filter *Filter) (int64, error)
+	Count(ctx context.Context, opts ...QOption) (int64, error)
 
 	// Set stores or updates an option.
 	Set(ctx context.Context, opt *Option) error

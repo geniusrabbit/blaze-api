@@ -43,12 +43,10 @@ func (r *Repository) GetByToken(ctx context.Context, token string) (*models.Dire
 }
 
 // FetchList retrieves a paginated list of direct access tokens with optional filtering and ordering.
-func (r *Repository) FetchList(ctx context.Context, filter *directaccesstoken.Filter, order *directaccesstoken.ListOrder, page *repository.Pagination) ([]*models.DirectAccessToken, error) {
+func (r *Repository) FetchList(ctx context.Context, opts ...directaccesstoken.QOption) ([]*models.DirectAccessToken, error) {
 	objects := make([]*models.DirectAccessToken, 0)
 	query := r.Slave(ctx).Model(&models.DirectAccessToken{})
-	query = filter.PrepareQuery(query)
-	query = order.PrepareQuery(query)
-	query = page.PrepareQuery(query)
+	query = directaccesstoken.ListOptions(opts).PrepareQuery(query)
 	err := query.Find(&objects).Error
 	if err != nil {
 		return nil, err
@@ -57,10 +55,10 @@ func (r *Repository) FetchList(ctx context.Context, filter *directaccesstoken.Fi
 }
 
 // Count returns the total number of direct access tokens matching the filter criteria.
-func (r *Repository) Count(ctx context.Context, filter *directaccesstoken.Filter) (int64, error) {
+func (r *Repository) Count(ctx context.Context, opts ...directaccesstoken.QOption) (int64, error) {
 	var count int64
 	query := r.Slave(ctx).Model(&models.DirectAccessToken{})
-	query = filter.PrepareQuery(query)
+	query = directaccesstoken.ListOptions(opts).PrepareQuery(query)
 	err := query.Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -92,8 +90,8 @@ func (r *Repository) Generate(ctx context.Context, userID, accountID uint64, des
 }
 
 // Revoke invalidates direct access tokens by setting their expiration to the past.
-func (r *Repository) Revoke(ctx context.Context, filter *directaccesstoken.Filter) error {
+func (r *Repository) Revoke(ctx context.Context, opts ...directaccesstoken.QOption) error {
 	query := r.Master(ctx).Model(&models.DirectAccessToken{})
-	query = filter.PrepareQuery(query)
+	query = directaccesstoken.ListOptions(opts).PrepareQuery(query)
 	return query.UpdateColumn("expires_at", time.Now().Add(-time.Hour)).Error
 }

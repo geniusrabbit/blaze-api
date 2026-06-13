@@ -12,11 +12,11 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 )
 
 // Register gorm callbacks for history log
@@ -87,7 +87,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 		}
 
 		// Create history log
-		err := db.Create(&model.HistoryAction{
+		err := db.Create(&historylogModels.HistoryAction{
 			ID:         uuid.New(),
 			RequestID:  requestid.Get(ctx),
 			Name:       gocast.Or(historylog.ActionFromContext(ctx), name),
