@@ -9,61 +9,71 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount/usecase"
-	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
-// QueryResolver for the social account
+// QueryResolver handles GraphQL queries for social accounts.
 type QueryResolver struct {
-	accsounts socialaccount.Usecase
+	accounts socialaccount.Usecase
 }
 
-// NewQueryResolver creates a new instance of the QueryResolver
+// NewQueryResolver creates a new QueryResolver instance.
 func NewQueryResolver() *QueryResolver {
 	return &QueryResolver{
-		accsounts: usecase.New(
-			repository.New(),
+		accounts: usecase.NewSocaccUsecase(
+			repository.NewSocaccRepository(),
 		),
 	}
 }
 
-// Get Social Account by ID
-func (r *QueryResolver) Get(ctx context.Context, id uint64) (*models.SocialAccountPayload, error) {
-	obj, err := r.accsounts.Get(ctx, id)
+// Get retrieves a social account by ID.
+func (r *QueryResolver) Get(ctx context.Context, id uint64) (*gqlmodels.SocialAccountPayload, error) {
+	obj, err := r.accounts.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &models.SocialAccountPayload{
+	return &gqlmodels.SocialAccountPayload{
 		ClientMutationID: requestid.Get(ctx),
-		SocialAccountID:  obj.ID,
-		SocialAccount:    models.FromSocialAccountModel(obj),
+		SocialAccountID:  id,
+		SocialAccount:    FromSocialAccountModel(obj),
 	}, nil
 }
 
-// Current Social Accounts list
-func (r *QueryResolver) ListCurrent(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.SocialAccountConnection, error) {
+// ListCurrent returns social accounts for the current authenticated user.
+func (r *QueryResolver) ListCurrent(
+	ctx context.Context,
+	filter *gqlmodels.SocialAccountListFilter,
+	order *gqlmodels.SocialAccountListOrder,
+) (*SocialAccountConnection, error) {
 	if filter == nil {
-		filter = &models.SocialAccountListFilter{}
+		filter = &gqlmodels.SocialAccountListFilter{}
 	}
 	if len(filter.UserID) > 1 || (len(filter.UserID) == 1 && filter.UserID[0] != session.User(ctx).ID) {
 		return nil, fmt.Errorf("filter by user id is not allowed for current user")
 	}
 	filter.UserID = append(filter.UserID[:0], session.User(ctx).ID)
-	return connectors.NewSocialAccountConnection(ctx, r.accsounts, filter, order, nil), nil
+	return NewSocialAccountConnection(ctx, r.accounts, filter, order, nil), nil
 }
 
-// List Social Accounts
-func (r *QueryResolver) List(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
-	return connectors.NewSocialAccountConnection(ctx, r.accsounts, filter, order, page), nil
+// List returns paginated social accounts with optional filtering and ordering.
+func (r *QueryResolver) List(
+	ctx context.Context,
+	filter *gqlmodels.SocialAccountListFilter,
+	order *gqlmodels.SocialAccountListOrder,
+	page *gqlmodels.Page,
+) (*SocialAccountConnection, error) {
+	return NewSocialAccountConnection(ctx, r.accounts, filter, order, page), nil
 }
 
-// Disconnect Social Account
-func (r *QueryResolver) Disconnect(ctx context.Context, socialAccountID uint64) (*models.SocialAccountPayload, error) {
-	obj, err := r.accsounts.Disconnect(ctx, socialAccountID)
+// Disconnect removes a social account association.
+func (r *QueryResolver) Disconnect(ctx context.Context, socialAccountID uint64) (*gqlmodels.SocialAccountPayload, error) {
+	obj, err := r.accounts.Disconnect(ctx, socialAccountID)
 	if err != nil {
 		return nil, err
 	}
-	return &models.SocialAccountPayload{
-		SocialAccount: models.FromSocialAccountModel(obj),
+	return &gqlmodels.SocialAccountPayload{
+		ClientMutationID: requestid.Get(ctx),
+		SocialAccountID:  socialAccountID,
+		SocialAccount:    FromSocialAccountModel(obj),
 	}, nil
 }

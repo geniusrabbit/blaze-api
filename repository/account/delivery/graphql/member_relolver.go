@@ -9,49 +9,61 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
-	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 type MemberQueryResolver struct {
 	accounts account.Usecase
+	members  account.MemberUsecase
 }
 
 func NewMemberQueryResolver() *MemberQueryResolver {
+	userRepo := userrepo.NewUserRepository()
+	accountRepo := repository.NewAccountRepository()
+	memberRepo := repository.NewMemberRepository()
 	return &MemberQueryResolver{
-		accounts: usecase.NewAccountUsecase(userrepo.New(), repository.New()),
+		accounts: usecase.NewAccountUsecase(
+			userRepo,
+			accountRepo,
+			memberRepo,
+		),
+		members: usecase.NewMemberUsecase(
+			userRepo,
+			accountRepo,
+			memberRepo,
+		),
 	}
 }
 
 // Invite is the resolver for the inviteAccountMember field.
 func (r *MemberQueryResolver) Invite(ctx context.Context, accountID uint64, member models.InviteMemberInput) (*models.MemberPayload, error) {
-	accountMember, err := r.accounts.InviteMember(ctx, accountID, member.Email, member.AllRoles()...)
+	accountMember, err := r.members.InviteMember(ctx, accountID, member.Email, member.AllRoles()...)
 	if err != nil {
 		return nil, err
 	}
 	return &models.MemberPayload{
 		ClientMutationID: requestid.Get(ctx),
 		MemberID:         accountID,
-		Member:           models.FromMemberModel(ctx, accountMember),
+		Member:           FromMemberModel(ctx, accountMember),
 	}, nil
 }
 
 // Update is the resolver for the updateAccountMember field.
 func (r *MemberQueryResolver) Update(ctx context.Context, memberID uint64, member models.MemberInput) (*models.MemberPayload, error) {
-	accountMember, err := r.accounts.SetMemberRoles(ctx, memberID, member.AllRoles()...)
+	accountMember, err := r.members.SetMemberRoles(ctx, memberID, member.AllRoles()...)
 	if err != nil {
 		return nil, err
 	}
 	return &models.MemberPayload{
 		ClientMutationID: requestid.Get(ctx),
 		MemberID:         memberID,
-		Member:           models.FromMemberModel(ctx, accountMember),
+		Member:           FromMemberModel(ctx, accountMember),
 	}, nil
 }
 
 // Remove is the resolver for the removeAccountMember field.
 func (r *MemberQueryResolver) Remove(ctx context.Context, memberID uint64) (*models.MemberPayload, error) {
-	err := r.accounts.UnlinkAccountMember(ctx, memberID)
+	err := r.members.UnlinkAccountMember(ctx, memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +84,6 @@ func (r *MemberQueryResolver) Reject(ctx context.Context, memberID uint64, msg s
 }
 
 // List is the resolver for the listMembers field.
-func (r *MemberQueryResolver) List(ctx context.Context, filter *models.MemberListFilter, order *models.MemberListOrder, page *models.Page) (*connectors.MemberConnection, error) {
-	return connectors.NewMemberConnection(ctx, r.accounts, filter, order, page), nil
+func (r *MemberQueryResolver) List(ctx context.Context, filter *models.MemberListFilter, order *models.MemberListOrder, page *models.Page) (*MemberConnection, error) {
+	return NewMemberConnection(ctx, r.members, filter, order, page), nil
 }

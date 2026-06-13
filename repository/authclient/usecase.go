@@ -2,18 +2,27 @@ package authclient
 
 import (
 	"context"
-
-	"github.com/geniusrabbit/blaze-api/model"
 )
 
-// Usecase of the AuthAclient
+// Usecase defines the business logic operations for AuthClient management.
 //
 //go:generate mockgen -source $GOFILE -package mocks -destination mocks/usecase.go
 type Usecase interface {
-	Get(ctx context.Context, id string) (*model.AuthClient, error)
-	FetchList(ctx context.Context, filter *Filter) ([]*model.AuthClient, error)
-	Count(ctx context.Context, filter *Filter) (int64, error)
-	Create(ctx context.Context, authClient *model.AuthClient) (string, error)
-	Update(ctx context.Context, id string, authClient *model.AuthClient) error
-	Delete(ctx context.Context, id string) error
+	// Get retrieves a single AuthClient by ID.
+	Get(ctx context.Context, id string) (*AuthClient, error)
+
+	// FetchList retrieves multiple AuthClients with optional query parameters.
+	FetchList(ctx context.Context, opts ...QOption) ([]*AuthClient, error)
+
+	// Count returns the total number of AuthClients matching the query options.
+	Count(ctx context.Context, opts ...QOption) (int64, error)
+
+	// Create adds a new AuthClient and records the change message.
+	Create(ctx context.Context, authClient *AuthClient, message string) (string, error)
+
+	// Update modifies an existing AuthClient by ID with a change message.
+	Update(ctx context.Context, id string, authClient *AuthClient, message string) error
+
+	// Delete removes an AuthClient by ID with a change message.
+	Delete(ctx context.Context, id, message string) error
 }

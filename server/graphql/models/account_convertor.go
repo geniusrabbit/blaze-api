@@ -76,9 +76,9 @@ func (ord *AccountListOrder) Order() *account.ListOrder {
 	}
 	return &account.ListOrder{
 		// UserID:    ord.UserID.AsOrder(),
-		ID:     ord.ID.AsOrder(),
-		Title:  ord.Title.AsOrder(),
-		Status: ord.Status.AsOrder(),
+		ID:     model.Order(ord.ID.AsOrder()),
+		Title:  model.Order(ord.Title.AsOrder()),
+		Status: model.Order(ord.Status.AsOrder()),
 		// CreatedAt: ord.CreatedAt.AsOrder(),
 		// UpdatedAt: ord.UpdatedAt.AsOrder(),
 	}

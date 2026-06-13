@@ -12,61 +12,66 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/utils"
 )
 
-// DataExtractor provides a function to extract user data from oauth2 token
+// DataExtractor extracts user data from an OAuth2 token.
 type DataExtractor func(ctx context.Context, token *oauth2.Token, oauth2conf *oauth2.Config) (*elogin.UserData, error)
 
-// Config provides a configuration for oauth2 authentication
+// Config holds the OAuth2 authentication configuration.
 type Config struct {
-	ProviderName string
-	OAuth2       *oauth2.Config
-	Extractor    DataExtractor
-	StateCode    string
+	ProviderName string         // Name of the OAuth2 provider
+	OAuth2       *oauth2.Config // OAuth2 configuration
+	Extractor    DataExtractor  // Function to extract user data from token
+	StateCode    string         // State code for CSRF protection
 }
 
-// Protocol returns the protocol name
+// Protocol returns the authentication protocol name.
 func (c *Config) Protocol() string {
 	return "oauth2"
 }
 
-// Provider returns the provider name
+// Provider returns the OAuth2 provider name.
 func (c *Config) Provider() string {
 	return c.ProviderName
 }
 
-// LoginURL returns the login url
+// LoginURL generates the OAuth2 login URL with the provided parameters.
 func (c *Config) LoginURL(params []elogin.URLParam) string {
 	state := utils.NewState(utils.Param{Key: "sc", Value: c.StateCode})
-	// reauthorize - always has for permissions
-	// rerequest - for declined/revoked permissions
-	// reauthenticate - always as user to confirm password
+
+	// OAuth2 auth type options:
+	// - rerequest: for declined/revoked permissions
+	// - reauthorize: always requires permissions
+	// - reauthenticate: always confirms password
 	opts := make([]oauth2.AuthCodeOption, 0, 2)
 	opts = append(opts, oauth2.SetAuthURLParam("auth_type", "rerequest"))
+
+	// Process additional parameters
 	for _, param := range params {
 		if param.Key == "scope" {
 			opts = append(opts, oauth2.SetAuthURLParam("scope", param.Value))
 		}
 		state = state.Extend(param.Key, param.Value)
 	}
+
 	return c.OAuth2.AuthCodeURL(state.Encode(), opts...)
 }
 
-// OAuth2Config returns the oauth2 configuration
+// OAuth2Config returns the underlying OAuth2 configuration.
 func (c *Config) OAuth2Config() *oauth2.Config {
 	return c.OAuth2
 }
 
-// UserData returns the user data from the oauth2 token
+// UserData exchanges the authorization code for a token and extracts user data.
 func (c *Config) UserData(ctx context.Context, values url.Values, params []elogin.URLParam) (*elogin.Token, *elogin.UserData, error) {
 	code := values.Get("code")
 	state := utils.DecodeState(values.Get("state"))
 	scopes := c.OAuth2.Scopes
 
-	// Check state code if it is set
+	// Validate state code if configured
 	if c.StateCode != "" && c.StateCode != state.Get("sc") {
 		return nil, nil, elogin.ErrInvalidState
 	}
 
-	// Extract scopes from the params
+	// Extract scopes from parameters
 	for _, param := range params {
 		if param.Key == "scope" {
 			scopes = xtypes.Slice[string](strings.Split(strings.ReplaceAll(param.Value, " ", ","), ",")).
@@ -77,12 +82,13 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 		}
 	}
 
-	// Exchange code for token
-	oa2token, err := c.OAuth2.Exchange(ctx, code) //, opts...)
+	// Exchange authorization code for access token
+	oa2token, err := c.OAuth2.Exchange(ctx, code)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Create token object
 	token := &elogin.Token{
 		TokenType:    oa2token.TokenType,
 		AccessToken:  oa2token.AccessToken,
@@ -90,11 +96,13 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 		ExpiresAt:    oa2token.Expiry,
 		Scopes:       scopes,
 	}
+
+	// If no extractor is configured, return token only
 	if c.Extractor == nil {
 		return token, nil, nil
 	}
 
-	// Extract user data if extractor is set
+	// Extract user data using the configured extractor
 	data, err := c.Extractor(ctx, oa2token.WithExtra(map[string]any{"scope": scopes, "newToken": token}), c.OAuth2)
 	if err != nil {
 		return nil, nil, err

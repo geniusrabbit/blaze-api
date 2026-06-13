@@ -7,11 +7,12 @@ import (
 	"github.com/ory/fosite"
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2/serverprovider"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/tokenextractor"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
-	userRepository "github.com/geniusrabbit/blaze-api/repository/user/repository"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
+	accountRepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 var (
@@ -32,13 +33,13 @@ func (au *Authorizer) AuthorizerCode() string {
 	return "oauth2"
 }
 
-func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (string, *model.User, *model.Account, error) {
+func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (string, *userModels.User, *accountModels.Account, error) {
 	var (
-		userObj    *model.User
-		accountObj *model.Account
+		userObj    *userModels.User
+		accountObj *accountModels.Account
 		ctx        = r.Context()
 		token, err = tokenextractor.DefaultExtractor(r)
-		users      = userRepository.New()
+		accounts   = accountRepo.NewAccountRepository()
 	)
 	if err != nil {
 		ctxlogger.Get(r.Context()).Error("token extraction", zap.Error(err))
@@ -59,7 +60,7 @@ func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (string,
 		return "", nil, nil, errAccessTokensOnlyAllows
 	}
 	session := accessReq.GetSession().(*serverprovider.Session)
-	userObj, accountObj, err = users.GetByToken(ctx, session.AccessToken)
+	userObj, accountObj, err = accounts.GetByToken(ctx, session.AccessToken)
 
 	return token, userObj, accountObj, err
 }

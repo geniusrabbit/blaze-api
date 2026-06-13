@@ -1,4 +1,4 @@
-// Package usecase account implementation
+// Package usecase provides business logic for option management
 package usecase
 
 import (
@@ -6,32 +6,32 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/option"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 )
 
-// Usecase provides bussiness logic for account access
+// Usecase implements business logic for option access and management
 type Usecase struct {
 	baseRepo option.Repository
 }
 
-// NewUsecase object controller
+// NewUsecase creates and returns a new Usecase instance
 func NewUsecase(repo option.Repository) *Usecase {
 	return &Usecase{
 		baseRepo: repo,
 	}
 }
 
-// Get returns the group by ID if have access
-func (a *Usecase) Get(ctx context.Context, name string, otype model.OptionType, targetID uint64) (*model.Option, error) {
+// Get retrieves an option by name, type, and target ID with permission checks
+func (a *Usecase) Get(ctx context.Context, name string, otype models.OptionType, targetID uint64) (*models.Option, error) {
 	switch {
-	case otype == model.UserOptionType && targetID == 0:
+	case otype == models.UserOptionType && targetID == 0:
 		targetID = session.User(ctx).ID
-	case otype == model.AccountOptionType && targetID == 0:
+	case otype == models.AccountOptionType && targetID == 0:
 		targetID = session.Account(ctx).ID
 	}
 	targetObj, err := a.baseRepo.Get(ctx, name, otype, targetID)
@@ -39,52 +39,50 @@ func (a *Usecase) Get(ctx context.Context, name string, otype model.OptionType, 
 		return nil, err
 	}
 	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermGet+`.*`) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "get")
+		return nil, acl.ErrNoPermissions.WithMessage("get")
 	}
 	return targetObj, nil
 }
 
-// FetchList of accounts by filter
-func (a *Usecase) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *repository.Pagination) ([]*model.Option, error) {
-	if !acl.HaveAccessList(ctx, &model.Option{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list")
+// FetchList retrieves a list of options filtered and ordered with permission checks
+func (a *Usecase) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *repository.Pagination) ([]*models.Option, error) {
+	if !acl.HaveAccessList(ctx, &models.Option{}) {
+		return nil, acl.ErrNoPermissions.WithMessage("list")
 	}
 	list, err := a.baseRepo.FetchList(ctx, filter, order, pagination)
 	for _, obj := range list {
 		if !acl.HaveAccessList(ctx, obj) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list")
+			return nil, acl.ErrNoPermissions.WithMessage("list")
 		}
 	}
 	return list, err
 }
 
-// Count of accounts by filter
+// Count returns the total count of options matching the filter with permission checks
 func (a *Usecase) Count(ctx context.Context, filter *option.Filter) (int64, error) {
-	if !acl.HaveAccessList(ctx, &model.Option{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "list")
+	if !acl.HaveAccessList(ctx, &models.Option{}) {
+		return 0, acl.ErrNoPermissions.WithMessage("list")
 	}
 	return a.baseRepo.Count(ctx, filter)
 }
 
-// Create new object in database
-func (a *Usecase) Set(ctx context.Context, targetObj *model.Option) error {
-	var err error
+// Set creates or updates an option with permission checks
+func (a *Usecase) Set(ctx context.Context, targetObj *models.Option) error {
 	switch {
-	case targetObj.Type == model.UserOptionType && targetObj.TargetID == 0:
+	case targetObj.Type == models.UserOptionType && targetObj.TargetID == 0:
 		targetObj.TargetID = session.User(ctx).ID
-	case targetObj.Type == model.AccountOptionType && targetObj.TargetID == 0:
+	case targetObj.Type == models.AccountOptionType && targetObj.TargetID == 0:
 		targetObj.TargetID = session.Account(ctx).ID
 	}
 	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermSet+`.*`) {
-		return errors.Wrap(acl.ErrNoPermissions, "set")
+		return acl.ErrNoPermissions.WithMessage("set")
 	}
-	err = a.baseRepo.Set(ctx, targetObj)
-	return err
+	return a.baseRepo.Set(ctx, targetObj)
 }
 
-// SetOption sets option value by name, type and targetID
-func (a *Usecase) SetOption(ctx context.Context, name string, otype model.OptionType, targetID uint64, value any) error {
-	obj := &model.Option{
+// SetOption sets an option value by name, type, and target ID
+func (a *Usecase) SetOption(ctx context.Context, name string, otype models.OptionType, targetID uint64, value any) error {
+	obj := &models.Option{
 		Type:     otype,
 		TargetID: targetID,
 		Name:     name,
@@ -95,14 +93,14 @@ func (a *Usecase) SetOption(ctx context.Context, name string, otype model.Option
 	return a.baseRepo.Set(ctx, obj)
 }
 
-// Delete delites record by ID
-func (a *Usecase) Delete(ctx context.Context, name string, otype model.OptionType, targetID uint64) error {
+// Delete removes an option with permission checks
+func (a *Usecase) Delete(ctx context.Context, name string, otype models.OptionType, targetID uint64) error {
 	targetObj, err := a.Get(ctx, name, otype, targetID)
 	if err != nil {
 		return err
 	}
 	if !acl.HaveAccessDelete(ctx, targetObj) {
-		return errors.Wrap(acl.ErrNoPermissions, "delete")
+		return acl.ErrNoPermissions.WithMessage("delete")
 	}
 	return a.baseRepo.Delete(
 		historylog.WithPK(ctx, targetObj.Name),

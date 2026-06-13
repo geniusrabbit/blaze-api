@@ -52,7 +52,7 @@ func NewWrapper(auth elogin.AuthAccessor, options ...Option) *Oauth2Wrapper {
 		opt(wr)
 	}
 	if wr.socialAuthUsecase == nil {
-		wr.socialAuthUsecase = usecase.New(userrepo.New(), repository.New())
+		wr.socialAuthUsecase = usecase.New(userrepo.NewUserRepository(), repository.New())
 	}
 	wr.wrapper = elogin.NewWrapper(auth, wr, wr, wr)
 	return wr
@@ -194,7 +194,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
 		// Get preoritized user account
 		accountID := uint64(0)
-		acclist, err := accrepo.New().FetchList(ctx, &account.Filter{
+		acclist, err := accrepo.NewAccountRepository().FetchList(ctx, &account.Filter{
 			UserID: []uint64{accSocial.UserID},
 			Status: []model.ApproveStatus{model.ApprovedApproveStatus, model.PendingApproveStatus},
 		}, nil, nil)

@@ -17,7 +17,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
-	"github.com/geniusrabbit/blaze-api/pkg/auth/devtoken"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/facebook"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2"
@@ -28,8 +27,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
 	"github.com/geniusrabbit/blaze-api/pkg/zlogger"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/account/authorizer"
 	"github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/delivery/rest"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 var (
@@ -118,10 +120,10 @@ func main() {
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
 		SessionManager: appinit.SessionManager(conf.Session.CookieName, conf.Session.Lifetime),
-		Authorizers: []auth.Authorizer{
+		Authorizers: []auth.Authorizer[*user.User, *account.Account]{
 			jwt.NewAuthorizer(jwtProvider),
 			oauth2.NewAuthorizer(oauth2provider),
-			devtoken.NewAuthorizer(gocast.IfThen(conf.IsDebug(), &devtoken.AuthOption{
+			authorizer.NewDevTokenAuthorizer(gocast.IfThen(conf.IsDebug(), &authorizer.AuthOption{
 				DevToken:     conf.Session.DevToken,
 				DevUserID:    conf.Session.DevUserID,
 				DevAccountID: conf.Session.DevAccountID,

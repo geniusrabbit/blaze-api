@@ -16,3 +16,33 @@ directive @cacheData(
   key: String
   fields: [String!]
 ) on FIELD_DEFINITION | FIELD
+
+# Validation directives
+
+## @length validates the length of a string or array.
+directive @length(
+  min: Int!
+  max: Int! = 0
+  trim: Boolean! = false
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+## @notempty validates that a string or array is not empty.
+directive @notempty(
+  trim: Boolean! = false
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+## @regex validates a string against a regular expression.
+directive @regex(
+  pattern: String!
+  trim: Boolean! = true
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+## @range validates that a number is within a specified range.
+directive @range(
+  min: Float!
+  max: Float! = 0
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR

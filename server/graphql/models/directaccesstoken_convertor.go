@@ -47,16 +47,16 @@ func (fl *DirectAccessTokenListFilter) Filter() *directaccesstoken.Filter {
 	}
 }
 
-func (ord *DirectAccessTokenListOrder) Order() *directaccesstoken.Order {
+func (ord *DirectAccessTokenListOrder) Order() *directaccesstoken.ListOrder {
 	if ord == nil {
 		return nil
 	}
-	return &directaccesstoken.Order{
-		ID:        ord.ID.AsOrder(),
-		Token:     ord.Token.AsOrder(),
-		UserID:    ord.UserID.AsOrder(),
-		AccountID: ord.AccountID.AsOrder(),
-		ExpiresAt: ord.ExpiresAt.AsOrder(),
-		CreatedAt: ord.CreatedAt.AsOrder(),
+	return &directaccesstoken.ListOrder{
+		ID:        model.Order(ord.ID.AsOrder()),
+		Token:     model.Order(ord.Token.AsOrder()),
+		UserID:    model.Order(ord.UserID.AsOrder()),
+		AccountID: model.Order(ord.AccountID.AsOrder()),
+		ExpiresAt: model.Order(ord.ExpiresAt.AsOrder()),
+		CreatedAt: model.Order(ord.CreatedAt.AsOrder()),
 	}
 }

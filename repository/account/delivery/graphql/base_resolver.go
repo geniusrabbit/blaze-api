@@ -16,8 +16,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	usergql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
-	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -29,13 +29,26 @@ var (
 type QueryResolver struct {
 	userRepo *userrepo.Repository
 	accounts account.Usecase
+	members  account.MemberUsecase
 }
 
 // NewQueryResolver returns new API resolver
 func NewQueryResolver() *QueryResolver {
+	userRepo := userrepo.NewUserRepository()
+	accountRepo := repository.NewAccountRepository()
+	memberRepo := repository.NewMemberRepository()
 	return &QueryResolver{
-		userRepo: userrepo.New(),
-		accounts: usecase.NewAccountUsecase(userrepo.New(), repository.New()),
+		userRepo: userRepo,
+		accounts: usecase.NewAccountUsecase(
+			userRepo,
+			accountRepo,
+			memberRepo,
+		),
+		members: usecase.NewMemberUsecase(
+			userRepo,
+			accountRepo,
+			memberRepo,
+		),
 	}
 }
 
@@ -45,7 +58,7 @@ func (r *QueryResolver) CurrentAccount(ctx context.Context) (*gqlmodels.AccountP
 	return &gqlmodels.AccountPayload{
 		ClientMutationID: requestid.Get(ctx),
 		AccountID:        account.ID,
-		Account:          gqlmodels.FromAccountModel(account),
+		Account:          FromAccountModel(account),
 	}, nil
 }
 
@@ -58,7 +71,7 @@ func (r *QueryResolver) Account(ctx context.Context, id uint64) (*gqlmodels.Acco
 	return &gqlmodels.AccountPayload{
 		ClientMutationID: requestid.Get(ctx),
 		AccountID:        id,
-		Account:          gqlmodels.FromAccountModel(acc),
+		Account:          FromAccountModel(acc),
 	}, nil
 }
 
@@ -107,8 +120,8 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 
 	return &gqlmodels.AccountCreatePayload{
 		ClientMutationID: requestid.Get(ctx),
-		Account:          gqlmodels.FromAccountModel(accObj),
-		Owner:            gqlmodels.FromUserModel(userObj),
+		Account:          FromAccountModel(accObj),
+		Owner:            usergql.FromUserModel(userObj),
 	}, nil
 }
 
@@ -134,7 +147,7 @@ func (r *QueryResolver) createUpdateAccount(ctx context.Context, id uint64, inpu
 	return &gqlmodels.AccountPayload{
 		ClientMutationID: requestid.Get(ctx),
 		AccountID:        id,
-		Account:          gqlmodels.FromAccountModel(acc),
+		Account:          FromAccountModel(acc),
 	}, nil
 }
 
@@ -149,47 +162,47 @@ func (r *QueryResolver) RejectAccount(ctx context.Context, id uint64, msg string
 }
 
 func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, status model.ApproveStatus, msg string) (*gqlmodels.AccountPayload, error) {
-	acc, err := r.accounts.Get(ctx, uint64(id))
+	acc, err := r.accounts.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	acc.Approve = status
 	saveCtx := historylog.WithMessage(ctx, msg)
 	saveCtx = historylog.WithAction(saveCtx, strings.ToLower(status.String()))
+
+	// Store the updated account
 	if _, err = r.accounts.Store(saveCtx, acc); err != nil {
 		return nil, err
 	}
 
-	// Send message to the account owner
-	if true {
-		// Get account owner
-		members, err := r.accounts.FetchListMembers(ctx,
-			&account.MemberFilter{AccountID: []uint64{acc.ID}}, nil, nil)
-		if err != nil {
-			return nil, err
-		}
+	// Get account owner
+	members, err := r.members.FetchListMembers(ctx,
+		&account.MemberFilter{AccountID: []uint64{acc.ID}}, nil, nil)
+	if err != nil {
+		return nil, err
+	}
 
-		recipients := make([]string, 0, len(members))
-		for _, member := range members {
-			if member.IsAdmin {
-				recipients = append(recipients, member.User.Email)
-			}
-		}
-
-		// Send message to the account owner about the account creation (welcome message)
-		tmplName := "account." + strings.ToLower(status.String())
-		err = messanger.Get(ctx).Send(ctx, tmplName, recipients, map[string]any{
-			"id":      id,
-			"account": acc,
-			"status":  status,
-		})
-		if err != nil {
-			ctxlogger.Get(ctx).Error("Failed to send message",
-				zap.String("template", tmplName),
-				zap.Error(err))
-			return nil, err
+	recipients := make([]string, 0, len(members))
+	for _, member := range members {
+		if member.IsAdmin {
+			recipients = append(recipients, member.User.Email)
 		}
 	}
+
+	// Send message to the account owner about the account creation (welcome message)
+	tmplName := "account." + strings.ToLower(status.String())
+	err = messanger.Get(ctx).Send(ctx, tmplName, recipients, map[string]any{
+		"id":      id,
+		"account": acc,
+		"status":  status,
+	})
+	if err != nil {
+		ctxlogger.Get(ctx).Error("Failed to send message",
+			zap.String("template", tmplName),
+			zap.Error(err))
+		return nil, err
+	}
+
 	return &gqlmodels.AccountPayload{
 		ClientMutationID: requestid.Get(ctx),
 		AccountID:        id,
@@ -202,6 +215,6 @@ func (r *QueryResolver) ListAccounts(ctx context.Context,
 	filter *gqlmodels.AccountListFilter,
 	order *gqlmodels.AccountListOrder,
 	page *gqlmodels.Page,
-) (*connectors.AccountConnection, error) {
-	return connectors.NewAccountConnection(ctx, r.accounts, filter, order, page), nil
+) (*AccountConnection, error) {
+	return NewAccountConnection(ctx, r.accounts, filter, order, page), nil
 }

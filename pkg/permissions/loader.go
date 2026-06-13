@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	rbacModels "github.com/geniusrabbit/blaze-api/repository/rbac/models"
 )
 
 // DBRoleLoader provides roles from database
@@ -23,8 +23,8 @@ type DBRoleLoader struct {
 // ListRoles returns all roles from database
 func (l *DBRoleLoader) ListRoles(ctx context.Context) []rbac.Role {
 	var (
-		links     []*model.M2MRole
-		roles     []*model.Role
+		links     []*rbacModels.M2MRole
+		roles     []*rbacModels.Role
 		roleCache = make(map[uint64]rbac.Role, 10)
 		query     = l.conn.WithContext(ctx)
 	)
@@ -49,7 +49,7 @@ func (l *DBRoleLoader) ListRoles(ctx context.Context) []rbac.Role {
 	return xtypes.Map[uint64, rbac.Role](roleCache).Values()
 }
 
-func roleByModel(role *model.Role, roles map[uint64]rbac.Role, links []*model.M2MRole) (rbac.Role, error) {
+func roleByModel(role *rbacModels.Role, roles map[uint64]rbac.Role, links []*rbacModels.M2MRole) (rbac.Role, error) {
 	roleList := make([]rbac.Role, 0, len(links))
 	for _, link := range links {
 		if link.ParentRoleID != role.ID {

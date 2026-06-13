@@ -9,15 +9,14 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
+	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	rbacGen "github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
-	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -47,7 +46,7 @@ func (r *QueryResolver) Role(ctx context.Context, id uint64) (*gqlmodels.RBACRol
 	return &gqlmodels.RBACRolePayload{
 		ClientMutationID: requestid.Get(ctx),
 		RoleID:           role.ID,
-		Role:             gqlmodels.FromRBACRoleModel(ctx, role),
+		Role:             FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
@@ -109,13 +108,13 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID, i
 }
 
 // ListRoles is the resolver for the listRoles field.
-func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRoleListFilter, order *gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) (*connectors.RBACRoleConnection, error) {
-	return connectors.NewRBACRoleConnection(ctx, r.roles, filter, order, page), nil
+func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRoleListFilter, order *gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) (*RBACRoleConnection, error) {
+	return NewRBACRoleConnection(ctx, r.roles, filter, order, page), nil
 }
 
 // CreateRole is the resolver for the createRole field.
 func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRoleInput) (*gqlmodels.RBACRolePayload, error) {
-	roleObj := &model.Role{
+	roleObj := &rbac.Role{
 		Name:  gocast.PtrAsValue(input.Name, ""),
 		Title: gocast.PtrAsValue(input.Title, ""),
 	}
@@ -124,7 +123,7 @@ func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRol
 			return nil, err
 		}
 	}
-	id, err := r.roles.Create(ctx, roleObj)
+	id, err := r.roles.Create(ctx, roleObj, "")
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +134,7 @@ func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRol
 	return &gqlmodels.RBACRolePayload{
 		ClientMutationID: requestid.Get(ctx),
 		RoleID:           id,
-		Role:             gqlmodels.FromRBACRoleModel(ctx, roleObj),
+		Role:             FromRBACRoleModel(ctx, roleObj),
 	}, nil
 }
 
@@ -153,19 +152,19 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 			return nil, err
 		}
 	}
-	if err := r.roles.Update(ctx, id, role); err != nil {
+	if err := r.roles.Update(ctx, id, role, ""); err != nil {
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
 		ClientMutationID: requestid.Get(ctx),
 		RoleID:           id,
-		Role:             gqlmodels.FromRBACRoleModel(ctx, role),
+		Role:             FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
 // DeleteRole is the resolver for the deleteRole field.
 func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) (*gqlmodels.RBACRolePayload, error) {
-	err := r.roles.Delete(ctx, id)
+	err := r.roles.Delete(ctx, id, gocast.PtrAsValue(msg, ""))
 	if err != nil {
 		return nil, err
 	}
@@ -176,17 +175,17 @@ func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) 
 	return &gqlmodels.RBACRolePayload{
 		ClientMutationID: requestid.Get(ctx),
 		RoleID:           id,
-		Role:             gqlmodels.FromRBACRoleModel(ctx, role),
+		Role:             FromRBACRoleModel(ctx, role),
 	}, nil
 }
 
 // ListPermissions is the resolver for the listPermissions field.
 func (r *QueryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*gqlmodels.RBACPermission, error) {
 	list := permissions.FromContext(ctx).Permissions(patterns...)
-	return gqlmodels.FromRBACPermissionModelList(list), nil
+	return FromRBACPermissionModelList(list), nil
 }
 
 func (r *QueryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*gqlmodels.RBACPermission, error) {
 	list := session.Account(ctx).ListPermissions()
-	return gqlmodels.FromRBACPermissionModelList(list), nil
+	return FromRBACPermissionModelList(list), nil
 }

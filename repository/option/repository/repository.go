@@ -10,9 +10,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 )
 
 // Repository DAO which provides functionality of working with RBAC song-tabulatures
@@ -21,23 +21,23 @@ type Repository struct {
 	defaultSystemOptions map[string]any
 }
 
-// New role repository
-func New(defSysOpts map[string]any) *Repository {
+// NewOptionRepository creates a new option repository
+func NewOptionRepository(defSysOpts map[string]any) *Repository {
 	return &Repository{
 		defaultSystemOptions: defSysOpts,
 	}
 }
 
 // Get returns option by ID
-func (r *Repository) Get(ctx context.Context, name string, otype model.OptionType, targetID uint64) (*model.Option, error) {
-	object := &model.Option{Name: name, Type: otype, TargetID: targetID}
+func (r *Repository) Get(ctx context.Context, name string, otype models.OptionType, targetID uint64) (*models.Option, error) {
+	object := &option.Option{Name: name, Type: otype, TargetID: targetID}
 	res := r.Slave(ctx).Model(object).
 		Where(`name=? AND type=? AND target_id=?`, name, otype, targetID).Find(object)
 
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) || errors.Is(res.Error, sql.ErrNoRows) || object.Value.Data == nil {
-		if otype == model.SystemOptionType && targetID == 0 && r.defaultSystemOptions != nil {
+		if otype == models.SystemOptionType && targetID == 0 && r.defaultSystemOptions != nil {
 			object.Name = name
-			object.Type = model.SystemOptionType
+			object.Type = models.SystemOptionType
 			object.TargetID = 0
 
 			if value, ok := r.defaultSystemOptions[name]; ok {
@@ -56,10 +56,10 @@ func (r *Repository) Get(ctx context.Context, name string, otype model.OptionTyp
 }
 
 // FetchList returns list of
-func (r *Repository) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *repository.Pagination) ([]*model.Option, error) {
+func (r *Repository) FetchList(ctx context.Context, filter *option.Filter, order *option.ListOrder, pagination *option.Pagination) ([]*models.Option, error) {
 	var (
-		list  []*model.Option
-		query = r.Slave(ctx).Model((*model.Option)(nil))
+		list  []*models.Option
+		query = r.Slave(ctx).Model((*models.Option)(nil))
 	)
 	query = filter.PrepareQuery(query)
 	query = order.PrepareQuery(query)
@@ -75,7 +75,7 @@ func (r *Repository) FetchList(ctx context.Context, filter *option.Filter, order
 func (r *Repository) Count(ctx context.Context, filter *option.Filter) (int64, error) {
 	var (
 		count int64
-		query = r.Slave(ctx).Model((*model.Option)(nil))
+		query = r.Slave(ctx).Model((*models.Option)(nil))
 	)
 	query = filter.PrepareQuery(query)
 	err := query.Count(&count).Error
@@ -86,7 +86,7 @@ func (r *Repository) Count(ctx context.Context, filter *option.Filter) (int64, e
 }
 
 // Set new or update object in database
-func (r *Repository) Set(ctx context.Context, obj *model.Option) error {
+func (r *Repository) Set(ctx context.Context, obj *models.Option) error {
 	if obj.CreatedAt.IsZero() {
 		obj.CreatedAt = time.Now()
 	}
@@ -100,7 +100,7 @@ func (r *Repository) Set(ctx context.Context, obj *model.Option) error {
 }
 
 // Delete delites record by ID
-func (r *Repository) Delete(ctx context.Context, name string, otype model.OptionType, targetID uint64) error {
-	return r.Master(ctx).Model((*model.Option)(nil)).
+func (r *Repository) Delete(ctx context.Context, name string, otype models.OptionType, targetID uint64) error {
+	return r.Master(ctx).Model((*models.Option)(nil)).
 		Delete(`type=? AND target_id=? AND name=?`, otype, targetID, name).Error
 }

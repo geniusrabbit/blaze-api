@@ -1,11 +1,16 @@
 package repository
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/demdxx/xtypes"
 	"gorm.io/gorm"
 )
+
+type QueryPermissionAdjuster interface {
+	AdjustPermissions(ctx context.Context) error
+}
 
 // QOption prepare query
 type QOption interface {

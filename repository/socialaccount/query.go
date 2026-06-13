@@ -1,8 +1,10 @@
 package socialaccount
 
 import (
-	"github.com/geniusrabbit/blaze-api/model"
 	"gorm.io/gorm"
+
+	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 )
 
 type Filter struct {
@@ -36,13 +38,13 @@ func (f *Filter) PrepareQuery(q *gorm.DB) *gorm.DB {
 }
 
 type Order struct {
-	ID        model.Order
-	UserID    model.Order
-	Provider  model.Order
-	Email     model.Order
-	Username  model.Order
-	FirstName model.Order
-	LastName  model.Order
+	ID        models.Order
+	UserID    models.Order
+	Provider  models.Order
+	Email     models.Order
+	Username  models.Order
+	FirstName models.Order
+	LastName  models.Order
 }
 
 func (o *Order) PrepareQuery(q *gorm.DB) *gorm.DB {
@@ -58,3 +60,10 @@ func (o *Order) PrepareQuery(q *gorm.DB) *gorm.DB {
 	q = o.LastName.PrepareQuery(q, `last_name`)
 	return q
 }
+
+// Type aliases for common repository types.
+type (
+	Pagination  = repository.Pagination
+	QOption     = repository.QOption
+	ListOptions = repository.ListOptions
+)

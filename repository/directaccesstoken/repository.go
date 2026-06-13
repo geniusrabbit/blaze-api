@@ -3,17 +3,27 @@ package directaccesstoken
 import (
 	"context"
 	"time"
-
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/repository"
 )
 
 //go:generate mockgen -source $GOFILE -package mocks -destination mocks/repository.go
+
+// Repository defines the interface for managing direct access tokens.
 type Repository interface {
-	Get(ctx context.Context, id uint64) (*model.DirectAccessToken, error)
-	GetByToken(ctx context.Context, token string) (*model.DirectAccessToken, error)
-	FetchList(ctx context.Context, filter *Filter, order *Order, page *repository.Pagination) ([]*model.DirectAccessToken, error)
+	// Get retrieves a direct access token by its ID.
+	Get(ctx context.Context, id uint64) (*DirectAccessToken, error)
+
+	// GetByToken retrieves a direct access token by its token string.
+	GetByToken(ctx context.Context, token string) (*DirectAccessToken, error)
+
+	// FetchList retrieves a paginated list of direct access tokens matching the filter and order criteria.
+	FetchList(ctx context.Context, filter *Filter, order *ListOrder, page *Pagination) ([]*DirectAccessToken, error)
+
+	// Count returns the total count of direct access tokens matching the filter criteria.
 	Count(ctx context.Context, filter *Filter) (int64, error)
-	Generate(ctx context.Context, userID, accountID uint64, description string, expiresAt time.Time) (*model.DirectAccessToken, error)
+
+	// Generate creates and stores a new direct access token for the specified user and account.
+	Generate(ctx context.Context, userID, accountID uint64, description string, expiresAt time.Time) (*DirectAccessToken, error)
+
+	// Revoke invalidates direct access tokens matching the filter criteria.
 	Revoke(ctx context.Context, filter *Filter) error
 }

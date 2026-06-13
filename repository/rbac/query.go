@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository"
 	"gorm.io/gorm"
 )
 
@@ -56,3 +57,8 @@ func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
 	query = o.UpdatedAt.PrepareQuery(query, `updated_at`)
 	return query
 }
+
+type (
+	QOption     = repository.QOption
+	ListOptions = repository.ListOptions
+)

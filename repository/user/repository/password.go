@@ -5,11 +5,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/repository/user"
+	"github.com/geniusrabbit/blaze-api/repository/user/password"
 )
 
 func (r *Repository) hashAndSalt(pwd []byte) string {
-	hash, err := user.PasswordHash(pwd)
+	hash, err := password.PasswordHash(pwd)
 	if err != nil {
 		zap.L().Error("GenerateFromPassword", zap.Error(err))
 	}
@@ -17,7 +17,7 @@ func (r *Repository) hashAndSalt(pwd []byte) string {
 }
 
 func (r *Repository) comparePasswords(hashedPwd string, plainPwd []byte) bool {
-	err := user.ComparePasswords(hashedPwd, plainPwd)
+	err := password.ComparePasswords(hashedPwd, plainPwd)
 	if err != nil {
 		zap.L().Error("CompareHashAndPassword", zap.Error(err))
 		return false

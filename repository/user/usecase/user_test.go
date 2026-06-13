@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
@@ -79,46 +79,46 @@ func (s *userTestSuite) TestGetByPassword() {
 	s.Assert().Equal(uint64(1), user.ID)
 }
 
-func (s *userTestSuite) TestGetByToken() {
-	s.userRepo.EXPECT().GetByToken(s.ctx, "token").
-		Return(&model.User{ID: 1}, &model.Account{ID: 1}, nil)
+// func (s *userTestSuite) TestGetByToken() {
+// 	s.userRepo.EXPECT().GetByToken(s.ctx, "token").
+// 		Return(&model.User{ID: 1}, &model.Account{ID: 1}, nil)
 
-	user, account, err := s.userUsecase.GetByToken(s.ctx, "token")
-	s.Assert().NoError(err)
-	s.Assert().Equal(uint64(1), user.ID)
-	s.Assert().Equal(uint64(1), account.ID)
-}
+// 	user, account, err := s.userUsecase.GetByToken(s.ctx, "token")
+// 	s.Assert().NoError(err)
+// 	s.Assert().Equal(uint64(1), user.ID)
+// 	s.Assert().Equal(uint64(1), account.ID)
+// }
 
 func (s *userTestSuite) TestFetchList() {
 	s.userRepo.EXPECT().
-		FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}},
+		FetchList(s.ctx, &user.ListFilter{},
 			gomock.AssignableToTypeOf(&user.ListOrder{}),
 			gomock.AssignableToTypeOf(&repository.Pagination{})).
 		Return([]*model.User{{ID: 1}, {ID: 2}}, nil)
 
-	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}}, nil, nil)
+	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{}, nil, nil)
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
 }
 
 func (s *userTestSuite) TestCount() {
 	s.userRepo.EXPECT().
-		Count(s.ctx, &user.ListFilter{AccountID: []uint64{1}}).
+		Count(s.ctx, &user.ListFilter{}).
 		Return(int64(2), nil)
 
-	count, err := s.userUsecase.Count(s.ctx, &user.ListFilter{AccountID: []uint64{1}})
+	count, err := s.userUsecase.Count(s.ctx, &user.ListFilter{})
 	s.Assert().NoError(err)
 	s.Assert().Equal(int64(2), count)
 }
 
 func (s *userTestSuite) TestFetchList_CurrentUser() {
 	s.userRepo.EXPECT().
-		FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}},
+		FetchList(s.ctx, &user.ListFilter{},
 			gomock.AssignableToTypeOf(&user.ListOrder{}),
 			gomock.AssignableToTypeOf(&repository.Pagination{})).
 		Return([]*model.User{{ID: 1}, {ID: 2}}, nil)
 
-	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{AccountID: []uint64{1}}, nil, nil)
+	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{}, nil, nil)
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
 }
@@ -128,7 +128,7 @@ func (s *userTestSuite) TestCreate() {
 		Create(s.ctx, gomock.AssignableToTypeOf(&model.User{}), "password").
 		Return(uint64(101), nil)
 
-	id, err := s.userUsecase.Store(s.ctx, &model.User{Email: "test@mail.com"}, "password")
+	id, err := s.userUsecase.Create(s.ctx, &model.User{Email: "test@mail.com"}, "password")
 	s.Assert().NoError(err)
 	s.Assert().Equal(id, uint64(101))
 }

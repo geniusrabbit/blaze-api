@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository"
 )
 
 // Filter of the objects list
@@ -115,3 +116,6 @@ func (ord *MemberListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 	query = ord.UpdatedAt.PrepareQuery(query, `updated_at`)
 	return query
 }
+
+// Pagination of the objects list
+type Pagination = repository.Pagination

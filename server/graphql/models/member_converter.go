@@ -50,13 +50,13 @@ func (ord *MemberListOrder) Order() *account.MemberListOrder {
 		return nil
 	}
 	return &account.MemberListOrder{
-		ID:        ord.ID.AsOrder(),
-		AccountID: ord.AccountID.AsOrder(),
-		UserID:    ord.UserID.AsOrder(),
-		Status:    ord.Status.AsOrder(),
-		IsAdmin:   ord.IsAdmin.AsOrder(),
-		CreatedAt: ord.CreatedAt.AsOrder(),
-		UpdatedAt: ord.UpdatedAt.AsOrder(),
+		ID:        model.Order(ord.ID.AsOrder()),
+		AccountID: model.Order(ord.AccountID.AsOrder()),
+		UserID:    model.Order(ord.UserID.AsOrder()),
+		Status:    model.Order(ord.Status.AsOrder()),
+		IsAdmin:   model.Order(ord.IsAdmin.AsOrder()),
+		CreatedAt: model.Order(ord.CreatedAt.AsOrder()),
+		UpdatedAt: model.Order(ord.UpdatedAt.AsOrder()),
 	}
 }
 

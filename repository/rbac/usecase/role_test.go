@@ -6,13 +6,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
 	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/mocks"
+	"github.com/geniusrabbit/blaze-api/repository/rbac/models"
 )
 
 type testSuite struct {
@@ -82,10 +83,10 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.roleRepo.EXPECT().
-		Create(s.ctx, gomock.AssignableToTypeOf(&model.Role{})).
+		Create(s.ctx, gomock.AssignableToTypeOf(&models.Role{}), "").
 		Return(uint64(101), nil)
 
-	id, err := s.roleUsecase.Create(s.ctx, &model.Role{ID: 0, Title: "test1"})
+	id, err := s.roleUsecase.Create(s.ctx, &models.Role{ID: 0, Title: "test1"}, "")
 	s.NoError(err)
 	s.Equal(id, uint64(101))
 }
@@ -93,10 +94,10 @@ func (s *testSuite) TestCreate() {
 func (s *testSuite) TestUpdate() {
 	s.roleRepo.EXPECT().
 		Update(gomock.AssignableToTypeOf(s.ctx),
-			uint64(101), gomock.AssignableToTypeOf(&model.Role{})).
+			uint64(101), gomock.AssignableToTypeOf(&models.Role{}), "").
 		Return(nil)
 
-	err := s.roleUsecase.Update(s.ctx, 101, &model.Role{Title: "test-test"})
+	err := s.roleUsecase.Update(s.ctx, 101, &models.Role{Title: "test-test"}, "")
 	s.NoError(err)
 }
 
@@ -105,18 +106,18 @@ func (s *testSuite) TestDelete() {
 		Get(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
 		Return(&model.Role{ID: 1}, nil)
 	s.roleRepo.EXPECT().
-		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
+		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101)), "").
 		Return(nil)
 
-	err := s.roleUsecase.Delete(s.ctx, 1)
+	err := s.roleUsecase.Delete(s.ctx, 1, "")
 	s.NoError(err)
 }
 
 func (s *testSuite) TestDeleteNotFound() {
 	s.roleRepo.EXPECT().
-		Get(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
+		Get(s.ctx, gomock.AssignableToTypeOf(uint64(101)), "").
 		Return(nil, sql.ErrNoRows)
-	err := s.roleUsecase.Delete(s.ctx, 9999)
+	err := s.roleUsecase.Delete(s.ctx, 9999, "")
 	s.EqualError(err, sql.ErrNoRows.Error())
 }
 

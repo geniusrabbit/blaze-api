@@ -4,9 +4,9 @@ package usecase
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
+	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/pkg/errors"
 )
@@ -24,7 +24,7 @@ func NewAuthclientUsecase(repo authclient.Repository) *AuthclientUsecase {
 }
 
 // Get returns the group by ID if have access
-func (a *AuthclientUsecase) Get(ctx context.Context, id string) (*model.AuthClient, error) {
+func (a *AuthclientUsecase) Get(ctx context.Context, id string) (*models.AuthClient, error) {
 	authclientObj, err := a.authclientRepo.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -36,17 +36,11 @@ func (a *AuthclientUsecase) Get(ctx context.Context, id string) (*model.AuthClie
 }
 
 // FetchList of accounts by filter
-func (a *AuthclientUsecase) FetchList(ctx context.Context, filter *authclient.Filter) ([]*model.AuthClient, error) {
-	if filter == nil {
-		filter = &authclient.Filter{}
-	}
-	if filter.PageSize <= 0 {
-		filter.PageSize = 10
-	}
-	if !acl.HaveAccessList(ctx, &model.AuthClient{}) {
+func (a *AuthclientUsecase) FetchList(ctx context.Context, opts ...authclient.QOption) ([]*models.AuthClient, error) {
+	if !acl.HaveAccessList(ctx, &models.AuthClient{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list authclient")
 	}
-	list, err := a.authclientRepo.FetchList(ctx, filter)
+	list, err := a.authclientRepo.FetchList(ctx, opts...)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list authclient")
@@ -56,36 +50,33 @@ func (a *AuthclientUsecase) FetchList(ctx context.Context, filter *authclient.Fi
 }
 
 // Count of accounts by filter
-func (a *AuthclientUsecase) Count(ctx context.Context, filter *authclient.Filter) (int64, error) {
-	if filter == nil {
-		filter = &authclient.Filter{}
-	}
-	if !acl.HaveAccessList(ctx, &model.AuthClient{}) {
+func (a *AuthclientUsecase) Count(ctx context.Context, opts ...authclient.QOption) (int64, error) {
+	if !acl.HaveAccessList(ctx, &models.AuthClient{}) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list authclient")
 	}
-	return a.authclientRepo.Count(ctx, filter)
+	return a.authclientRepo.Count(ctx, opts...)
 }
 
 // Create new object in database
-func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *model.AuthClient) (string, error) {
+func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *models.AuthClient, message string) (string, error) {
 	var err error
 	if !acl.HaveAccessCreate(ctx, authclientObj) {
 		return "", errors.Wrap(acl.ErrNoPermissions, "create authclient")
 	}
-	authclientObj.ID, err = a.authclientRepo.Create(ctx, authclientObj)
+	authclientObj.ID, err = a.authclientRepo.Create(ctx, authclientObj, message)
 	return authclientObj.ID, err
 }
 
 // Update object in database
-func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj *model.AuthClient) error {
+func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj *models.AuthClient, message string) error {
 	if !acl.HaveAccessUpdate(ctx, authclientObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "update authclient")
 	}
-	return a.authclientRepo.Update(historylog.WithPK(ctx, id), id, authclientObj)
+	return a.authclientRepo.Update(historylog.WithPK(ctx, id), id, authclientObj, message)
 }
 
 // Delete delites record by ID
-func (a *AuthclientUsecase) Delete(ctx context.Context, id string) error {
+func (a *AuthclientUsecase) Delete(ctx context.Context, id, message string) error {
 	authclientObj, err := a.Get(ctx, id)
 	if err != nil {
 		return err
@@ -93,5 +84,5 @@ func (a *AuthclientUsecase) Delete(ctx context.Context, id string) error {
 	if !acl.HaveAccessDelete(ctx, authclientObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "delete authclient")
 	}
-	return a.authclientRepo.Delete(historylog.WithPK(ctx, id), id)
+	return a.authclientRepo.Delete(historylog.WithPK(ctx, id), id, message)
 }

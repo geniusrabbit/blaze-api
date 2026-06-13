@@ -4,6 +4,8 @@ import (
 	"bytes"
 
 	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 	"gorm.io/gorm"
 )
 
@@ -48,11 +50,11 @@ func (fl *Filter) PrepareQuery(q *gorm.DB) *gorm.DB {
 
 // ListOrder object with order values which is not NULL
 type ListOrder struct {
-	Name      model.Order
-	Type      model.Order
-	TargetID  model.Order
-	CreatedAt model.Order
-	UpdatedAt model.Order
+	Name      models.Order
+	Type      models.Order
+	TargetID  models.Order
+	CreatedAt models.Order
+	UpdatedAt models.Order
 }
 
 // PrepareQuery returns the query with applied order
@@ -66,3 +68,9 @@ func (ord *ListOrder) PrepareQuery(q *gorm.DB) *gorm.DB {
 	}
 	return q
 }
+
+type (
+	Pagination  = repository.Pagination
+	QOption     = repository.QOption
+	ListOptions = repository.ListOptions
+)

@@ -14,6 +14,7 @@ CREATE TABLE account_user
 
 , email                   VARCHAR(128)                NOT NULL        CHECK (email ~* '^[^\s]+$')  UNIQUE
 , password                VARCHAR(128)                NOT NULL        CHECK (LENGTH(password) = 0 OR LENGTH(password) > 5)
+, required_password_reset BOOL                        NOT NULL        DEFAULT FALSE
 
 , created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()

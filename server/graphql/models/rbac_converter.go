@@ -100,8 +100,8 @@ func (ol *RBACRoleListOrder) Order() *rbac.Order {
 		return nil
 	}
 	return &rbac.Order{
-		ID:    ol.ID.AsOrder(),
-		Name:  ol.Name.AsOrder(),
-		Title: ol.Title.AsOrder(),
+		ID:    model.Order(ol.ID.AsOrder()),
+		Name:  model.Order(ol.Name.AsOrder()),
+		Title: model.Order(ol.Title.AsOrder()),
 	}
 }

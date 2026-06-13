@@ -9,15 +9,14 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
 )
 
-var testOption = model.Option{
+var testOption = models.Option{
 	Name:     "opt.name",
-	Type:     model.UserOptionType,
+	Type:     models.UserOptionType,
 	TargetID: 1,
 	Value:    *gosql.MustNullableJSON[any](map[string]any{"val": 1}),
 }
@@ -30,7 +29,7 @@ type testSuite struct {
 
 func (s *testSuite) SetupSuite() {
 	s.DatabaseSuite.SetupSuite()
-	s.testRepo = New(map[string]any{
+	s.testRepo = NewOptionRepository(map[string]any{
 		"opt.default": 1,
 	})
 }
@@ -40,9 +39,9 @@ func (s *testSuite) TestGet() {
 		WithArgs("opt.name", sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}).
-				AddRow(model.UserOptionType, uint64(1), "opt.name", `{"val":1}`, time.Now()),
+				AddRow(models.UserOptionType, uint64(1), "opt.name", `{"val":1}`, time.Now()),
 		)
-	role, err := s.testRepo.Get(s.Ctx, "opt.name", model.UserOptionType, 1)
+	role, err := s.testRepo.Get(s.Ctx, "opt.name", models.UserOptionType, 1)
 	s.NoError(err)
 	s.Equal("opt.name", role.Name)
 }
@@ -51,11 +50,11 @@ func (s *testSuite) TestGetDefault() {
 	s.Mock.ExpectQuery("SELECT *").
 		WithArgs("opt.default", sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnError(gorm.ErrRecordNotFound)
-	role, err := s.testRepo.Get(s.Ctx, "opt.default", model.SystemOptionType, 0)
+	role, err := s.testRepo.Get(s.Ctx, "opt.default", models.SystemOptionType, 0)
 
 	if s.NoError(err) {
 		s.Equal("opt.default", role.Name)
-		s.Equal(model.SystemOptionType, role.Type)
+		s.Equal(models.SystemOptionType, role.Type)
 		s.Equal(uint64(0), role.TargetID)
 		if s.NotNil(role.Value.Data) {
 			s.Equal(1, *role.Value.Data)
@@ -68,13 +67,13 @@ func (s *testSuite) TestFetchList() {
 		WithArgs("opt.name1", "opt.name2", 100).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}).
-				AddRow(model.UserOptionType, uint64(1), "opt.name1", `{"val":1}`, time.Now()).
-				AddRow(model.UserOptionType, uint64(2), "opt.name2", `{"val":2}`, time.Now()),
+				AddRow(models.UserOptionType, uint64(1), "opt.name1", `{"val":1}`, time.Now()).
+				AddRow(models.UserOptionType, uint64(2), "opt.name2", `{"val":2}`, time.Now()),
 		)
 	list, err := s.testRepo.FetchList(s.Ctx,
 		&option.Filter{Name: []string{"opt.name1", "opt.name2"}},
-		&option.ListOrder{Name: model.OrderAsc},
-		&repository.Pagination{Size: 100})
+		&option.ListOrder{Name: models.OrderAsc},
+		&option.Pagination{Size: 100})
 	s.NoError(err)
 	s.Equal(2, len(list))
 }
@@ -93,7 +92,7 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestSet() {
 	s.Mock.ExpectExec("INSERT INTO").
-		WithArgs(model.UserOptionType, uint64(1), "opt.name", `{"val":1}`, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(models.UserOptionType, uint64(1), "opt.name", `{"val":1}`, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	err := s.testRepo.Set(s.Ctx, &testOption)
 	s.NoError(err)
@@ -101,9 +100,9 @@ func (s *testSuite) TestSet() {
 
 func (s *testSuite) TestDelete() {
 	s.Mock.ExpectExec("UPDATE").
-		WithArgs(sqlmock.AnyArg(), model.UserOptionType, uint64(1), "opt.name").
+		WithArgs(sqlmock.AnyArg(), models.UserOptionType, uint64(1), "opt.name").
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	err := s.testRepo.Delete(s.Ctx, "opt.name", model.UserOptionType, 1)
+	err := s.testRepo.Delete(s.Ctx, "opt.name", models.UserOptionType, 1)
 	s.NoError(err)
 }
 

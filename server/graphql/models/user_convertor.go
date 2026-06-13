@@ -32,10 +32,8 @@ func (fl *UserListFilter) Filter() *user.ListFilter {
 		return nil
 	}
 	return &user.ListFilter{
-		UserID:    fl.ID,
-		AccountID: fl.AccountID,
-		Emails:    fl.Emails,
-		Roles:     fl.Roles,
+		UserID: fl.ID,
+		Emails: fl.Emails,
 	}
 }
 
