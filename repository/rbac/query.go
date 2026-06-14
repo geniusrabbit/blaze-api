@@ -1,8 +1,10 @@
 package rbac
 
 import (
-	"github.com/geniusrabbit/blaze-api/model"
 	"gorm.io/gorm"
+
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
+	"github.com/geniusrabbit/blaze-api/repository"
 )
 
 // Filter of the objects list
@@ -36,12 +38,12 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 
 // Order of the objects list
 type Order struct {
-	ID          model.Order
-	Name        model.Order
-	Title       model.Order
-	AccessLevel model.Order
-	CreatedAt   model.Order
-	UpdatedAt   model.Order
+	ID          pkgModels.Order
+	Name        pkgModels.Order
+	Title       pkgModels.Order
+	AccessLevel pkgModels.Order
+	CreatedAt   pkgModels.Order
+	UpdatedAt   pkgModels.Order
 }
 
 func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
@@ -56,3 +58,8 @@ func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
 	query = o.UpdatedAt.PrepareQuery(query, `updated_at`)
 	return query
 }
+
+type (
+	QOption     = repository.QOption
+	ListOptions = repository.ListOptions
+)

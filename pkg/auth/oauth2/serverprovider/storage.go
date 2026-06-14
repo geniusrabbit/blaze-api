@@ -16,9 +16,10 @@ import (
 	"github.com/ory/fosite/handler/oauth2"
 	"github.com/pkg/errors"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/cache"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	"github.com/geniusrabbit/blaze-api/repository/authclient"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 type cacher interface {
@@ -28,7 +29,7 @@ type cacher interface {
 }
 
 type userAccessor interface {
-	GetByPassword(ctx context.Context, email, password string) (*model.User, error)
+	GetByPassword(ctx context.Context, email, password string) (*user.User, error)
 }
 
 // DatabaseStorage implements fosite.Storage interface to control Oauth2 and OpenID access
@@ -55,7 +56,7 @@ func NewDatabaseStorage(db *gorm.DB, userAccessor userAccessor, cache cacher, ca
 func (s *DatabaseStorage) GetClient(ctx context.Context, id string) (fosite.Client, error) {
 	ctxlogger.Get(ctx).Debug("GetClient", zap.String("client_id", id))
 	var (
-		clientObj model.AuthClient
+		clientObj authclient.AuthClient
 		err       = s.fromCacheOrSelect(ctx, s.clientCacheKey(id), &clientObj, id)
 	)
 	if err == sql.ErrNoRows {
@@ -185,7 +186,7 @@ func (s *DatabaseStorage) CreateRefreshTokenSession(ctx context.Context, signatu
 		zap.String("refresh_signature", signature),
 		zap.String("refresh_access_signature", accessSignature),
 	)
-	err := s.updateSessionCB(request.GetID(), func(auth *model.AuthSession) {
+	err := s.updateSessionCB(request.GetID(), func(auth *authclient.AuthSession) {
 		auth.RefreshToken = null.StringFrom(signature)
 		auth.RefreshTokenExpiresAt = request.GetSession().GetExpiresAt(fosite.RefreshToken)
 	})
@@ -236,7 +237,7 @@ func (s *DatabaseStorage) CreateImplicitAccessTokenSession(ctx context.Context, 
 // grant (see Implementation Note).
 func (s *DatabaseStorage) RevokeRefreshToken(ctx context.Context, requestID string) error {
 	ctxlogger.Get(ctx).Debug("RevokeRefreshToken", zap.String("request_id", requestID))
-	return s.updateSessionCB(requestID, func(auth *model.AuthSession) {
+	return s.updateSessionCB(requestID, func(auth *authclient.AuthSession) {
 		auth.AccessTokenExpiresAt = time.Now()
 		auth.RefreshTokenExpiresAt = time.Now()
 	})
@@ -266,7 +267,7 @@ func (s *DatabaseStorage) RevokeRefreshTokenMaybeGracePeriod(ctx context.Context
 // token as well.
 func (s *DatabaseStorage) RevokeAccessToken(ctx context.Context, requestID string) error {
 	ctxlogger.Get(ctx).Debug("RevokeAccessToken", zap.String("request_id", requestID))
-	return s.updateSessionCB(requestID, func(auth *model.AuthSession) {
+	return s.updateSessionCB(requestID, func(auth *authclient.AuthSession) {
 		auth.AccessTokenExpiresAt = time.Now()
 	})
 }
@@ -300,7 +301,7 @@ func (s *DatabaseStorage) newSession(ctx context.Context, token string, request 
 		return fosite.ErrInvalidClient.WithHint("Check session user")
 	}
 	var (
-		sessionObj = &model.AuthSession{
+		sessionObj = &authclient.AuthSession{
 			Active:                true,
 			ClientID:              client.GetID(),
 			Username:              session.GetUsername(),
@@ -326,9 +327,9 @@ func (s *DatabaseStorage) newSession(ctx context.Context, token string, request 
 	return nil
 }
 
-func (s *DatabaseStorage) updateSessionCB(requestID string, cb func(auth *model.AuthSession)) error {
+func (s *DatabaseStorage) updateSessionCB(requestID string, cb func(auth *authclient.AuthSession)) error {
 	var (
-		sessionObj model.AuthSession
+		sessionObj authclient.AuthSession
 		err        = s.db.Find(&sessionObj, `request_id=?`, requestID).Error
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -341,9 +342,9 @@ func (s *DatabaseStorage) updateSessionCB(requestID string, cb func(auth *model.
 	return s.db.Model(&sessionObj).Where(`request_id=?`, requestID).Updates(&sessionObj).Error
 }
 
-func (s *DatabaseStorage) getAuthSession(ctx context.Context, code, fieldName string) (*model.AuthSession, error) {
+func (s *DatabaseStorage) getAuthSession(ctx context.Context, code, fieldName string) (*authclient.AuthSession, error) {
 	var (
-		sessionObj model.AuthSession
+		sessionObj authclient.AuthSession
 		err        = s.fromCacheOrSelect(ctx, s.sessCacheKey(code), &sessionObj, fieldName+`=?`, code)
 	)
 	if err != nil {
@@ -373,7 +374,7 @@ func (s *DatabaseStorage) getSessionCode(ctx context.Context, code, fieldName st
 }
 
 func (s *DatabaseStorage) dropSession(ctx context.Context, code, fieldName string) error {
-	err := s.db.Model((*model.AuthSession)(nil)).Delete(fieldName+`=?`, code).Error
+	err := s.db.Model((*authclient.AuthSession)(nil)).Delete(fieldName+`=?`, code).Error
 	if err == sql.ErrNoRows {
 		return fosite.ErrNotFound
 	}
@@ -402,14 +403,14 @@ func (s *DatabaseStorage) invalidateSession(ctx context.Context, code, fieldName
 		ctxlogger.Get(ctx).Error("incalidate session cache",
 			zap.String(`cache_key`, cacheKey), zap.Error(err))
 	}
-	err = s.db.Model((*model.AuthSession)(nil)).Where(fieldName+`=? AND active=TRUE`, code).Update(`active`, true).Error
+	err = s.db.Model((*authclient.AuthSession)(nil)).Where(fieldName+`=? AND active=TRUE`, code).Update(`active`, true).Error
 	if err == sql.ErrNoRows {
 		return fosite.ErrNotFound
 	}
 	return err
 }
 
-func (s *DatabaseStorage) authToSession(ctx context.Context, sessionObj *model.AuthSession) (_ fosite.Session, err error) {
+func (s *DatabaseStorage) authToSession(ctx context.Context, sessionObj *authclient.AuthSession) (_ fosite.Session, err error) {
 	if !sessionObj.Active {
 		err = fosite.ErrInvalidatedAuthorizeCode
 	}
@@ -424,7 +425,7 @@ func (s *DatabaseStorage) authToSession(ctx context.Context, sessionObj *model.A
 	), err
 }
 
-func (s *DatabaseStorage) toRequest(ctx context.Context, sessionObj *model.AuthSession) (*fosite.Request, error) {
+func (s *DatabaseStorage) toRequest(ctx context.Context, sessionObj *authclient.AuthSession) (*fosite.Request, error) {
 	session, authErr := s.authToSession(ctx, sessionObj)
 	if session == nil {
 		return nil, errors.Wrap(authErr, "auth session")

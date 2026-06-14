@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/pkg/models"
 )
 
 func (order *Ordering) Int8() int8 {
@@ -18,15 +18,15 @@ func (order *Ordering) Int8() int8 {
 	return 0
 }
 
-func (order *Ordering) AsOrder() model.Order {
+func (order *Ordering) AsOrder() models.Order {
 	if order != nil {
 		fmt.Println("order: ", *order)
 		switch *order {
 		case OrderingAsc:
-			return model.OrderAsc
+			return models.OrderAsc
 		case OrderingDesc:
-			return model.OrderDesc
+			return models.OrderDesc
 		}
 	}
-	return model.OrderUndefined
+	return models.OrderUndefined
 }

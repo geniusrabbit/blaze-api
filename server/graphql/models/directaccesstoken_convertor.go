@@ -6,11 +6,11 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken"
 )
 
-func FromDirectAccessToken(token *model.DirectAccessToken) *DirectAccessToken {
+func FromDirectAccessToken(token *directaccesstoken.DirectAccessToken) *DirectAccessToken {
 	if token == nil {
 		return nil
 	}
@@ -25,8 +25,8 @@ func FromDirectAccessToken(token *model.DirectAccessToken) *DirectAccessToken {
 	}
 }
 
-func FromDirectAccessTokenModelList(list []*model.DirectAccessToken) []*DirectAccessToken {
-	return xtypes.SliceApply(list, func(m *model.DirectAccessToken) *DirectAccessToken {
+func FromDirectAccessTokenModelList(list []*directaccesstoken.DirectAccessToken) []*DirectAccessToken {
+	return xtypes.SliceApply(list, func(m *directaccesstoken.DirectAccessToken) *DirectAccessToken {
 		return FromDirectAccessToken(m)
 	})
 }
@@ -47,16 +47,16 @@ func (fl *DirectAccessTokenListFilter) Filter() *directaccesstoken.Filter {
 	}
 }
 
-func (ord *DirectAccessTokenListOrder) Order() *directaccesstoken.Order {
+func (ord *DirectAccessTokenListOrder) Order() *directaccesstoken.ListOrder {
 	if ord == nil {
 		return nil
 	}
-	return &directaccesstoken.Order{
-		ID:        ord.ID.AsOrder(),
-		Token:     ord.Token.AsOrder(),
-		UserID:    ord.UserID.AsOrder(),
-		AccountID: ord.AccountID.AsOrder(),
-		ExpiresAt: ord.ExpiresAt.AsOrder(),
-		CreatedAt: ord.CreatedAt.AsOrder(),
+	return &directaccesstoken.ListOrder{
+		ID:        pkgModels.Order(ord.ID.AsOrder()),
+		Token:     pkgModels.Order(ord.Token.AsOrder()),
+		UserID:    pkgModels.Order(ord.UserID.AsOrder()),
+		AccountID: pkgModels.Order(ord.AccountID.AsOrder()),
+		ExpiresAt: pkgModels.Order(ord.ExpiresAt.AsOrder()),
+		CreatedAt: pkgModels.Order(ord.CreatedAt.AsOrder()),
 	}
 }

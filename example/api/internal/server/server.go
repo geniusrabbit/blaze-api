@@ -20,8 +20,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/middleware"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	accAuth "github.com/geniusrabbit/blaze-api/repository/account/auth"
 	"github.com/geniusrabbit/blaze-api/repository/option/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 type (
@@ -34,7 +37,7 @@ type HTTPServer struct {
 	RequestTimeout time.Duration
 	ContextWrap    contextWrapper
 	InitWrap       muxInitWrapper
-	Authorizers    []auth.Authorizer
+	Authorizers    []auth.Authorizer[*user.User, *account.Account]
 	JWTProvider    *jwt.Provider
 	SessionManager *scs.SessionManager
 	Logger         *zap.Logger
@@ -51,7 +54,7 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,
-		usecase.NewUsecase(repository.New(nil))))
+		usecase.NewUsecase(repository.NewOptionRepository(nil))))
 
 	if s.InitWrap != nil {
 		s.InitWrap(mux)
@@ -60,7 +63,7 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	h := http.Handler(mux)
 
 	// Add middleware's
-	h = auth.Middelware(h, s.Authorizers...)
+	h = accAuth.Middleware(h, s.Authorizers...)
 	h = middleware.HTTPContextWrapper(h, s.ContextWrap)
 	h = middleware.HTTPSession(h, s.SessionManager)
 	h = middleware.RealIP(h)

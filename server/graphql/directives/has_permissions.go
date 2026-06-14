@@ -9,9 +9,10 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/pkg/errors"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 var (
@@ -60,14 +61,14 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 
 // here we need to check that object belongs to the user or have manager access
 // as it's the basic level of access to any object
-func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Account) any {
+func ownedObject(ctx context.Context, obj any, usr *user.User, acc *account.Account) any {
 	switch obj.(type) {
 	case nil:
 		return nil
-	case *model.Account, model.Account:
-		return &model.Account{ID: acc.ID, Admins: []uint64{user.ID}}
-	case *model.User, model.User:
-		return &model.User{ID: user.ID}
+	case *account.Account, account.Account:
+		return &account.Account{ID: acc.ID, Admins: []uint64{usr.ID}}
+	case *user.User, user.User:
+		return &user.User{ID: usr.ID}
 	}
 
 	// Get object struct type value
@@ -92,11 +93,11 @@ func ownedObject(ctx context.Context, obj any, user *model.User, acc *model.Acco
 
 	// Set user owner ID
 	if setter, ok := newObj.(userOwnerSetter); ok {
-		setter.SetUserOwnerID(user.ID)
+		setter.SetUserOwnerID(usr.ID)
 	} else {
-		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, user.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, user.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, user.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, usr.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, usr.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, usr.ID)
 	}
 	return newObj
 }

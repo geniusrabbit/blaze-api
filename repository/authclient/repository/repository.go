@@ -3,90 +3,54 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
-
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
+	"github.com/geniusrabbit/blaze-api/repository/generated"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 )
 
-// Repository DAO which provides functionality of working with RBAC roles
+// Repository DAO which provides functionality of working with AuthClients.
+// FetchList and Count are provided by the embedded generated.Repository.
 type Repository struct {
-	repository.Repository
+	generated.Repository[authclient.AuthClient, string]
 }
 
-// New role repository
-func New() *Repository {
-	return &Repository{}
+// NewAuthclientRepository creates a new instance of the AuthClient repository
+func NewAuthclientRepository() *Repository {
+	return &Repository{Repository: *generated.NewRepository[authclient.AuthClient, string]()}
 }
 
-// Get returns RBAC role model by ID
-func (r *Repository) Get(ctx context.Context, id string) (*model.AuthClient, error) {
-	object := new(model.AuthClient)
+// Get returns AuthClient by ID. Uses Find (not First) to keep the original
+// no-error-on-not-found behavior required by the authclient domain interface.
+func (r *Repository) Get(ctx context.Context, id string) (*authclient.AuthClient, error) {
+	object := new(authclient.AuthClient)
 	if err := r.Slave(ctx).Find(object, id).Error; err != nil {
 		return nil, err
 	}
 	return object, nil
 }
 
-// FetchList returns list of RBAC roles by filter
-func (r *Repository) FetchList(ctx context.Context, filter *authclient.Filter) ([]*model.AuthClient, error) {
-	var (
-		list  []*model.AuthClient
-		query = r.Slave(ctx).Model((*model.AuthClient)(nil))
-	)
-	if filter != nil && len(filter.ID) > 0 {
-		query = query.Where(`id IN (?)`, filter.ID)
-	}
-	if filter.PageSize > 0 {
-		query = query.Limit(filter.PageSize).Offset(filter.PageSize * filter.Page)
-	}
-	err := query.Find(&list).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-		err = nil
-	}
-	return list, err
-}
-
-// Count returns count of records by filter
-func (r *Repository) Count(ctx context.Context, filter *authclient.Filter) (int64, error) {
-	var (
-		count int64
-		query = r.Slave(ctx).Model((*model.AuthClient)(nil))
-	)
-	if filter != nil && len(filter.ID) > 0 {
-		query = query.Where(`id IN (?)`, filter.ID)
-	}
-	err := query.Count(&count).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-		err = nil
-	}
-	return count, err
-}
-
-// Create new object into database
-func (r *Repository) Create(ctx context.Context, roleObj *model.AuthClient) (string, error) {
+// Create adds a new AuthClient, auto-generating a UUID when the ID is empty.
+func (r *Repository) Create(ctx context.Context, roleObj *authclient.AuthClient, opts ...authclient.QOption) (string, error) {
 	if roleObj.ID == "" {
 		roleObj.ID = newID()
 	}
 	roleObj.CreatedAt = time.Now()
 	roleObj.UpdatedAt = roleObj.CreatedAt
-	err := r.Master(ctx).Create(roleObj).Error
+	db := authclient.ListOptions(opts).PrepareQuery(r.Master(historylog.WithPK(ctx, roleObj.ID)))
+	err := db.Create(roleObj).Error
 	return roleObj.ID, err
 }
 
-// Update existing object in database
-func (r *Repository) Update(ctx context.Context, id string, roleObj *model.AuthClient) error {
+// Update saves partial changes (non-zero fields only) to an existing AuthClient.
+func (r *Repository) Update(ctx context.Context, id string, roleObj *authclient.AuthClient, opts ...authclient.QOption) error {
 	obj := *roleObj
 	obj.ID = id
-	return r.Master(ctx).Updates(&obj).Error
+	return authclient.ListOptions(opts).PrepareQuery(r.Master(ctx)).Updates(&obj).Error
 }
 
-// Delete delites record by ID
-func (r *Repository) Delete(ctx context.Context, id string) error {
-	return r.Master(ctx).Model((*model.AuthClient)(nil)).Delete(`id=?`, id).Error
+// Delete removes an AuthClient by ID.
+func (r *Repository) Delete(ctx context.Context, id string, opts ...authclient.QOption) error {
+	return r.Repository.Delete(historylog.WithPK(ctx, id), id, opts...)
 }

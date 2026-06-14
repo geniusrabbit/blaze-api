@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 )
 
 // Repository DAO which provides functionality of working with changelogs
@@ -23,22 +23,20 @@ func New() *Repository {
 }
 
 // Count returns count of history actions log by filter
-func (r *Repository) Count(ctx context.Context, filter *historylog.Filter) (cnt int64, err error) {
-	query := r.Slave(ctx).Model((*model.HistoryAction)(nil))
-	query = filter.Query(query)
+func (r *Repository) Count(ctx context.Context, opts ...historylog.QOption) (cnt int64, err error) {
+	query := r.Slave(ctx).Model((*historylogModels.HistoryAction)(nil))
+	query = historylog.ListOptions(opts).PrepareQuery(query)
 	err = query.Count(&cnt).Error
 	return cnt, err
 }
 
 // FetchList returns list of history actions log by filter
-func (r *Repository) FetchList(ctx context.Context, filter *historylog.Filter, order *historylog.Order, pagination *repository.Pagination) ([]*model.HistoryAction, error) {
+func (r *Repository) FetchList(ctx context.Context, opts ...historylog.QOption) ([]*historylogModels.HistoryAction, error) {
 	var (
-		list  []*model.HistoryAction
-		query = r.Slave(ctx).Model((*model.HistoryAction)(nil))
+		list  []*historylogModels.HistoryAction
+		query = r.Slave(ctx).Model((*historylogModels.HistoryAction)(nil))
 	)
-	query = filter.Query(query)
-	query = order.Query(query)
-	query = pagination.PrepareQuery(query)
+	query = historylog.ListOptions(opts).PrepareQuery(query)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil

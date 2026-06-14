@@ -7,10 +7,10 @@ import (
 	"github.com/guregu/null"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
+	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 )
 
 type Repository struct {
@@ -22,8 +22,8 @@ func New() *Repository {
 }
 
 // Get account by ID
-func (r *Repository) Get(ctx context.Context, id uint64) (*model.AccountSocial, error) {
-	var account model.AccountSocial
+func (r *Repository) Get(ctx context.Context, id uint64) (*socialAccountModels.AccountSocial, error) {
+	var account socialAccountModels.AccountSocial
 	err := r.Slave(ctx).First(&account, id).Error
 	if err != nil {
 		return nil, err
@@ -32,9 +32,9 @@ func (r *Repository) Get(ctx context.Context, id uint64) (*model.AccountSocial, 
 }
 
 // List accounts by filter
-func (r *Repository) List(ctx context.Context, filter *socialauth.Filter) ([]*model.AccountSocial, error) {
-	var list []*model.AccountSocial
-	query := r.Slave(ctx).Model((*model.AccountSocial)(nil))
+func (r *Repository) List(ctx context.Context, filter *socialauth.Filter) ([]*socialAccountModels.AccountSocial, error) {
+	var list []*socialAccountModels.AccountSocial
+	query := r.Slave(ctx).Model((*socialAccountModels.AccountSocial)(nil))
 	query = filter.PrepareQuery(query)
 	err := query.Find(&list).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +44,7 @@ func (r *Repository) List(ctx context.Context, filter *socialauth.Filter) ([]*mo
 }
 
 // Create new account in the database
-func (r *Repository) Create(ctx context.Context, account *model.AccountSocial) (uint64, error) {
+func (r *Repository) Create(ctx context.Context, account *socialAccountModels.AccountSocial) (uint64, error) {
 	err := r.Master(ctx).Create(account).Error
 	if err != nil {
 		return 0, err
@@ -53,9 +53,9 @@ func (r *Repository) Create(ctx context.Context, account *model.AccountSocial) (
 }
 
 // Update account in the database
-func (r *Repository) Update(ctx context.Context, id uint64, account *model.AccountSocial) error {
+func (r *Repository) Update(ctx context.Context, id uint64, account *socialAccountModels.AccountSocial) error {
 	return r.Master(ctx).
-		Model((*model.AccountSocial)(nil)).
+		Model((*socialAccountModels.AccountSocial)(nil)).
 		Where("id = ?", id).
 		Unscoped().
 		Updates(account).Error
@@ -64,8 +64,8 @@ func (r *Repository) Update(ctx context.Context, id uint64, account *model.Accou
 // Token returns the token by social account ID
 func (r *Repository) Token(ctx context.Context, name string, id uint64) (*elogin.Token, error) {
 	var (
-		sess model.AccountSocialSession
-		err  = r.Slave(ctx).Model((*model.AccountSocialSession)(nil)).
+		sess socialAccountModels.AccountSocialSession
+		err  = r.Slave(ctx).Model((*socialAccountModels.AccountSocialSession)(nil)).
 			Where("account_social_id=? AND name=?", id, name).
 			First(&sess).Error
 	)
@@ -87,8 +87,8 @@ func (r *Repository) Token(ctx context.Context, name string, id uint64) (*elogin
 // SetToken saves the token to the social account
 func (r *Repository) SetToken(ctx context.Context, name string, id uint64, token *elogin.Token) error {
 	var (
-		oldSess model.AccountSocialSession
-		db      = r.Master(ctx).Model((*model.AccountSocialSession)(nil))
+		oldSess socialAccountModels.AccountSocialSession
+		db      = r.Master(ctx).Model((*socialAccountModels.AccountSocialSession)(nil))
 		err     = db.Unscoped().Find(&oldSess, "account_social_id=? AND name=?", id, name).Error
 	)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -96,7 +96,7 @@ func (r *Repository) SetToken(ctx context.Context, name string, id uint64, token
 	}
 
 	return r.Master(ctx).Unscoped().
-		Save(&model.AccountSocialSession{
+		Save(&socialAccountModels.AccountSocialSession{
 			AccountSocialID: id,
 			Name:            name,
 			TokenType:       token.TokenType,

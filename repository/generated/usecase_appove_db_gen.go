@@ -7,12 +7,12 @@ import (
 )
 
 // UsecaseApprover provides approve/reject usecase methods
-type UsecaseApprover[T any, TID any] struct {
+type UsecaseApprover[T Model[TID], TID comparable] struct {
 	Repo RepositoryIfaceWithApprove[T, TID]
 }
 
 // Approve approves an entity by ID with ACL permission check
-func (u *UsecaseApprover[T, TID]) Approve(ctx context.Context, id TID, message string) error {
+func (u *UsecaseApprover[T, TID]) Approve(ctx context.Context, id TID, opts ...Option) error {
 	// Fetch existing entity to check permissions
 	existingObj, err := u.Repo.Get(ctx, id)
 	if err != nil {
@@ -23,11 +23,11 @@ func (u *UsecaseApprover[T, TID]) Approve(ctx context.Context, id TID, message s
 	if !acl.HaveAccessApprove(ctx, existingObj) {
 		return acl.ErrNoPermissions.WithMessage("approve")
 	}
-	return u.Repo.Approve(ctx, id, message)
+	return u.Repo.Approve(ctx, id, opts...)
 }
 
 // Reject rejects an entity by ID with ACL permission check
-func (u *UsecaseApprover[T, TID]) Reject(ctx context.Context, id TID, message string) error {
+func (u *UsecaseApprover[T, TID]) Reject(ctx context.Context, id TID, opts ...Option) error {
 	// Fetch existing entity to check permissions
 	existingObj, err := u.Repo.Get(ctx, id)
 	if err != nil {
@@ -35,8 +35,8 @@ func (u *UsecaseApprover[T, TID]) Reject(ctx context.Context, id TID, message st
 	}
 
 	// Check if user has reject permissions for the existing entity
-	if !acl.HaveAccessApprove(ctx, existingObj) {
+	if !acl.HaveAccessReject(ctx, existingObj) {
 		return acl.ErrNoPermissions.WithMessage("reject")
 	}
-	return u.Repo.Reject(ctx, id, message)
+	return u.Repo.Reject(ctx, id, opts...)
 }

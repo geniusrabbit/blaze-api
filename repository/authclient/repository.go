@@ -1,20 +1,29 @@
-// Package account present full API functionality of the specific object
+// Package authclient provides repository access for authentication client management.
 package authclient
 
 import (
 	"context"
-
-	"github.com/geniusrabbit/blaze-api/model"
 )
 
-// Repository of access to the account
+// Repository defines the interface for AuthClient data access operations.
 //
 //go:generate mockgen -source $GOFILE -package mocks -destination mocks/repository.go
 type Repository interface {
-	Get(ctx context.Context, id string) (*model.AuthClient, error)
-	FetchList(ctx context.Context, filter *Filter) ([]*model.AuthClient, error)
-	Count(ctx context.Context, filter *Filter) (int64, error)
-	Create(ctx context.Context, authClient *model.AuthClient) (string, error)
-	Update(ctx context.Context, id string, authClient *model.AuthClient) error
-	Delete(ctx context.Context, id string) error
+	// Get retrieves an AuthClient by ID.
+	Get(ctx context.Context, id string) (*AuthClient, error)
+
+	// FetchList retrieves a list of AuthClients with optional query parameters.
+	FetchList(ctx context.Context, opts ...QOption) ([]*AuthClient, error)
+
+	// Count returns the total number of AuthClients matching the query options.
+	Count(ctx context.Context, opts ...QOption) (int64, error)
+
+	// Create adds a new AuthClient and returns its ID.
+	Create(ctx context.Context, authClient *AuthClient, opts ...QOption) (string, error)
+
+	// Update modifies an existing AuthClient by ID.
+	Update(ctx context.Context, id string, authClient *AuthClient, opts ...QOption) error
+
+	// Delete removes an AuthClient by ID.
+	Delete(ctx context.Context, id string, opts ...QOption) error
 }

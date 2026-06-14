@@ -14,18 +14,20 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/utils"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
+	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/usecase"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
 
@@ -52,7 +54,7 @@ func NewWrapper(auth elogin.AuthAccessor, options ...Option) *Oauth2Wrapper {
 		opt(wr)
 	}
 	if wr.socialAuthUsecase == nil {
-		wr.socialAuthUsecase = usecase.New(userrepo.New(), repository.New())
+		wr.socialAuthUsecase = usecase.New(userrepo.NewUserRepository(), repository.New())
 	}
 	wr.wrapper = elogin.NewWrapper(auth, wr, wr, wr)
 	return wr
@@ -147,7 +149,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	}
 
 	var (
-		accSocial *model.AccountSocial
+		accSocial *socialAccountModels.AccountSocial
 		expiresAt time.Time
 		ctx       = acl.WithNoPermCheck(r.Context())
 		state     = utils.DecodeState(r.URL.Query().Get("state"))
@@ -162,7 +164,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 		Provider:        []string{wr.Provider()},
 		RetrieveDeleted: true,
 	})
-	if err != nil && !(errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows)) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && !errors.Is(err, sql.ErrNoRows) {
 		wr.Error(w, r, err)
 		return
 	}
@@ -194,9 +196,9 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	if sessToken == "" && wr.sessProvider != nil && session.User(ctx).IsAnonymous() {
 		// Get preoritized user account
 		accountID := uint64(0)
-		acclist, err := accrepo.New().FetchList(ctx, &account.Filter{
+		acclist, err := accrepo.NewAccountRepository().FetchList(ctx, &account.Filter{
 			UserID: []uint64{accSocial.UserID},
-			Status: []model.ApproveStatus{model.ApprovedApproveStatus, model.PendingApproveStatus},
+			Status: []pkgModels.ApproveStatus{pkgModels.ApprovedApproveStatus, pkgModels.PendingApproveStatus},
 		}, nil, nil)
 		if err == nil && len(acclist) > 0 {
 			for _, acc := range acclist {
@@ -237,19 +239,19 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	})
 }
 
-func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, userData *elogin.UserData) (*model.AccountSocial, error) {
+func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, userData *elogin.UserData) (*socialAccountModels.AccountSocial, error) {
 	user := session.User(ctx)
 
 	// Create new user or connect to the existing one
 	if user.IsAnonymous() {
-		user = &model.User{
+		user = &userModels.User{
 			Email:   userData.Email,
-			Approve: model.ApprovedApproveStatus,
+			Approve: pkgModels.ApprovedApproveStatus,
 		}
 	}
 
 	// Connect user to the social account
-	socAcc := &model.AccountSocial{
+	socAcc := &socialAccountModels.AccountSocial{
 		Provider:  wr.Provider(),
 		SocialID:  userData.ID,
 		Email:     userData.Email,
@@ -264,7 +266,7 @@ func (wr *Oauth2Wrapper) createSocialAccountAndUser(ctx context.Context, userDat
 	return socAcc, err
 }
 
-func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *model.AccountSocial, userData *elogin.UserData) error {
+func (wr *Oauth2Wrapper) updateSocialAccount(ctx context.Context, socAcc *socialAccountModels.AccountSocial, userData *elogin.UserData) error {
 	socAcc.Email = gocast.Or(userData.Email, socAcc.Email)
 	socAcc.FirstName = gocast.Or(userData.FirstName, socAcc.FirstName)
 	socAcc.LastName = gocast.Or(userData.LastName, socAcc.LastName)

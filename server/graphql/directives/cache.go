@@ -98,7 +98,7 @@ func getCacheKey(opCtx *graphql.OperationContext, fc *graphql.FieldContext, obj 
 			opName = "op"
 		}
 
-		objName := "unknown"
+		var objName string
 		if fc != nil {
 			// fc.Object is like "Query", "Video", etc.
 			objName = fc.Object + "." + fc.Field.Name
@@ -129,10 +129,10 @@ func getCacheKey(opCtx *graphql.OperationContext, fc *graphql.FieldContext, obj 
 					if objMap == nil {
 						objMap = gocast.Map[string, any](obj, `json`)
 					}
-					if v, _ = objMap[newField]; v == nil {
+					if v = objMap[newField]; v == nil {
 						newField2 := strings.ToLower(newField)
 						if newField2 != newField {
-							v, _ = objMap[newField2]
+							v = objMap[newField2]
 						}
 					}
 				}

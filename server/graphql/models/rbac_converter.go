@@ -7,7 +7,7 @@ import (
 	mrbac "github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -58,7 +58,7 @@ func FromRBACPermissionModelList(perms []mrbac.Permission) []*RBACPermission {
 }
 
 // FromRBACRoleModel to local graphql model
-func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
+func FromRBACRoleModel(ctx context.Context, role *rbac.Role) *RBACRole {
 	perms := permissions.FromContext(ctx).Permissions(role.PermissionPatterns...)
 	return &RBACRole{
 		ID:    role.ID,
@@ -79,8 +79,8 @@ func FromRBACRoleModel(ctx context.Context, role *model.Role) *RBACRole {
 }
 
 // FromRBACRoleModelList converts model list to local model list
-func FromRBACRoleModelList(ctx context.Context, list []*model.Role) []*RBACRole {
-	return xtypes.SliceApply(list, func(val *model.Role) *RBACRole {
+func FromRBACRoleModelList(ctx context.Context, list []*rbac.Role) []*RBACRole {
+	return xtypes.SliceApply(list, func(val *rbac.Role) *RBACRole {
 		return FromRBACRoleModel(ctx, val)
 	})
 }
@@ -100,8 +100,8 @@ func (ol *RBACRoleListOrder) Order() *rbac.Order {
 		return nil
 	}
 	return &rbac.Order{
-		ID:    ol.ID.AsOrder(),
-		Name:  ol.Name.AsOrder(),
-		Title: ol.Title.AsOrder(),
+		ID:    pkgModels.Order(ol.ID.AsOrder()),
+		Name:  pkgModels.Order(ol.Name.AsOrder()),
+		Title: pkgModels.Order(ol.Title.AsOrder()),
 	}
 }

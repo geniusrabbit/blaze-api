@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Token represents the token data
+// Token represents OAuth token data with access and refresh tokens.
 type Token struct {
 	TokenType    string    `json:"token_type,omitempty"`
 	AccessToken  string    `json:"access_token"`
@@ -14,12 +14,12 @@ type Token struct {
 	Scopes       []string  `json:"scopes,omitempty"`
 }
 
-// IsExpired checks if the token is expired
+// IsExpired returns true if the token has expired based on the ExpiresAt time.
 func (tok *Token) IsExpired() bool {
 	return tok.ExpiresAt.Before(time.Now())
 }
 
-// IsBearer checks if the token is a bearer token
+// IsBearer returns true if the token type is "bearer" (case-insensitive).
 func (tok *Token) IsBearer() bool {
 	return strings.EqualFold(tok.TokenType, "bearer")
 }

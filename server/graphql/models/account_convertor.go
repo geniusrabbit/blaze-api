@@ -3,12 +3,12 @@ package models
 import (
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 )
 
 // FromAccountModel to local graphql model
-func FromAccountModel(acc *model.Account) *Account {
+func FromAccountModel(acc *account.Account) *Account {
 	if acc == nil {
 		return nil
 	}
@@ -28,7 +28,7 @@ func FromAccountModel(acc *model.Account) *Account {
 }
 
 // FromAccountModelList converts model list to local model list
-func FromAccountModelList(list []*model.Account) []*Account {
+func FromAccountModelList(list []*account.Account) []*Account {
 	return xtypes.SliceApply(list, FromAccountModel)
 }
 
@@ -41,24 +41,24 @@ func (fl *AccountListFilter) Filter() *account.Filter {
 		ID:     fl.ID,
 		UserID: fl.UserID,
 		Title:  fl.Title,
-		Status: xtypes.SliceApply(fl.Status, func(st ApproveStatus) model.ApproveStatus {
+		Status: xtypes.SliceApply(fl.Status, func(st ApproveStatus) pkgModels.ApproveStatus {
 			return st.ModelStatus()
 		}),
 	}
 }
 
 // Model converts local graphql model to model
-func (acc *AccountInput) Model(appStatus ...model.ApproveStatus) *model.Account {
+func (acc *AccountInput) Model(appStatus ...pkgModels.ApproveStatus) *account.Account {
 	if acc == nil {
 		return nil
 	}
-	var status model.ApproveStatus
+	var status pkgModels.ApproveStatus
 	if len(appStatus) == 0 {
 		status = acc.Status.ModelStatus()
 	} else {
 		status = appStatus[0]
 	}
-	return &model.Account{
+	return &account.Account{
 		Approve:           status,
 		Title:             s4ptr(acc.Title),
 		Description:       s4ptr(acc.Description),
@@ -76,9 +76,9 @@ func (ord *AccountListOrder) Order() *account.ListOrder {
 	}
 	return &account.ListOrder{
 		// UserID:    ord.UserID.AsOrder(),
-		ID:     ord.ID.AsOrder(),
-		Title:  ord.Title.AsOrder(),
-		Status: ord.Status.AsOrder(),
+		ID:     pkgModels.Order(ord.ID.AsOrder()),
+		Title:  pkgModels.Order(ord.Title.AsOrder()),
+		Status: pkgModels.Order(ord.Status.AsOrder()),
 		// CreatedAt: ord.CreatedAt.AsOrder(),
 		// UpdatedAt: ord.UpdatedAt.AsOrder(),
 	}

@@ -3,6 +3,7 @@ APP_TAGS  ?= $(or ${APP_BUILD_TAGS},postgres jaeger migrate)
 .DEPS:
 	@echo "Install dependencies"
 	go install github.com/NoahShen/gotunnelme
+	go install go.uber.org/mock/mockgen@latest
 
 .PHONY: all
 all: lint cover
@@ -44,10 +45,6 @@ cover:
 	@echo Open the coverage report:
 	@echo open $(TMP_ETC)/coverage.html
 
-.PHONY: __eval_srcs
-__eval_srcs:
-	$(eval SRCS := $(shell find . -not -path 'bazel-*' -not -path '.tmp*' -name '*.go'))
-
 .PHONY: generate-code
 generate-code: ## Run codegeneration procedure
 	@echo "Generate code"
@@ -61,6 +58,10 @@ build-gql: ## Build graphql server
 .PHONY: run-test-api
 run-test-api: ## Run test api server
 	cd example/api && make run-api
+
+.PHONY: build-test-api
+build-test-api: ## Build test api server
+	cd example/api && make build-docker-dev
 
 .PHONY: announce-test-api
 announce-test-api: ## Run test api server with announce via tunnelme

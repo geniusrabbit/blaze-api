@@ -1,33 +1,49 @@
 package account
 
 import (
-	"time"
-
-	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository/account/models"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
-type AccountBase interface {
-	IsNil() bool
-	GetID() uint64
-	SetID(id uint64)
+// import (
+// 	"time"
 
-	ExtendAdminUsers(ids ...uint64)
-	SetPermissions(perm model.PermissionChecker)
+// 	"github.com/geniusrabbit/blaze-api/model"
+// )
 
-	GetApprove() model.ApproveStatus
-	SetApprove(status model.ApproveStatus)
+// type AccountBase interface {
+// 	IsNil() bool
+// 	GetID() uint64
+// 	SetID(id uint64)
 
-	SetCreatedAt(createdAt time.Time)
-}
+// 	ExtendAdminUsers(ids ...uint64)
+// 	SetPermissions(perm model.PermissionChecker)
 
-type Account[AccountT AccountBase] interface {
-	AccountBase
-	New() AccountT
-	NewBasicAccount(
-		id uint64,
-		title string,
-		approve model.ApproveStatus,
-		perms model.PermissionChecker,
-		admins []uint64,
-	) AccountT
-}
+// 	GetApprove() model.ApproveStatus
+// 	SetApprove(status model.ApproveStatus)
+
+// 	SetCreatedAt(createdAt time.Time)
+// }
+
+// type Account[AccountT AccountBase] interface {
+// 	AccountBase
+// 	New() AccountT
+// 	NewBasicAccount(
+// 		id uint64,
+// 		title string,
+// 		approve model.ApproveStatus,
+// 		perms model.PermissionChecker,
+// 		admins []uint64,
+// 	) AccountT
+// }
+
+type (
+	Account              = models.Account
+	AccountMember        = models.AccountMember
+	M2MAccountMemberRole = models.M2MAccountMemberRole
+	PermissionChecker    = models.PermissionChecker
+	User                 = user.User
+)
+
+// CtxPermissionCheckAccount is the context key for account permission checks.
+var CtxPermissionCheckAccount = models.CtxPermissionCheckAccount

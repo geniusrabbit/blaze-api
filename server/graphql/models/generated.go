@@ -152,27 +152,41 @@ type AuthClient struct {
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
 
+// AuthClientCreateInput is used to create a new OAuth 2.0 client
+type AuthClientCreateInput struct {
+	// AccountID of the auth client owner
+	AccountID *uint64 `json:"accountID,omitempty"`
+	// UserID of the auth client creator
+	UserID *uint64 `json:"userID,omitempty"`
+	// Title of the auth client as human readable name
+	Title *string `json:"title,omitempty"`
+	// Secret for the OAuth 2.0 client
+	Secret *string `json:"secret,omitempty"`
+	// RedirectURIs allowed for this client
+	RedirectURIs []string `json:"redirectURIs,omitempty"`
+	// GrantTypes allowed for this client
+	GrantTypes []string `json:"grantTypes,omitempty"`
+	// ResponseTypes allowed for this client
+	ResponseTypes []string `json:"responseTypes,omitempty"`
+	// Scope string for the client
+	Scope *string `json:"scope,omitempty"`
+	// Audience whitelist for token requests
+	Audience []string `json:"audience,omitempty"`
+	// SubjectType for responses to this client
+	SubjectType string `json:"subjectType"`
+	// AllowedCORSOrigins for this client
+	AllowedCORSOrigins []string `json:"allowedCORSOrigins,omitempty"`
+	// Public flag for the client
+	Public *bool `json:"public,omitempty"`
+	// ExpiresAt time for the client
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+}
+
 type AuthClientEdge struct {
 	// A cursor for use in pagination.
 	Cursor string `json:"cursor"`
 	// The item at the end of the edge.
 	Node *AuthClient `json:"node,omitempty"`
-}
-
-type AuthClientInput struct {
-	AccountID          *uint64    `json:"accountID,omitempty"`
-	UserID             *uint64    `json:"userID,omitempty"`
-	Title              *string    `json:"title,omitempty"`
-	Secret             *string    `json:"secret,omitempty"`
-	RedirectURIs       []string   `json:"redirectURIs,omitempty"`
-	GrantTypes         []string   `json:"grantTypes,omitempty"`
-	ResponseTypes      []string   `json:"responseTypes,omitempty"`
-	Scope              *string    `json:"scope,omitempty"`
-	Audience           []string   `json:"audience,omitempty"`
-	SubjectType        string     `json:"subjectType"`
-	AllowedCORSOrigins []string   `json:"allowedCORSOrigins,omitempty"`
-	Public             *bool      `json:"public,omitempty"`
-	ExpiresAt          *time.Time `json:"expiresAt,omitempty"`
 }
 
 type AuthClientListFilter struct {
@@ -199,6 +213,36 @@ type AuthClientPayload struct {
 	AuthClientID string `json:"authClientID"`
 	// AuthClient object accessor
 	AuthClient *AuthClient `json:"authClient,omitempty"`
+}
+
+// AuthClientUpdateInput is used to update an existing OAuth 2.0 client
+type AuthClientUpdateInput struct {
+	// AccountID of the auth client owner
+	AccountID *uint64 `json:"accountID,omitempty"`
+	// UserID of the auth client creator
+	UserID *uint64 `json:"userID,omitempty"`
+	// Title of the auth client as human readable name
+	Title *string `json:"title,omitempty"`
+	// Secret for the OAuth 2.0 client
+	Secret *string `json:"secret,omitempty"`
+	// RedirectURIs allowed for this client
+	RedirectURIs []string `json:"redirectURIs,omitempty"`
+	// GrantTypes allowed for this client
+	GrantTypes []string `json:"grantTypes,omitempty"`
+	// ResponseTypes allowed for this client
+	ResponseTypes []string `json:"responseTypes,omitempty"`
+	// Scope string for the client
+	Scope *string `json:"scope,omitempty"`
+	// Audience whitelist for token requests
+	Audience []string `json:"audience,omitempty"`
+	// SubjectType for responses to this client
+	SubjectType *string `json:"subjectType,omitempty"`
+	// AllowedCORSOrigins for this client
+	AllowedCORSOrigins []string `json:"allowedCORSOrigins,omitempty"`
+	// Public flag for the client
+	Public *bool `json:"public,omitempty"`
+	// ExpiresAt time for the client
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
 type DirectAccessToken struct {

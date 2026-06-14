@@ -1,7 +1,7 @@
 package types
 
 import (
-	"fmt"
+	"encoding/json"
 	"io"
 
 	"github.com/geniusrabbit/gosql/v2"
@@ -55,14 +55,24 @@ func (j NullableJSON) MarshalGQL(w io.Writer) {
 	_, _ = w.Write(data)
 }
 
-// UnmarshalGQL implements method of interface graphql.Unmarshaler
+// UnmarshalGQL implements method of interface graphql.Unmarshaler.
+// gqlgen passes already-parsed values (map[string]any, []any, primitives)
+// when variables are used, and strings/bytes when inlined as literals.
 func (j *NullableJSON) UnmarshalGQL(v any) error {
 	switch v := v.(type) {
 	case []byte:
 		return j.goJSON().UnmarshalJSON(v)
 	case string:
 		return j.goJSON().UnmarshalJSON([]byte(v))
+	case nil:
+		j.goJSON().Data = nil
+		return nil
 	default:
-		return fmt.Errorf("%T is not a supported as a duration", v)
+		// Already-parsed value from variables (map[string]any, []any, bool, float64, …)
+		data, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		return j.goJSON().UnmarshalJSON(data)
 	}
 }

@@ -8,16 +8,13 @@ import (
 	"github.com/demdxx/sendmsg"
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/messanger"
+	"github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	"github.com/geniusrabbit/blaze-api/repository/user/repository"
-	"github.com/geniusrabbit/blaze-api/repository/user/usecase"
-	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -31,10 +28,8 @@ type QueryResolver struct {
 }
 
 // NewQueryResolver returns new API resolver
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{
-		users: usecase.NewUserUsecase(repository.New()),
-	}
+func NewQueryResolver(uc user.Usecase) *QueryResolver {
+	return &QueryResolver{users: uc}
 }
 
 // CurrentUser returns the current user info
@@ -49,10 +44,10 @@ func (r *QueryResolver) CurrentUser(ctx context.Context) (*gqlmodels.UserPayload
 
 // CreateUser is the resolver for the createUser field.
 func (r *QueryResolver) CreateUser(ctx context.Context, input *gqlmodels.UserInput) (*gqlmodels.UserPayload, error) {
-	uid, err := r.users.Store(ctx, &model.User{
+	uid, err := r.users.Create(ctx, &user.User{
 		Email:   *input.Username,
 		Approve: input.Status.ModelStatus(),
-	}, "")
+	}, "GQL create user")
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +58,7 @@ func (r *QueryResolver) CreateUser(ctx context.Context, input *gqlmodels.UserInp
 	return &gqlmodels.UserPayload{
 		ClientMutationID: requestid.Get(ctx),
 		UserID:           user.ID,
-		User:             gqlmodels.FromUserModel(user),
+		User:             FromUserModel(user),
 	}, nil
 }
 
@@ -85,21 +80,21 @@ func (r *QueryResolver) UpdateUser(ctx context.Context, id uint64, input *gqlmod
 	return &gqlmodels.UserPayload{
 		ClientMutationID: requestid.Get(ctx),
 		UserID:           user.ID,
-		User:             gqlmodels.FromUserModel(user),
+		User:             FromUserModel(user),
 	}, nil
 }
 
 // ApproveUser is the resolver for the approveUser field.
 func (r *QueryResolver) ApproveUser(ctx context.Context, id uint64, msg *string) (*gqlmodels.UserPayload, error) {
-	return r.updateApproveStatus(ctx, id, model.ApprovedApproveStatus, msg)
+	return r.updateApproveStatus(ctx, id, models.ApprovedApproveStatus, msg)
 }
 
 // RejectUser is the resolver for the rejectUser field.
 func (r *QueryResolver) RejectUser(ctx context.Context, id uint64, msg *string) (*gqlmodels.UserPayload, error) {
-	return r.updateApproveStatus(ctx, id, model.DisapprovedApproveStatus, msg)
+	return r.updateApproveStatus(ctx, id, models.DisapprovedApproveStatus, msg)
 }
 
-func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, status model.ApproveStatus, msg *string) (*gqlmodels.UserPayload, error) {
+func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, status models.ApproveStatus, msg *string) (*gqlmodels.UserPayload, error) {
 	user, err := r.users.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -128,7 +123,7 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 	return &gqlmodels.UserPayload{
 		ClientMutationID: requestid.Get(ctx),
 		UserID:           id,
-		User:             gqlmodels.FromUserModel(user),
+		User:             FromUserModel(user),
 	}, nil
 }
 
@@ -201,7 +196,7 @@ func (r *QueryResolver) UpdateResetedUserPassword(ctx context.Context, token, em
 func (r *QueryResolver) User(ctx context.Context, id uint64, username string) (*gqlmodels.UserPayload, error) {
 	var (
 		err  error
-		user *model.User
+		user *user.User
 	)
 	switch {
 	case id > 0:
@@ -223,11 +218,11 @@ func (r *QueryResolver) User(ctx context.Context, id uint64, username string) (*
 	return &gqlmodels.UserPayload{
 		ClientMutationID: requestid.Get(ctx),
 		UserID:           user.ID,
-		User:             gqlmodels.FromUserModel(user),
+		User:             FromUserModel(user),
 	}, nil
 }
 
 // ListUsers list by filter
-func (r *QueryResolver) ListUsers(ctx context.Context, filter *gqlmodels.UserListFilter, order *gqlmodels.UserListOrder, page *gqlmodels.Page) (*connectors.UserConnection, error) {
-	return connectors.NewUserConnection(ctx, r.users, filter, order, page), nil
+func (r *QueryResolver) ListUsers(ctx context.Context, filter *gqlmodels.UserListFilter, order *gqlmodels.UserListOrder, page *gqlmodels.Page) (*UserConnection, error) {
+	return NewUserConnection(ctx, r.users, filter, order, page), nil
 }

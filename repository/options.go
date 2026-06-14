@@ -1,11 +1,16 @@
 package repository
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/demdxx/xtypes"
 	"gorm.io/gorm"
 )
+
+type QueryPermissionAdjuster interface {
+	AdjustPermissions(ctx context.Context) error
+}
 
 // QOption prepare query
 type QOption interface {
@@ -79,7 +84,9 @@ func (opts ListOptions) With(prep QOption) ListOptions {
 
 func (opts ListOptions) PrepareQuery(query *gorm.DB) *gorm.DB {
 	for _, opt := range opts {
-		query = opt.PrepareQuery(query)
+		if opt != nil {
+			query = opt.PrepareQuery(query)
+		}
 	}
 	return query
 }
@@ -99,4 +106,21 @@ func (opts ListOptions) PrepareAfterQuery(query *gorm.DB, idCol string, orderCol
 		}
 	}
 	return query
+}
+
+// WithPermissions finds the first QOption implementing QueryPermissionAdjuster and calls it.
+// If no such option is found, appends defaultOpt and adjusts it.
+// Returns the (possibly extended) opts slice and any adjustment error.
+func (opts ListOptions) WithPermissions(ctx context.Context, defaultOpt QOption) (ListOptions, error) {
+	for _, opt := range opts {
+		if adj, ok := opt.(QueryPermissionAdjuster); ok {
+			return opts, adj.AdjustPermissions(ctx)
+		}
+	}
+	if adj, ok := defaultOpt.(QueryPermissionAdjuster); ok {
+		if err := adj.AdjustPermissions(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return append(opts, defaultOpt), nil
 }

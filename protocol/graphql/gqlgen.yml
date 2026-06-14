@@ -3,7 +3,8 @@
 
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
-- ./schemas/*.graphql
+  - ./schemas/*.graphql
+  - ../../repository/**/*.graphql
 
 skip_mod_tidy: true
 
@@ -76,20 +77,20 @@ models:
     model: github.com/geniusrabbit/blaze-api/server/graphql/types.ID64
   # Connectors
   UserConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.UserConnection
+    model: github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql.UserConnection
   AccountConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AccountConnection
+    model: github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql.AccountConnection
   MemberConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.MemberConnection
+    model: github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql.MemberConnection
   SocialAccountConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.SocialAccountConnection
+    model: github.com/geniusrabbit/blaze-api/repository/socialaccount/delivery/graphql.SocialAccountConnection
   RBACRoleConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.RBACRoleConnection
+    model: github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql.RBACRoleConnection
   AuthClientConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AuthClientConnection
+    model: github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql.AuthClientConnection
   HistoryActionConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.HistoryActionConnection
+    model: github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql.HistoryActionConnection
   OptionConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.OptionConnection
+    model: github.com/geniusrabbit/blaze-api/repository/option/delivery/graphql.OptionConnection
   DirectAccessTokenConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.DirectAccessTokenConnection
+    model: github.com/geniusrabbit/blaze-api/repository/directaccesstoken/delivery/graphql.DirectAccessTokenConnection

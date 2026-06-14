@@ -7,19 +7,18 @@ import (
 	"testing"
 
 	"github.com/geniusrabbit/gosql/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/repository/option/mocks"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 )
 
-var testOption = model.Option{
+var testOption = models.Option{
 	Name:     "opt.name",
-	Type:     model.UserOptionType,
+	Type:     models.UserOptionType,
 	TargetID: 1,
 	Value:    *gosql.MustNullableJSON[any](map[string]any{"val": 1}),
 }
@@ -63,13 +62,13 @@ func (s *testSuite) TestFetchList() {
 		FetchList(s.ctx,
 			gomock.AssignableToTypeOf(&option.Filter{}),
 			gomock.AssignableToTypeOf(&option.ListOrder{}),
-			gomock.AssignableToTypeOf(&repository.Pagination{})).
-		Return([]*model.Option{{Name: "opt.name1"}, {Name: "opt.name2"}}, nil)
+			gomock.AssignableToTypeOf(&option.Pagination{})).
+		Return([]*option.Option{{Name: "opt.name1"}, {Name: "opt.name2"}}, nil)
 
 	roles, err := s.testUsecase.FetchList(s.ctx,
 		&option.Filter{NamePattern: []string{"opt.%"}},
-		&option.ListOrder{Name: model.OrderAsc},
-		&repository.Pagination{Size: 100})
+		&option.ListOrder{Name: models.OrderAsc},
+		&option.Pagination{Size: 100})
 	s.NoError(err)
 	s.Equal(2, len(roles))
 }
@@ -86,16 +85,16 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestSet() {
 	s.baseRepo.EXPECT().
-		Set(s.ctx, gomock.AssignableToTypeOf(&model.Option{})).
+		Set(s.ctx, gomock.AssignableToTypeOf(&option.Option{})).
 		Return(nil)
 
-	err := s.testUsecase.Set(s.ctx, &model.Option{Name: "test1"})
+	err := s.testUsecase.Set(s.ctx, &option.Option{Name: "test1"})
 	s.NoError(err)
 }
 
 func (s *testSuite) TestSetOption() {
 	s.baseRepo.EXPECT().
-		Set(s.ctx, gomock.AssignableToTypeOf(&model.Option{})).
+		Set(s.ctx, gomock.AssignableToTypeOf(&option.Option{})).
 		Return(nil)
 
 	err := s.testUsecase.SetOption(s.ctx,

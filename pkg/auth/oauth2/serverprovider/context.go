@@ -5,15 +5,15 @@ import (
 
 	"github.com/ory/fosite"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	"github.com/geniusrabbit/blaze-api/repository/authclient"
 )
 
 var ctxTarget = struct{ s string }{"oauth2:user"}
 
 type target struct {
 	uid        uint64
-	clientObj  *model.AuthClient
-	sessionObj *model.AuthSession
+	clientObj  *authclient.AuthClient
+	sessionObj *authclient.AuthSession
 }
 
 // NewContext with additional functionality for oauth2 module
@@ -39,22 +39,22 @@ func GetContextTargetUserID(ctx context.Context) uint64 {
 }
 
 // SetContextTargetClient puts user ID into the context to reuse it in future
-func SetContextTargetClient(ctx context.Context, client *model.AuthClient) {
+func SetContextTargetClient(ctx context.Context, client *authclient.AuthClient) {
 	getContextTarget(ctx).clientObj = client
 }
 
 // GetContextTargetClient returns auth client object
-func GetContextTargetClient(ctx context.Context) *model.AuthClient {
+func GetContextTargetClient(ctx context.Context) *authclient.AuthClient {
 	return getContextTarget(ctx).clientObj
 }
 
 // SetContextSession puts session model into the context
-func SetContextSession(ctx context.Context, session *model.AuthSession) {
+func SetContextSession(ctx context.Context, session *authclient.AuthSession) {
 	getContextTarget(ctx).sessionObj = session
 }
 
 // GetContextSession returns session model object from context
-func GetContextSession(ctx context.Context) *model.AuthSession {
+func GetContextSession(ctx context.Context) *authclient.AuthSession {
 	return getContextTarget(ctx).sessionObj
 }
 

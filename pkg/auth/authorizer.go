@@ -4,35 +4,51 @@ import (
 	"net/http"
 
 	"github.com/demdxx/xtypes"
-
-	"github.com/geniusrabbit/blaze-api/model"
 )
 
-type Authorizer interface {
+// IsNillable describes a type that can report whether it is nil/empty.
+type IsNillable interface {
+	IsNil() bool
+}
+
+// Authorizer defines a single authorization strategy.
+type Authorizer[User IsNillable, Account IsNillable] interface {
+	// AuthorizerCode returns a unique identifier for the authorizer.
 	AuthorizerCode() string
-	Authorize(w http.ResponseWriter, r *http.Request) (string /* token */, *model.User, *model.Account, error)
+	// Authorize validates request credentials and returns token, user, account, and error.
+	Authorize(w http.ResponseWriter, r *http.Request) (string /* token */, User, Account, error)
 }
 
-type AuthorizeWrapper struct {
-	authorizers []Authorizer
+// AuthorizeWrapper combines multiple authorizers and executes them in order.
+type AuthorizeWrapper[User IsNillable, Account IsNillable] struct {
+	authorizers []Authorizer[User, Account]
 }
 
-func NewAuthorizeWrapper(authorizers ...Authorizer) *AuthorizeWrapper {
-	return &AuthorizeWrapper{
-		authorizers: xtypes.Slice[Authorizer](authorizers).
-			Filter(func(a Authorizer) bool { return a != nil }),
+// NewAuthorizeWrapper creates a wrapper from the provided non-nil authorizers.
+func NewAuthorizeWrapper[User IsNillable, Account IsNillable](authorizers ...Authorizer[User, Account]) *AuthorizeWrapper[User, Account] {
+	return &AuthorizeWrapper[User, Account]{
+		authorizers: xtypes.Slice[Authorizer[User, Account]](authorizers).
+			Filter(func(a Authorizer[User, Account]) bool { return a != nil }),
 	}
 }
 
-func (a *AuthorizeWrapper) Authorize(w http.ResponseWriter, r *http.Request) (string, *model.User, *model.Account, error) {
+// Authorize runs each authorizer until one returns a non-nil user or account.
+// If any authorizer returns an error, authorization stops and the error is returned.
+func (a *AuthorizeWrapper[User, Account]) Authorize(w http.ResponseWriter, r *http.Request) (string, User, Account, error) {
+	var (
+		zeroUser    User
+		zeroAccount Account
+	)
+
 	for _, authorizer := range a.authorizers {
 		token, user, account, err := authorizer.Authorize(w, r)
 		if err != nil {
-			return token, nil, nil, err
+			return token, zeroUser, zeroAccount, err
 		}
-		if user != nil || account != nil {
+		if !user.IsNil() || !account.IsNil() {
 			return token, user, account, nil
 		}
 	}
-	return "", nil, nil, nil
+
+	return "", zeroUser, zeroAccount, nil
 }

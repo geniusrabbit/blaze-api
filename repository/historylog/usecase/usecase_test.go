@@ -4,15 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/historylog/mocks"
+	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 )
 
 type testSuite struct {
@@ -47,12 +46,12 @@ func (s *testSuite) TestFetchList() {
 		FetchList(s.ctx,
 			gomock.AssignableToTypeOf(&historylog.Filter{}),
 			gomock.AssignableToTypeOf(&historylog.Order{}),
-			gomock.AssignableToTypeOf(&repository.Pagination{})).
-		Return([]*model.HistoryAction{{ID: uid1}, {ID: uid2}}, nil)
+			gomock.AssignableToTypeOf(&historylog.Pagination{})).
+		Return([]*historylogModels.HistoryAction{{ID: uid1}, {ID: uid2}}, nil)
 
 	objs, err := s.testUsecase.FetchList(s.ctx,
 		&historylog.Filter{ID: []uuid.UUID{uid1, uid2}},
-		&historylog.Order{}, &repository.Pagination{Size: 100})
+		&historylog.Order{}, &historylog.Pagination{Size: 100})
 	s.NoError(err)
 	s.Equal(2, len(objs))
 }

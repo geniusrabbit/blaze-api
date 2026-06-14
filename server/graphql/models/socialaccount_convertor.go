@@ -4,12 +4,11 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
 )
 
-func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
+func FromSocialAccountModel(acc *socialaccount.AccountSocial) *SocialAccount {
 	if acc == nil {
 		return nil
 	}
@@ -35,11 +34,11 @@ func FromSocialAccountModel(acc *model.AccountSocial) *SocialAccount {
 	}
 }
 
-func FromSocialAccountModelList(list []*model.AccountSocial) []*SocialAccount {
+func FromSocialAccountModelList(list []*socialaccount.AccountSocial) []*SocialAccount {
 	return xtypes.SliceApply(list, FromSocialAccountModel)
 }
 
-func FromSocialAccountSessionModel(sess *model.AccountSocialSession) *SocialAccountSession {
+func FromSocialAccountSessionModel(sess *socialaccount.AccountSocialSession) *SocialAccountSession {
 	if sess == nil {
 		return nil
 	}
@@ -58,7 +57,7 @@ func FromSocialAccountSessionModel(sess *model.AccountSocialSession) *SocialAcco
 	}
 }
 
-func FromSocialAccountSessionModelList(list []*model.AccountSocialSession) []*SocialAccountSession {
+func FromSocialAccountSessionModelList(list []*socialaccount.AccountSocialSession) []*SocialAccountSession {
 	return xtypes.SliceApply(list, FromSocialAccountSessionModel)
 }
 

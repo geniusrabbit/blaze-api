@@ -3,7 +3,7 @@ package generated
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/model"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 )
@@ -21,7 +21,7 @@ func (r *RepositoryApprover[T, TID]) Approve(ctx context.Context, id TID, messag
 		historylog.WithMessage(ctx, message),
 	).Model((*T)(nil)).
 		Where(r.IDName+"=?", id).
-		Update(r.StatusName, model.ApprovedApproveStatus).Error
+		Update(r.StatusName, pkgModels.ApprovedApproveStatus).Error
 }
 
 // Reject rejects an entity by ID
@@ -30,5 +30,5 @@ func (r *RepositoryApprover[T, TID]) Reject(ctx context.Context, id TID, message
 		historylog.WithMessage(ctx, message),
 	).Model((*T)(nil)).
 		Where(r.IDName+"=?", id).
-		Update(r.StatusName, model.DisapprovedApproveStatus).Error
+		Update(r.StatusName, pkgModels.DisapprovedApproveStatus).Error
 }

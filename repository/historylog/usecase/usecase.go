@@ -4,11 +4,11 @@ package usecase
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/pkg/acl"
-	"github.com/geniusrabbit/blaze-api/repository"
-	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/pkg/errors"
+
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 )
 
 // RoleUsecase provides bussiness logic for account access
@@ -24,19 +24,19 @@ func NewUsecase(repo historylog.Repository) *HistoryUsecase {
 }
 
 // Count of roles by filter
-func (a *HistoryUsecase) Count(ctx context.Context, filter *historylog.Filter) (int64, error) {
-	if !acl.HaveAccessList(ctx, &model.HistoryAction{}) {
+func (a *HistoryUsecase) Count(ctx context.Context, opts ...historylog.QOption) (int64, error) {
+	if !acl.HaveAccessList(ctx, &historylogModels.HistoryAction{}) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list log items")
 	}
-	return a.repo.Count(ctx, filter)
+	return a.repo.Count(ctx, opts...)
 }
 
 // FetchList of roles by filter
-func (a *HistoryUsecase) FetchList(ctx context.Context, filter *historylog.Filter, order *historylog.Order, pagination *repository.Pagination) ([]*model.HistoryAction, error) {
-	if !acl.HaveAccessList(ctx, &model.HistoryAction{}) {
+func (a *HistoryUsecase) FetchList(ctx context.Context, opts ...historylog.QOption) ([]*historylogModels.HistoryAction, error) {
+	if !acl.HaveAccessList(ctx, &historylogModels.HistoryAction{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list log items")
 	}
-	list, err := a.repo.FetchList(ctx, filter, order, pagination)
+	list, err := a.repo.FetchList(ctx, opts...)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list log items")

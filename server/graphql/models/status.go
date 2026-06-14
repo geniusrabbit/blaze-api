@@ -1,74 +1,52 @@
 package models
 
-import "github.com/geniusrabbit/blaze-api/model"
-
-// // StatusFrom model value
-// func StatusFrom(status model.ActiveStatus) ActiveStatus {
-// 	switch status {
-// 	case model.ActiveStatus:
-// 		return ActiveStatusActive
-// 	case model.PausedStatus:
-// 		return ActiveStatusPaused
-// 	}
-// 	return ActiveStatusPaused
-// }
-
-// // Value model status
-// func (status ActiveStatus) Value() model.Status {
-// 	switch status {
-// 	case ActiveStatusActive:
-// 		return model.ActiveStatus
-// 	case ActiveStatusPaused:
-// 		return model.PausedStatus
-// 	}
-// 	return model.PausedStatus
-// }
+import pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 
 // ModelStatus returns status type from models
-func (status *ApproveStatus) ModelStatus() model.ApproveStatus {
+func (status *ApproveStatus) ModelStatus() pkgModels.ApproveStatus {
 	if status == nil {
-		return model.UndefinedApproveStatus
+		return pkgModels.UndefinedApproveStatus
 	}
 	switch *status {
 	case ApproveStatusApproved:
-		return model.ApprovedApproveStatus
+		return pkgModels.ApprovedApproveStatus
 	case ApproveStatusRejected:
-		return model.DisapprovedApproveStatus
+		return pkgModels.DisapprovedApproveStatus
 	}
-	return model.UndefinedApproveStatus
+	return pkgModels.UndefinedApproveStatus
 }
 
 // ModelStatus returns status type from models
-func (status *AvailableStatus) ModelStatus() model.AvailableStatus {
+func (status *AvailableStatus) ModelStatus() pkgModels.AvailableStatus {
 	if status == nil {
-		return model.UndefinedAvailableStatus
+		return pkgModels.UndefinedAvailableStatus
 	}
 	switch *status {
 	case AvailableStatusAvailable:
-		return model.AvailableAvailableStatus
+		return pkgModels.AvailableAvailableStatus
 	case AvailableStatusUnavailable:
-		return model.UnavailableAvailableStatus
+		return pkgModels.UnavailableAvailableStatus
 	}
-	return model.UndefinedAvailableStatus
+	return pkgModels.UndefinedAvailableStatus
 }
 
 // AvailableStatusFrom model value
-func AvailableStatusFrom(status model.AvailableStatus) AvailableStatus {
+func AvailableStatusFrom(status pkgModels.AvailableStatus) AvailableStatus {
 	switch status {
-	case model.AvailableAvailableStatus:
+	case pkgModels.AvailableAvailableStatus:
 		return AvailableStatusAvailable
-	case model.UnavailableAvailableStatus:
+	case pkgModels.UnavailableAvailableStatus:
 		return AvailableStatusUnavailable
 	}
 	return AvailableStatusUndefined
 }
 
 // ApproveStatusFrom model value
-func ApproveStatusFrom(status model.ApproveStatus) ApproveStatus {
+func ApproveStatusFrom(status pkgModels.ApproveStatus) ApproveStatus {
 	switch status {
-	case model.ApprovedApproveStatus:
+	case pkgModels.ApprovedApproveStatus:
 		return ApproveStatusApproved
-	case model.DisapprovedApproveStatus:
+	case pkgModels.DisapprovedApproveStatus:
 		return ApproveStatusRejected
 	}
 	return ApproveStatusPending

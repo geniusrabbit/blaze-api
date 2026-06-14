@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
@@ -32,7 +31,7 @@ func NewUserUsecase(repo user.Repository) *UserUsecase {
 }
 
 // Get returns the group by ID if have access
-func (a *UserUsecase) Get(ctx context.Context, id uint64) (*model.User, error) {
+func (a *UserUsecase) Get(ctx context.Context, id uint64) (*user.User, error) {
 	currentUser, _ := session.UserAccount(ctx)
 	if currentUser.ID == id {
 		if !acl.HaveAccessView(ctx, currentUser) {
@@ -51,7 +50,7 @@ func (a *UserUsecase) Get(ctx context.Context, id uint64) (*model.User, error) {
 }
 
 // GetByEmail returns the group by Email if have access
-func (a *UserUsecase) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+func (a *UserUsecase) GetByEmail(ctx context.Context, email string) (*user.User, error) {
 	currentUser, _ := session.UserAccount(ctx)
 	if currentUser.Email == email {
 		if !acl.HaveAccessView(ctx, currentUser) {
@@ -70,45 +69,38 @@ func (a *UserUsecase) GetByEmail(ctx context.Context, email string) (*model.User
 }
 
 // GetByPassword returns user by email + password
-func (a *UserUsecase) GetByPassword(ctx context.Context, email, password string) (*model.User, error) {
+func (a *UserUsecase) GetByPassword(ctx context.Context, email, password string) (*user.User, error) {
 	return a.userRepo.GetByPassword(ctx, email, password)
 }
 
-// GetByToken returns user + account by session token
-func (a *UserUsecase) GetByToken(ctx context.Context, token string) (*model.User, *model.Account, error) {
-	return a.userRepo.GetByToken(ctx, token)
-}
-
 // FetchList of users by filter
-func (a *UserUsecase) FetchList(ctx context.Context, filter *user.ListFilter, order *user.ListOrder, page *repository.Pagination) ([]*model.User, error) {
-	if !acl.HaveAccessList(ctx, &model.User{}) {
+func (a *UserUsecase) FetchList(ctx context.Context, opts ...user.QOption) ([]*user.User, error) {
+	if !acl.HaveAccessList(ctx, &user.User{}) {
 		if !acl.HaveAccessList(ctx, session.User(ctx)) {
 			return nil, acl.ErrNoPermissions
 		}
-		if filter == nil {
-			filter = &user.ListFilter{}
+		if err := adjustFetchListPermissions(ctx, opts...); err != nil {
+			return nil, err
 		}
-		filter.AccountID = []uint64{session.Account(ctx).ID}
 	}
-	return a.userRepo.FetchList(ctx, filter, order, page)
+	return a.userRepo.FetchList(ctx, opts...)
 }
 
 // Count of users by filter
-func (a *UserUsecase) Count(ctx context.Context, filter *user.ListFilter) (int64, error) {
-	if !acl.HaveAccessCount(ctx, &model.User{}) {
+func (a *UserUsecase) Count(ctx context.Context, opts ...user.QOption) (int64, error) {
+	if !acl.HaveAccessCount(ctx, &user.User{}) {
 		if !acl.HaveAccessCount(ctx, session.User(ctx)) {
 			return 0, acl.ErrNoPermissions
 		}
-		if filter == nil {
-			filter = &user.ListFilter{}
+		if err := adjustFetchListPermissions(ctx, opts...); err != nil {
+			return 0, err
 		}
-		filter.AccountID = []uint64{session.Account(ctx).ID}
 	}
-	return a.userRepo.Count(ctx, filter)
+	return a.userRepo.Count(ctx, opts...)
 }
 
 // SetPassword for the exists user
-func (a *UserUsecase) SetPassword(ctx context.Context, userObj *model.User, password string) error {
+func (a *UserUsecase) SetPassword(ctx context.Context, userObj *user.User, password string) error {
 	if !acl.HaveObjectPermissions(ctx, userObj, `password.set.*`) {
 		return errors.Wrap(acl.ErrNoPermissions, `set password`)
 	}
@@ -116,7 +108,7 @@ func (a *UserUsecase) SetPassword(ctx context.Context, userObj *model.User, pass
 }
 
 // ResetPassword for the exists user
-func (a *UserUsecase) ResetPassword(ctx context.Context, email string) (*model.UserPasswordReset, *model.User, error) {
+func (a *UserUsecase) ResetPassword(ctx context.Context, email string) (*user.UserPasswordReset, *user.User, error) {
 	user, err := a.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		if err == sql.ErrNoRows || err == gorm.ErrRecordNotFound {
@@ -168,25 +160,16 @@ func (a *UserUsecase) UpdatePassword(ctx context.Context, token, email, password
 	return nil
 }
 
-// Store new object into database
-func (a *UserUsecase) Store(ctx context.Context, userObj *model.User, password string) (uint64, error) {
-	var err error
-	if userObj.ID == 0 && !acl.HaveAccessCreate(ctx, userObj) {
+// Create new object into database
+func (a *UserUsecase) Create(ctx context.Context, userObj *user.User, password string) (uint64, error) {
+	if !acl.HaveAccessCreate(ctx, userObj) {
 		return 0, acl.ErrNoPermissions
 	}
-	if userObj.ID != 0 && !acl.HaveAccessUpdate(ctx, userObj) {
-		return 0, acl.ErrNoPermissions
-	}
-	if userObj.ID == 0 {
-		userObj.ID, err = a.userRepo.Create(ctx, userObj, password)
-	} else {
-		err = a.userRepo.Update(ctx, userObj)
-	}
-	return userObj.ID, err
+	return a.userRepo.Create(ctx, userObj, password)
 }
 
 // Update existing object in database
-func (a *UserUsecase) Update(ctx context.Context, userObj *model.User) error {
+func (a *UserUsecase) Update(ctx context.Context, userObj *user.User) error {
 	if !acl.HaveAccessUpdate(ctx, userObj) {
 		return acl.ErrNoPermissions
 	}
@@ -205,10 +188,26 @@ func (a *UserUsecase) Delete(ctx context.Context, id uint64) error {
 	return a.userRepo.Delete(historylog.WithPK(ctx, id), id)
 }
 
-func (a *UserUsecase) getUserByID(ctx context.Context, id uint64) (*model.User, error) {
+func (a *UserUsecase) getUserByID(ctx context.Context, id uint64) (*user.User, error) {
 	currentUser := session.User(ctx)
 	if currentUser.ID == id {
 		return currentUser, nil
 	}
 	return nil, sql.ErrNoRows
+}
+
+func adjustFetchListPermissions(ctx context.Context, opts ...user.QOption) error {
+	adjusted := false
+	for _, opt := range opts {
+		if adjuster, ok := opt.(repository.QueryPermissionAdjuster); ok {
+			if err := adjuster.AdjustPermissions(ctx); err != nil {
+				return err
+			}
+			adjusted = true
+		}
+	}
+	if !adjusted {
+		return acl.ErrNoPermissions
+	}
+	return nil
 }

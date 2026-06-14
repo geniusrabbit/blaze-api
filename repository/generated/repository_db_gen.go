@@ -5,19 +5,17 @@ import (
 	"errors"
 	"time"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/repository"
-	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"gorm.io/gorm"
 )
 
-type Repository[T any, TID any] struct {
+type Repository[T Model[TID], TID comparable] struct {
 	repository.Repository
 	idField string
 }
 
 // NewRepository creates a new repository instance
-func NewRepository[T any, TID any]() *Repository[T, TID] {
+func NewRepository[T Model[TID], TID comparable]() *Repository[T, TID] {
 	return &Repository[T, TID]{idField: getModelIDField(new(T))}
 }
 
@@ -53,30 +51,27 @@ func (r *Repository[T, TID]) Count(ctx context.Context, qops ...Option) (count i
 }
 
 // Create creates a new campaign
-func (r *Repository[T, TID]) Create(ctx context.Context, obj *T, message string) (TID, error) {
+func (r *Repository[T, TID]) Create(ctx context.Context, obj *T, opts ...Option) (TID, error) {
 	setModelCreatedAt(obj, time.Now())
-	setModelApproveStatus(obj, model.ApproveStatus(model.PendingApproveStatus))
-	db := r.Master(historylog.WithMessage(ctx, message))
+	db := Options(opts).PrepareQuery(r.Master(ctx))
 	err := db.Create(obj).Error
 	return getModelID[TID](obj), err
 }
 
 // Update updates an existing campaign
-func (r *Repository[T, TID]) Update(ctx context.Context, id TID, obj *T, message string) error {
+func (r *Repository[T, TID]) Update(ctx context.Context, id TID, obj *T, opts ...Option) error {
 	newObj := *obj
 	setModelID(&newObj, id)
 	setModelUpdatedAt(&newObj, time.Now())
-	db := r.Master(historylog.WithMessage(ctx, message))
-	if err := db.Save(&newObj).Error; err != nil {
+	db := Options(opts).PrepareQuery(r.Master(ctx))
+	if err := db.Updates(&newObj).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 // Delete deletes a campaign by ID
-func (r *Repository[T, TID]) Delete(ctx context.Context, id TID, message string) error {
+func (r *Repository[T, TID]) Delete(ctx context.Context, id TID, opts ...Option) error {
 	obj := new(T)
-	return r.Master(
-		historylog.WithMessage(ctx, message),
-	).Delete(obj, r.idField+`=?`, id).Error
+	return Options(opts).PrepareQuery(r.Master(ctx)).Delete(obj, r.idField+`=?`, id).Error
 }

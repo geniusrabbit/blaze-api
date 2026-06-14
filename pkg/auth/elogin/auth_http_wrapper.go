@@ -4,24 +4,28 @@ import (
 	"net/http"
 )
 
+// URLParam represents a URL parameter with a key-value pair
 type URLParam struct {
 	Key   string
 	Value string
 }
 
+// ErrorHandler defines the interface for handling authentication errors
 type ErrorHandler interface {
 	Error(w http.ResponseWriter, r *http.Request, err error)
 }
 
+// SuccessHandler defines the interface for handling successful authentication
 type SuccessHandler interface {
 	Success(w http.ResponseWriter, r *http.Request, token *Token, data *UserData)
 }
 
+// RedirectParamsExtractor defines the interface for extracting redirect parameters
 type RedirectParamsExtractor interface {
 	RedirectParams(w http.ResponseWriter, r *http.Request, login bool) []URLParam
 }
 
-// AuthHTTPWrapper provides a wrapper for auth authentication
+// AuthHTTPWrapper provides HTTP handler wrapping for authentication flows
 type AuthHTTPWrapper struct {
 	Auth           AuthAccessor
 	Error          ErrorHandler
@@ -39,17 +43,17 @@ func NewWrapper(auth AuthAccessor, err ErrorHandler, success SuccessHandler, red
 	}
 }
 
-// Protocol returns the protocol name
+// Protocol returns the authentication protocol name
 func (wr *AuthHTTPWrapper) Protocol() string {
 	return wr.Auth.Protocol()
 }
 
-// Provider returns the provider name
+// Provider returns the authentication provider name
 func (wr *AuthHTTPWrapper) Provider() string {
 	return wr.Auth.Provider()
 }
 
-// HandleWrapper returns the http handler which handles the auth authentication
+// HandleWrapper returns an HTTP handler for the authentication routes
 func (wr *AuthHTTPWrapper) HandleWrapper(prefix string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", wr.Login)
@@ -60,19 +64,19 @@ func (wr *AuthHTTPWrapper) HandleWrapper(prefix string) http.Handler {
 	return mux
 }
 
-// Login handles the login request
+// Login handles the login request and redirects to the provider
 func (wr *AuthHTTPWrapper) Login(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, wr.Auth.LoginURL(wr.rediParams(w, r, true)), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, wr.Auth.LoginURL(wr.redirectParams(w, r, true)), http.StatusTemporaryRedirect)
 }
 
-// Callback handles the callback request
+// Callback handles the provider callback and authenticates the user
 func (wr *AuthHTTPWrapper) Callback(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		wr.Error.Error(w, r, err)
 		return
 	}
 
-	token, data, err := wr.Auth.UserData(r.Context(), r.Form, wr.rediParams(w, r, false))
+	token, data, err := wr.Auth.UserData(r.Context(), r.Form, wr.redirectParams(w, r, false))
 	if err != nil {
 		wr.Error.Error(w, r, err)
 		return
@@ -80,7 +84,8 @@ func (wr *AuthHTTPWrapper) Callback(w http.ResponseWriter, r *http.Request) {
 	wr.Success.Success(w, r, token, data)
 }
 
-func (wr *AuthHTTPWrapper) rediParams(w http.ResponseWriter, r *http.Request, isLogin bool) []URLParam {
+// redirectParams retrieves redirect parameters from the extractor
+func (wr *AuthHTTPWrapper) redirectParams(w http.ResponseWriter, r *http.Request, isLogin bool) []URLParam {
 	if wr.RedirectParams != nil {
 		return wr.RedirectParams.RedirectParams(w, r, isLogin)
 	}

@@ -1,24 +1,27 @@
 package historylog
 
 import (
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/option/models"
 )
 
-// Filter of the objects list
+// Filter represents query filters for history log objects.
 type Filter struct {
-	ID          []uuid.UUID
-	RequestID   []string
-	Name        []string
-	UserID      []uint64
-	AccountID   []uint64
-	ObjectID    []uint64
-	ObjectIDStr []string
-	ObjectType  []string
+	ID          []uuid.UUID // Filter by history log IDs
+	RequestID   []string    // Filter by request IDs
+	Name        []string    // Filter by names
+	UserID      []uint64    // Filter by user IDs
+	AccountID   []uint64    // Filter by account IDs
+	ObjectID    []uint64    // Filter by numeric object IDs
+	ObjectIDStr []string    // Filter by string object IDs
+	ObjectType  []string    // Filter by object types
 }
 
-func (filter *Filter) Query(query *gorm.DB) *gorm.DB {
+// PrepareQuery applies the filter conditions to a GORM query.
+func (filter *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if filter == nil {
 		return query
 	}
@@ -49,19 +52,21 @@ func (filter *Filter) Query(query *gorm.DB) *gorm.DB {
 	return query
 }
 
+// Order defines sorting options for history log queries.
 type Order struct {
-	ID          model.Order
-	RequestID   model.Order
-	Name        model.Order
-	UserID      model.Order
-	AccountID   model.Order
-	ObjectID    model.Order
-	ObjectIDStr model.Order
-	ObjectType  model.Order
-	ActionAt    model.Order
+	ID          models.Order // Sort by ID
+	RequestID   models.Order // Sort by request ID
+	Name        models.Order // Sort by name
+	UserID      models.Order // Sort by user ID
+	AccountID   models.Order // Sort by account ID
+	ObjectID    models.Order // Sort by numeric object ID
+	ObjectIDStr models.Order // Sort by string object ID
+	ObjectType  models.Order // Sort by object type
+	ActionAt    models.Order // Sort by action timestamp
 }
 
-func (o *Order) Query(query *gorm.DB) *gorm.DB {
+// PrepareQuery applies the sorting conditions to a GORM query.
+func (o *Order) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if o == nil {
 		return query
 	}
@@ -76,3 +81,10 @@ func (o *Order) Query(query *gorm.DB) *gorm.DB {
 	query = o.ActionAt.PrepareQuery(query, `action_at`)
 	return query
 }
+
+// Type aliases for common repository types.
+type (
+	Pagination  = repository.Pagination
+	QOption     = repository.QOption
+	ListOptions = repository.ListOptions
+)

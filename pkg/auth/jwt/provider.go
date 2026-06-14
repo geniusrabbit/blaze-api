@@ -32,32 +32,26 @@ type (
 	// Token of JWT session
 	Token = jwt.Token
 
-	// MapClaims describes the Claims type that uses the map[string]interface{} for JSON decoding
-	// This is the default claims type if you don't supply one
+	// MapClaims describes the Claims type that uses map[string]interface{} for JSON decoding
 	MapClaims = jwt.MapClaims
 )
 
-// TokenData extracted from token
+// TokenData contains extracted token information
 type TokenData struct {
 	UserID          uint64
 	AccountID       uint64
-	SocealAccountID uint64
+	SocealAccountID uint64 // Note: typo - consider renaming to SocialAccountID
 	ExpireAt        int64
 }
 
-// Provider to JWT constructions
+// Provider manages JWT token creation and validation
 type Provider struct {
-	// TokenLifetime defineds the valid time-period of token
-	TokenLifetime time.Duration
-
-	// Secret of session generation
-	Secret string
-
-	// MiddlewareOpts to get middelware procedure
-	MiddlewareOpts *jwtmiddleware.Options
+	TokenLifetime  time.Duration          // Valid time period for tokens
+	Secret         string                 // Secret key for signing
+	MiddlewareOpts *jwtmiddleware.Options // Middleware configuration
 }
 
-// NewDefaultProvider returns new provider
+// NewDefaultProvider creates a new JWT provider with default settings
 func NewDefaultProvider(secret string, tokenLifetime time.Duration, isDebug bool) *Provider {
 	return &Provider{
 		TokenLifetime: tokenLifetime,
@@ -70,98 +64,101 @@ func NewDefaultProvider(secret string, tokenLifetime time.Duration, isDebug bool
 	}
 }
 
-// CreateToken new token for user ID
+// CreateToken generates a new signed JWT token for the given user
 func (provider *Provider) CreateToken(userID, accountID, socialAccountID uint64) (string, time.Time, error) {
-	var (
-		err      error
-		lifetime = gocast.IfThen(provider.TokenLifetime > time.Minute, provider.TokenLifetime, time.Hour)
-		expireAt = time.Now().Add(lifetime)
-	)
-	//Creating Access Token
+	lifetime := gocast.IfThen(provider.TokenLifetime > time.Minute, provider.TokenLifetime, time.Hour)
+	expireAt := time.Now().Add(lifetime)
+
+	// Build token claims
 	atClaims := jwt.MapClaims{
 		claimUserID:    userID,
 		claimExpiredAt: expireAt.Unix(),
 	}
+
 	if accountID > 0 {
 		atClaims[claimAccountID] = accountID
 	}
 	if socialAccountID > 0 {
 		atClaims[claimSocialAccountID] = socialAccountID
 	}
+
+	// Sign and return token
 	opt := provider.MiddlewareOptions()
 	at := jwt.NewWithClaims(opt.SigningMethod, atClaims)
 	token, err := at.SignedString([]byte(provider.Secret))
 	if err != nil {
 		return "", expireAt, err
 	}
+
 	return token, expireAt, nil
 }
 
-// MiddlewareOptions returns the options of middelware
+// MiddlewareOptions returns configured middleware options with defaults
 func (provider *Provider) MiddlewareOptions() *jwtmiddleware.Options {
 	if provider.MiddlewareOpts == nil {
 		provider.MiddlewareOpts = &jwtmiddleware.Options{}
 	}
+
 	if provider.MiddlewareOpts.ValidationKeyGetter == nil {
 		provider.MiddlewareOpts.ValidationKeyGetter = provider.validationKeyGetter
 	}
+
 	if provider.MiddlewareOpts.SigningMethod == nil {
-		// When set, the middleware verifies that tokens are signed with the specific signing algorithm
-		// If the signing method is not constant the ValidationKeyGetter callback can be used to implement additional checks
-		// Important to avoid security issues described here: https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/
 		provider.MiddlewareOpts.SigningMethod = jwt.SigningMethodHS256
 	}
+
 	if provider.MiddlewareOpts.ErrorHandler == nil {
 		provider.MiddlewareOpts.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err string) {}
 	}
+
 	return provider.MiddlewareOpts
 }
 
-// Middleware returns middleware object with custom validation procedure
+// Middleware returns a configured JWT middleware handler
 func (provider *Provider) Middleware() *jwtmiddleware.JWTMiddleware {
 	return jwtmiddleware.New(*provider.MiddlewareOptions())
 }
 
-// ExtractTokenData into the token struct
+// ExtractTokenData extracts and validates claims from a token
 func (provider *Provider) ExtractTokenData(token *Token) (*TokenData, error) {
 	if token == nil || token.Claims == nil {
 		return nil, errJWTInvalidToken
 	}
-	claims := token.Claims.(MapClaims)
-	uid := gocast.Uint64(claims[claimUserID])
-	acc := gocast.Uint64(claims[claimAccountID])
-	sid := gocast.Uint64(claims[claimSocialAccountID])
-	exp := gocast.Int64(claims[claimExpiredAt])
 
+	claims := token.Claims.(MapClaims)
 	data := &TokenData{
-		UserID:          uid,
-		AccountID:       acc,
-		SocealAccountID: sid,
-		ExpireAt:        exp,
+		UserID:          gocast.Uint64(claims[claimUserID]),
+		AccountID:       gocast.Uint64(claims[claimAccountID]),
+		SocealAccountID: gocast.Uint64(claims[claimSocialAccountID]),
+		ExpireAt:        gocast.Int64(claims[claimExpiredAt]),
 	}
 
+	// Validate expiration and user ID
 	if data.ExpireAt < time.Now().Unix() {
 		return nil, errJWTTokenIsExpired
 	}
 	if data.UserID <= 0 {
 		return nil, jwt.ErrInvalidKey
 	}
+
 	return data, nil
 }
 
+// validationKeyGetter retrieves and validates the secret key for token verification
 func (provider *Provider) validationKeyGetter(token *Token) (any, error) {
 	if token.Claims == nil {
 		return nil, jwt.ErrInvalidKey
 	}
-	claims := token.Claims.(MapClaims)
-	uid := claims[claimUserID]
-	// acc, _ := claims[claimAccountID]
-	exp := claims[claimExpiredAt]
 
-	if gocast.Int64(exp) < time.Now().Unix() {
+	claims := token.Claims.(MapClaims)
+	exp := gocast.Int64(claims[claimExpiredAt])
+	uid := gocast.Int64(claims[claimUserID])
+
+	// Validate token claims
+	if exp < time.Now().Unix() {
 		return nil, errJWTTokenIsExpired
 	}
-	if gocast.Int64(uid) <= 0 {
+	if uid <= 0 {
 		return nil, jwt.ErrInvalidKey
 	}
 

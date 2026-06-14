@@ -8,13 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	models1 "github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -27,20 +25,10 @@ import (
 
 // NewExecutableSchema creates an ExecutableSchema from the ResolverRoot interface.
 func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
-	return &executableSchema{
-		schema:     cfg.Schema,
-		resolvers:  cfg.Resolvers,
-		directives: cfg.Directives,
-		complexity: cfg.Complexity,
-	}
+	return &executableSchema{SchemaData: cfg.Schema, Resolvers: cfg.Resolvers, Directives: cfg.Directives, ComplexityRoot: cfg.Complexity}
 }
 
-type Config struct {
-	Schema     *ast.Schema
-	Resolvers  ResolverRoot
-	Directives DirectiveRoot
-	Complexity ComplexityRoot
-}
+type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
@@ -52,6 +40,10 @@ type DirectiveRoot struct {
 	Auth              func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 	CacheData         func(ctx context.Context, obj any, next graphql.Resolver, ttl int, key *string, fields []string) (res any, err error)
 	HasPermissions    func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
+	Length            func(ctx context.Context, obj any, next graphql.Resolver, min int, max int, trim bool, ornil bool) (res any, err error)
+	Notempty          func(ctx context.Context, obj any, next graphql.Resolver, trim bool, ornil bool) (res any, err error)
+	Range             func(ctx context.Context, obj any, next graphql.Resolver, min float64, max float64, ornil bool) (res any, err error)
+	Regex             func(ctx context.Context, obj any, next graphql.Resolver, pattern string, trim bool, ornil bool) (res any, err error)
 	SkipNoPermissions func(ctx context.Context, obj any, next graphql.Resolver, permissions []string) (res any, err error)
 }
 
@@ -226,7 +218,7 @@ type ComplexityRoot struct {
 		ApproveAccount            func(childComplexity int, id uint64, msg string) int
 		ApproveAccountMember      func(childComplexity int, memberID uint64, msg string) int
 		ApproveUser               func(childComplexity int, id uint64, msg *string) int
-		CreateAuthClient          func(childComplexity int, input models.AuthClientInput) int
+		CreateAuthClient          func(childComplexity int, input models.AuthClientCreateInput) int
 		CreateRole                func(childComplexity int, input models.RBACRoleInput) int
 		CreateUser                func(childComplexity int, input models.UserInput) int
 		DeleteAuthClient          func(childComplexity int, id string, msg *string) int
@@ -248,7 +240,7 @@ type ComplexityRoot struct {
 		SwitchAccount             func(childComplexity int, id uint64) int
 		UpdateAccount             func(childComplexity int, id uint64, input models.AccountInput) int
 		UpdateAccountMember       func(childComplexity int, memberID uint64, member models.MemberInput) int
-		UpdateAuthClient          func(childComplexity int, id string, input models.AuthClientInput) int
+		UpdateAuthClient          func(childComplexity int, id string, input models.AuthClientUpdateInput) int
 		UpdateRole                func(childComplexity int, id uint64, input models.RBACRoleInput) int
 		UpdateUser                func(childComplexity int, id uint64, input models.UserInput) int
 		UpdateUserPassword        func(childComplexity int, token string, email string, password string) int
@@ -318,7 +310,7 @@ type ComplexityRoot struct {
 		GetDirectAccessToken           func(childComplexity int, id uint64) int
 		ListAccountRolesAndPermissions func(childComplexity int, accountID uint64, order *models.RBACRoleListOrder) int
 		ListAccounts                   func(childComplexity int, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) int
-		ListAuthClients                func(childComplexity int, filter *models.AuthClientListFilter, order *models.AuthClientListOrder, page *models.Page) int
+		ListAuthClients                func(childComplexity int, filter *models.AuthClientListFilter, order []*models.AuthClientListOrder, page *models.Page) int
 		ListDirectAccessTokens         func(childComplexity int, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) int
 		ListHistory                    func(childComplexity int, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) int
 		ListMembers                    func(childComplexity int, filter *models.MemberListFilter, order *models.MemberListOrder, page *models.Page) int
@@ -467,6 +459,12 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	Poke(ctx context.Context) (string, error)
+	CreateUser(ctx context.Context, input models.UserInput) (*models.UserPayload, error)
+	UpdateUser(ctx context.Context, id uint64, input models.UserInput) (*models.UserPayload, error)
+	ApproveUser(ctx context.Context, id uint64, msg *string) (*models.UserPayload, error)
+	RejectUser(ctx context.Context, id uint64, msg *string) (*models.UserPayload, error)
+	ResetUserPassword(ctx context.Context, email string) (*models.StatusResponse, error)
+	UpdateUserPassword(ctx context.Context, token string, email string, password string) (*models.StatusResponse, error)
 	Login(ctx context.Context, login string, password string) (*models.SessionToken, error)
 	Logout(ctx context.Context) (bool, error)
 	SwitchAccount(ctx context.Context, id uint64) (*models.SessionToken, error)
@@ -479,15 +477,8 @@ type MutationResolver interface {
 	RemoveAccountMember(ctx context.Context, memberID uint64) (*models.MemberPayload, error)
 	ApproveAccountMember(ctx context.Context, memberID uint64, msg string) (*models.MemberPayload, error)
 	RejectAccountMember(ctx context.Context, memberID uint64, msg string) (*models.MemberPayload, error)
-	DisconnectSocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error)
-	CreateUser(ctx context.Context, input models.UserInput) (*models.UserPayload, error)
-	UpdateUser(ctx context.Context, id uint64, input models.UserInput) (*models.UserPayload, error)
-	ApproveUser(ctx context.Context, id uint64, msg *string) (*models.UserPayload, error)
-	RejectUser(ctx context.Context, id uint64, msg *string) (*models.UserPayload, error)
-	ResetUserPassword(ctx context.Context, email string) (*models.StatusResponse, error)
-	UpdateUserPassword(ctx context.Context, token string, email string, password string) (*models.StatusResponse, error)
-	CreateAuthClient(ctx context.Context, input models.AuthClientInput) (*models.AuthClientPayload, error)
-	UpdateAuthClient(ctx context.Context, id string, input models.AuthClientInput) (*models.AuthClientPayload, error)
+	CreateAuthClient(ctx context.Context, input models.AuthClientCreateInput) (*models.AuthClientPayload, error)
+	UpdateAuthClient(ctx context.Context, id string, input models.AuthClientUpdateInput) (*models.AuthClientPayload, error)
 	DeleteAuthClient(ctx context.Context, id string, msg *string) (*models.AuthClientPayload, error)
 	GenerateDirectAccessToken(ctx context.Context, userID *uint64, description string, expiresAt *time.Time) (*models.DirectAccessTokenPayload, error)
 	RevokeDirectAccessToken(ctx context.Context, filter models.DirectAccessTokenListFilter) (*models.StatusResponse, error)
@@ -495,25 +486,23 @@ type MutationResolver interface {
 	CreateRole(ctx context.Context, input models.RBACRoleInput) (*models.RBACRolePayload, error)
 	UpdateRole(ctx context.Context, id uint64, input models.RBACRoleInput) (*models.RBACRolePayload, error)
 	DeleteRole(ctx context.Context, id uint64, msg *string) (*models.RBACRolePayload, error)
+	DisconnectSocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error)
 }
 type QueryResolver interface {
 	ServiceVersion(ctx context.Context) (string, error)
+	CurrentUser(ctx context.Context) (*models.UserPayload, error)
+	User(ctx context.Context, id uint64, username string) (*models.UserPayload, error)
+	ListUsers(ctx context.Context, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) (*connectors.CollectionConnection[models.User, models.UserEdge], error)
 	CurrentSession(ctx context.Context) (*models.SessionToken, error)
 	CurrentAccount(ctx context.Context) (*models.AccountPayload, error)
 	Account(ctx context.Context, id uint64) (*models.AccountPayload, error)
 	ListAccounts(ctx context.Context, filter *models.AccountListFilter, order *models.AccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.Account, models.AccountEdge], error)
 	ListAccountRolesAndPermissions(ctx context.Context, accountID uint64, order *models.RBACRoleListOrder) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error)
 	ListMembers(ctx context.Context, filter *models.MemberListFilter, order *models.MemberListOrder, page *models.Page) (*connectors.CollectionConnection[models.Member, models.MemberEdge], error)
-	SocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error)
-	CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
-	ListSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
-	CurrentUser(ctx context.Context) (*models.UserPayload, error)
-	User(ctx context.Context, id uint64, username string) (*models.UserPayload, error)
-	ListUsers(ctx context.Context, filter *models.UserListFilter, order *models.UserListOrder, page *models.Page) (*connectors.CollectionConnection[models.User, models.UserEdge], error)
 	AuthClient(ctx context.Context, id string) (*models.AuthClientPayload, error)
-	ListAuthClients(ctx context.Context, filter *models.AuthClientListFilter, order *models.AuthClientListOrder, page *models.Page) (*connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge], error)
+	ListAuthClients(ctx context.Context, filter *models.AuthClientListFilter, order []*models.AuthClientListOrder, page *models.Page) (*connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge], error)
 	GetDirectAccessToken(ctx context.Context, id uint64) (*models.DirectAccessTokenPayload, error)
-	ListDirectAccessTokens(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*models1.DirectAccessTokenConnection, error)
+	ListDirectAccessTokens(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge], error)
 	ListHistory(ctx context.Context, filter *models.HistoryActionListFilter, order *models.HistoryActionListOrder, page *models.Page) (*connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge], error)
 	Option(ctx context.Context, name string, typeArg models.OptionType, targetID uint64) (*models.OptionPayload, error)
 	ListOptions(ctx context.Context, filter *models.OptionListFilter, order *models.OptionListOrder, page *models.Page) (*connectors.CollectionConnection[models.Option, models.OptionEdge], error)
@@ -522,668 +511,666 @@ type QueryResolver interface {
 	ListRoles(ctx context.Context, filter *models.RBACRoleListFilter, order *models.RBACRoleListOrder, page *models.Page) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error)
 	ListPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error)
 	ListMyPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error)
+	SocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error)
+	CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
+	ListSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order *models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error)
 }
 
-type executableSchema struct {
-	schema     *ast.Schema
-	resolvers  ResolverRoot
-	directives DirectiveRoot
-	complexity ComplexityRoot
-}
+type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 func (e *executableSchema) Schema() *ast.Schema {
-	if e.schema != nil {
-		return e.schema
+	if e.SchemaData != nil {
+		return e.SchemaData
 	}
 	return parsedSchema
 }
 
 func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
-	ec := executionContext{nil, e, 0, 0, nil}
+	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
 
 	case "Account.clientURI":
-		if e.complexity.Account.ClientURI == nil {
+		if e.ComplexityRoot.Account.ClientURI == nil {
 			break
 		}
 
-		return e.complexity.Account.ClientURI(childComplexity), true
+		return e.ComplexityRoot.Account.ClientURI(childComplexity), true
 	case "Account.contacts":
-		if e.complexity.Account.Contacts == nil {
+		if e.ComplexityRoot.Account.Contacts == nil {
 			break
 		}
 
-		return e.complexity.Account.Contacts(childComplexity), true
+		return e.ComplexityRoot.Account.Contacts(childComplexity), true
 	case "Account.createdAt":
-		if e.complexity.Account.CreatedAt == nil {
+		if e.ComplexityRoot.Account.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.Account.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.Account.CreatedAt(childComplexity), true
 	case "Account.description":
-		if e.complexity.Account.Description == nil {
+		if e.ComplexityRoot.Account.Description == nil {
 			break
 		}
 
-		return e.complexity.Account.Description(childComplexity), true
+		return e.ComplexityRoot.Account.Description(childComplexity), true
 	case "Account.ID":
-		if e.complexity.Account.ID == nil {
+		if e.ComplexityRoot.Account.ID == nil {
 			break
 		}
 
-		return e.complexity.Account.ID(childComplexity), true
+		return e.ComplexityRoot.Account.ID(childComplexity), true
 	case "Account.logoURI":
-		if e.complexity.Account.LogoURI == nil {
+		if e.ComplexityRoot.Account.LogoURI == nil {
 			break
 		}
 
-		return e.complexity.Account.LogoURI(childComplexity), true
+		return e.ComplexityRoot.Account.LogoURI(childComplexity), true
 	case "Account.policyURI":
-		if e.complexity.Account.PolicyURI == nil {
+		if e.ComplexityRoot.Account.PolicyURI == nil {
 			break
 		}
 
-		return e.complexity.Account.PolicyURI(childComplexity), true
+		return e.ComplexityRoot.Account.PolicyURI(childComplexity), true
 	case "Account.status":
-		if e.complexity.Account.Status == nil {
+		if e.ComplexityRoot.Account.Status == nil {
 			break
 		}
 
-		return e.complexity.Account.Status(childComplexity), true
+		return e.ComplexityRoot.Account.Status(childComplexity), true
 	case "Account.statusMessage":
-		if e.complexity.Account.StatusMessage == nil {
+		if e.ComplexityRoot.Account.StatusMessage == nil {
 			break
 		}
 
-		return e.complexity.Account.StatusMessage(childComplexity), true
+		return e.ComplexityRoot.Account.StatusMessage(childComplexity), true
 	case "Account.termsOfServiceURI":
-		if e.complexity.Account.TermsOfServiceURI == nil {
+		if e.ComplexityRoot.Account.TermsOfServiceURI == nil {
 			break
 		}
 
-		return e.complexity.Account.TermsOfServiceURI(childComplexity), true
+		return e.ComplexityRoot.Account.TermsOfServiceURI(childComplexity), true
 	case "Account.title":
-		if e.complexity.Account.Title == nil {
+		if e.ComplexityRoot.Account.Title == nil {
 			break
 		}
 
-		return e.complexity.Account.Title(childComplexity), true
+		return e.ComplexityRoot.Account.Title(childComplexity), true
 	case "Account.updatedAt":
-		if e.complexity.Account.UpdatedAt == nil {
+		if e.ComplexityRoot.Account.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.Account.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.Account.UpdatedAt(childComplexity), true
 
 	case "AccountConnection.edges":
-		if e.complexity.AccountConnection.Edges == nil {
+		if e.ComplexityRoot.AccountConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.AccountConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.AccountConnection.Edges(childComplexity), true
 	case "AccountConnection.list":
-		if e.complexity.AccountConnection.List == nil {
+		if e.ComplexityRoot.AccountConnection.List == nil {
 			break
 		}
 
-		return e.complexity.AccountConnection.List(childComplexity), true
+		return e.ComplexityRoot.AccountConnection.List(childComplexity), true
 	case "AccountConnection.pageInfo":
-		if e.complexity.AccountConnection.PageInfo == nil {
+		if e.ComplexityRoot.AccountConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.AccountConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.AccountConnection.PageInfo(childComplexity), true
 	case "AccountConnection.totalCount":
-		if e.complexity.AccountConnection.TotalCount == nil {
+		if e.ComplexityRoot.AccountConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.AccountConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.AccountConnection.TotalCount(childComplexity), true
 
 	case "AccountCreatePayload.account":
-		if e.complexity.AccountCreatePayload.Account == nil {
+		if e.ComplexityRoot.AccountCreatePayload.Account == nil {
 			break
 		}
 
-		return e.complexity.AccountCreatePayload.Account(childComplexity), true
+		return e.ComplexityRoot.AccountCreatePayload.Account(childComplexity), true
 	case "AccountCreatePayload.clientMutationID":
-		if e.complexity.AccountCreatePayload.ClientMutationID == nil {
+		if e.ComplexityRoot.AccountCreatePayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.AccountCreatePayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.AccountCreatePayload.ClientMutationID(childComplexity), true
 	case "AccountCreatePayload.owner":
-		if e.complexity.AccountCreatePayload.Owner == nil {
+		if e.ComplexityRoot.AccountCreatePayload.Owner == nil {
 			break
 		}
 
-		return e.complexity.AccountCreatePayload.Owner(childComplexity), true
+		return e.ComplexityRoot.AccountCreatePayload.Owner(childComplexity), true
 
 	case "AccountEdge.cursor":
-		if e.complexity.AccountEdge.Cursor == nil {
+		if e.ComplexityRoot.AccountEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.AccountEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.AccountEdge.Cursor(childComplexity), true
 	case "AccountEdge.node":
-		if e.complexity.AccountEdge.Node == nil {
+		if e.ComplexityRoot.AccountEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.AccountEdge.Node(childComplexity), true
+		return e.ComplexityRoot.AccountEdge.Node(childComplexity), true
 
 	case "AccountPayload.account":
-		if e.complexity.AccountPayload.Account == nil {
+		if e.ComplexityRoot.AccountPayload.Account == nil {
 			break
 		}
 
-		return e.complexity.AccountPayload.Account(childComplexity), true
+		return e.ComplexityRoot.AccountPayload.Account(childComplexity), true
 	case "AccountPayload.accountID":
-		if e.complexity.AccountPayload.AccountID == nil {
+		if e.ComplexityRoot.AccountPayload.AccountID == nil {
 			break
 		}
 
-		return e.complexity.AccountPayload.AccountID(childComplexity), true
+		return e.ComplexityRoot.AccountPayload.AccountID(childComplexity), true
 	case "AccountPayload.clientMutationID":
-		if e.complexity.AccountPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.AccountPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.AccountPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.AccountPayload.ClientMutationID(childComplexity), true
 
 	case "AuthClient.accountID":
-		if e.complexity.AuthClient.AccountID == nil {
+		if e.ComplexityRoot.AuthClient.AccountID == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.AccountID(childComplexity), true
+		return e.ComplexityRoot.AuthClient.AccountID(childComplexity), true
 	case "AuthClient.allowedCORSOrigins":
-		if e.complexity.AuthClient.AllowedCORSOrigins == nil {
+		if e.ComplexityRoot.AuthClient.AllowedCORSOrigins == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.AllowedCORSOrigins(childComplexity), true
+		return e.ComplexityRoot.AuthClient.AllowedCORSOrigins(childComplexity), true
 	case "AuthClient.audience":
-		if e.complexity.AuthClient.Audience == nil {
+		if e.ComplexityRoot.AuthClient.Audience == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.Audience(childComplexity), true
+		return e.ComplexityRoot.AuthClient.Audience(childComplexity), true
 	case "AuthClient.createdAt":
-		if e.complexity.AuthClient.CreatedAt == nil {
+		if e.ComplexityRoot.AuthClient.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.AuthClient.CreatedAt(childComplexity), true
 	case "AuthClient.deletedAt":
-		if e.complexity.AuthClient.DeletedAt == nil {
+		if e.ComplexityRoot.AuthClient.DeletedAt == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.DeletedAt(childComplexity), true
+		return e.ComplexityRoot.AuthClient.DeletedAt(childComplexity), true
 	case "AuthClient.expiresAt":
-		if e.complexity.AuthClient.ExpiresAt == nil {
+		if e.ComplexityRoot.AuthClient.ExpiresAt == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.ExpiresAt(childComplexity), true
+		return e.ComplexityRoot.AuthClient.ExpiresAt(childComplexity), true
 	case "AuthClient.grantTypes":
-		if e.complexity.AuthClient.GrantTypes == nil {
+		if e.ComplexityRoot.AuthClient.GrantTypes == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.GrantTypes(childComplexity), true
+		return e.ComplexityRoot.AuthClient.GrantTypes(childComplexity), true
 	case "AuthClient.ID":
-		if e.complexity.AuthClient.ID == nil {
+		if e.ComplexityRoot.AuthClient.ID == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.ID(childComplexity), true
+		return e.ComplexityRoot.AuthClient.ID(childComplexity), true
 	case "AuthClient.public":
-		if e.complexity.AuthClient.Public == nil {
+		if e.ComplexityRoot.AuthClient.Public == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.Public(childComplexity), true
+		return e.ComplexityRoot.AuthClient.Public(childComplexity), true
 	case "AuthClient.redirectURIs":
-		if e.complexity.AuthClient.RedirectURIs == nil {
+		if e.ComplexityRoot.AuthClient.RedirectURIs == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.RedirectURIs(childComplexity), true
+		return e.ComplexityRoot.AuthClient.RedirectURIs(childComplexity), true
 	case "AuthClient.responseTypes":
-		if e.complexity.AuthClient.ResponseTypes == nil {
+		if e.ComplexityRoot.AuthClient.ResponseTypes == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.ResponseTypes(childComplexity), true
+		return e.ComplexityRoot.AuthClient.ResponseTypes(childComplexity), true
 	case "AuthClient.scope":
-		if e.complexity.AuthClient.Scope == nil {
+		if e.ComplexityRoot.AuthClient.Scope == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.Scope(childComplexity), true
+		return e.ComplexityRoot.AuthClient.Scope(childComplexity), true
 	case "AuthClient.secret":
-		if e.complexity.AuthClient.Secret == nil {
+		if e.ComplexityRoot.AuthClient.Secret == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.Secret(childComplexity), true
+		return e.ComplexityRoot.AuthClient.Secret(childComplexity), true
 	case "AuthClient.subjectType":
-		if e.complexity.AuthClient.SubjectType == nil {
+		if e.ComplexityRoot.AuthClient.SubjectType == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.SubjectType(childComplexity), true
+		return e.ComplexityRoot.AuthClient.SubjectType(childComplexity), true
 	case "AuthClient.title":
-		if e.complexity.AuthClient.Title == nil {
+		if e.ComplexityRoot.AuthClient.Title == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.Title(childComplexity), true
+		return e.ComplexityRoot.AuthClient.Title(childComplexity), true
 	case "AuthClient.updatedAt":
-		if e.complexity.AuthClient.UpdatedAt == nil {
+		if e.ComplexityRoot.AuthClient.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.AuthClient.UpdatedAt(childComplexity), true
 	case "AuthClient.userID":
-		if e.complexity.AuthClient.UserID == nil {
+		if e.ComplexityRoot.AuthClient.UserID == nil {
 			break
 		}
 
-		return e.complexity.AuthClient.UserID(childComplexity), true
+		return e.ComplexityRoot.AuthClient.UserID(childComplexity), true
 
 	case "AuthClientConnection.edges":
-		if e.complexity.AuthClientConnection.Edges == nil {
+		if e.ComplexityRoot.AuthClientConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.AuthClientConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.AuthClientConnection.Edges(childComplexity), true
 	case "AuthClientConnection.list":
-		if e.complexity.AuthClientConnection.List == nil {
+		if e.ComplexityRoot.AuthClientConnection.List == nil {
 			break
 		}
 
-		return e.complexity.AuthClientConnection.List(childComplexity), true
+		return e.ComplexityRoot.AuthClientConnection.List(childComplexity), true
 	case "AuthClientConnection.pageInfo":
-		if e.complexity.AuthClientConnection.PageInfo == nil {
+		if e.ComplexityRoot.AuthClientConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.AuthClientConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.AuthClientConnection.PageInfo(childComplexity), true
 	case "AuthClientConnection.totalCount":
-		if e.complexity.AuthClientConnection.TotalCount == nil {
+		if e.ComplexityRoot.AuthClientConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.AuthClientConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.AuthClientConnection.TotalCount(childComplexity), true
 
 	case "AuthClientEdge.cursor":
-		if e.complexity.AuthClientEdge.Cursor == nil {
+		if e.ComplexityRoot.AuthClientEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.AuthClientEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.AuthClientEdge.Cursor(childComplexity), true
 	case "AuthClientEdge.node":
-		if e.complexity.AuthClientEdge.Node == nil {
+		if e.ComplexityRoot.AuthClientEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.AuthClientEdge.Node(childComplexity), true
+		return e.ComplexityRoot.AuthClientEdge.Node(childComplexity), true
 
 	case "AuthClientPayload.authClient":
-		if e.complexity.AuthClientPayload.AuthClient == nil {
+		if e.ComplexityRoot.AuthClientPayload.AuthClient == nil {
 			break
 		}
 
-		return e.complexity.AuthClientPayload.AuthClient(childComplexity), true
+		return e.ComplexityRoot.AuthClientPayload.AuthClient(childComplexity), true
 	case "AuthClientPayload.authClientID":
-		if e.complexity.AuthClientPayload.AuthClientID == nil {
+		if e.ComplexityRoot.AuthClientPayload.AuthClientID == nil {
 			break
 		}
 
-		return e.complexity.AuthClientPayload.AuthClientID(childComplexity), true
+		return e.ComplexityRoot.AuthClientPayload.AuthClientID(childComplexity), true
 	case "AuthClientPayload.clientMutationID":
-		if e.complexity.AuthClientPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.AuthClientPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.AuthClientPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.AuthClientPayload.ClientMutationID(childComplexity), true
 
 	case "DirectAccessToken.accountID":
-		if e.complexity.DirectAccessToken.AccountID == nil {
+		if e.ComplexityRoot.DirectAccessToken.AccountID == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.AccountID(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.AccountID(childComplexity), true
 	case "DirectAccessToken.createdAt":
-		if e.complexity.DirectAccessToken.CreatedAt == nil {
+		if e.ComplexityRoot.DirectAccessToken.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.CreatedAt(childComplexity), true
 	case "DirectAccessToken.description":
-		if e.complexity.DirectAccessToken.Description == nil {
+		if e.ComplexityRoot.DirectAccessToken.Description == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.Description(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.Description(childComplexity), true
 	case "DirectAccessToken.expiresAt":
-		if e.complexity.DirectAccessToken.ExpiresAt == nil {
+		if e.ComplexityRoot.DirectAccessToken.ExpiresAt == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.ExpiresAt(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.ExpiresAt(childComplexity), true
 	case "DirectAccessToken.ID":
-		if e.complexity.DirectAccessToken.ID == nil {
+		if e.ComplexityRoot.DirectAccessToken.ID == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.ID(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.ID(childComplexity), true
 	case "DirectAccessToken.token":
-		if e.complexity.DirectAccessToken.Token == nil {
+		if e.ComplexityRoot.DirectAccessToken.Token == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.Token(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.Token(childComplexity), true
 	case "DirectAccessToken.userID":
-		if e.complexity.DirectAccessToken.UserID == nil {
+		if e.ComplexityRoot.DirectAccessToken.UserID == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessToken.UserID(childComplexity), true
+		return e.ComplexityRoot.DirectAccessToken.UserID(childComplexity), true
 
 	case "DirectAccessTokenConnection.edges":
-		if e.complexity.DirectAccessTokenConnection.Edges == nil {
+		if e.ComplexityRoot.DirectAccessTokenConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenConnection.Edges(childComplexity), true
 	case "DirectAccessTokenConnection.list":
-		if e.complexity.DirectAccessTokenConnection.List == nil {
+		if e.ComplexityRoot.DirectAccessTokenConnection.List == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenConnection.List(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenConnection.List(childComplexity), true
 	case "DirectAccessTokenConnection.pageInfo":
-		if e.complexity.DirectAccessTokenConnection.PageInfo == nil {
+		if e.ComplexityRoot.DirectAccessTokenConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenConnection.PageInfo(childComplexity), true
 	case "DirectAccessTokenConnection.totalCount":
-		if e.complexity.DirectAccessTokenConnection.TotalCount == nil {
+		if e.ComplexityRoot.DirectAccessTokenConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenConnection.TotalCount(childComplexity), true
 
 	case "DirectAccessTokenEdge.cursor":
-		if e.complexity.DirectAccessTokenEdge.Cursor == nil {
+		if e.ComplexityRoot.DirectAccessTokenEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenEdge.Cursor(childComplexity), true
 	case "DirectAccessTokenEdge.node":
-		if e.complexity.DirectAccessTokenEdge.Node == nil {
+		if e.ComplexityRoot.DirectAccessTokenEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenEdge.Node(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenEdge.Node(childComplexity), true
 
 	case "DirectAccessTokenPayload.clientMutationID":
-		if e.complexity.DirectAccessTokenPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.DirectAccessTokenPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenPayload.ClientMutationID(childComplexity), true
 	case "DirectAccessTokenPayload.token":
-		if e.complexity.DirectAccessTokenPayload.Token == nil {
+		if e.ComplexityRoot.DirectAccessTokenPayload.Token == nil {
 			break
 		}
 
-		return e.complexity.DirectAccessTokenPayload.Token(childComplexity), true
+		return e.ComplexityRoot.DirectAccessTokenPayload.Token(childComplexity), true
 
 	case "HistoryAction.accountID":
-		if e.complexity.HistoryAction.AccountID == nil {
+		if e.ComplexityRoot.HistoryAction.AccountID == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.AccountID(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.AccountID(childComplexity), true
 	case "HistoryAction.actionAt":
-		if e.complexity.HistoryAction.ActionAt == nil {
+		if e.ComplexityRoot.HistoryAction.ActionAt == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.ActionAt(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.ActionAt(childComplexity), true
 	case "HistoryAction.data":
-		if e.complexity.HistoryAction.Data == nil {
+		if e.ComplexityRoot.HistoryAction.Data == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.Data(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.Data(childComplexity), true
 	case "HistoryAction.ID":
-		if e.complexity.HistoryAction.ID == nil {
+		if e.ComplexityRoot.HistoryAction.ID == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.ID(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.ID(childComplexity), true
 	case "HistoryAction.message":
-		if e.complexity.HistoryAction.Message == nil {
+		if e.ComplexityRoot.HistoryAction.Message == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.Message(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.Message(childComplexity), true
 	case "HistoryAction.name":
-		if e.complexity.HistoryAction.Name == nil {
+		if e.ComplexityRoot.HistoryAction.Name == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.Name(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.Name(childComplexity), true
 	case "HistoryAction.objectID":
-		if e.complexity.HistoryAction.ObjectID == nil {
+		if e.ComplexityRoot.HistoryAction.ObjectID == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.ObjectID(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.ObjectID(childComplexity), true
 	case "HistoryAction.objectIDs":
-		if e.complexity.HistoryAction.ObjectIDs == nil {
+		if e.ComplexityRoot.HistoryAction.ObjectIDs == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.ObjectIDs(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.ObjectIDs(childComplexity), true
 	case "HistoryAction.objectType":
-		if e.complexity.HistoryAction.ObjectType == nil {
+		if e.ComplexityRoot.HistoryAction.ObjectType == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.ObjectType(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.ObjectType(childComplexity), true
 	case "HistoryAction.RequestID":
-		if e.complexity.HistoryAction.RequestID == nil {
+		if e.ComplexityRoot.HistoryAction.RequestID == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.RequestID(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.RequestID(childComplexity), true
 	case "HistoryAction.userID":
-		if e.complexity.HistoryAction.UserID == nil {
+		if e.ComplexityRoot.HistoryAction.UserID == nil {
 			break
 		}
 
-		return e.complexity.HistoryAction.UserID(childComplexity), true
+		return e.ComplexityRoot.HistoryAction.UserID(childComplexity), true
 
 	case "HistoryActionConnection.edges":
-		if e.complexity.HistoryActionConnection.Edges == nil {
+		if e.ComplexityRoot.HistoryActionConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.HistoryActionConnection.Edges(childComplexity), true
 	case "HistoryActionConnection.list":
-		if e.complexity.HistoryActionConnection.List == nil {
+		if e.ComplexityRoot.HistoryActionConnection.List == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionConnection.List(childComplexity), true
+		return e.ComplexityRoot.HistoryActionConnection.List(childComplexity), true
 	case "HistoryActionConnection.pageInfo":
-		if e.complexity.HistoryActionConnection.PageInfo == nil {
+		if e.ComplexityRoot.HistoryActionConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.HistoryActionConnection.PageInfo(childComplexity), true
 	case "HistoryActionConnection.totalCount":
-		if e.complexity.HistoryActionConnection.TotalCount == nil {
+		if e.ComplexityRoot.HistoryActionConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.HistoryActionConnection.TotalCount(childComplexity), true
 
 	case "HistoryActionEdge.cursor":
-		if e.complexity.HistoryActionEdge.Cursor == nil {
+		if e.ComplexityRoot.HistoryActionEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.HistoryActionEdge.Cursor(childComplexity), true
 	case "HistoryActionEdge.node":
-		if e.complexity.HistoryActionEdge.Node == nil {
+		if e.ComplexityRoot.HistoryActionEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionEdge.Node(childComplexity), true
+		return e.ComplexityRoot.HistoryActionEdge.Node(childComplexity), true
 
 	case "HistoryActionPayload.action":
-		if e.complexity.HistoryActionPayload.Action == nil {
+		if e.ComplexityRoot.HistoryActionPayload.Action == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionPayload.Action(childComplexity), true
+		return e.ComplexityRoot.HistoryActionPayload.Action(childComplexity), true
 	case "HistoryActionPayload.actionID":
-		if e.complexity.HistoryActionPayload.ActionID == nil {
+		if e.ComplexityRoot.HistoryActionPayload.ActionID == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionPayload.ActionID(childComplexity), true
+		return e.ComplexityRoot.HistoryActionPayload.ActionID(childComplexity), true
 	case "HistoryActionPayload.clientMutationId":
-		if e.complexity.HistoryActionPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.HistoryActionPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.HistoryActionPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.HistoryActionPayload.ClientMutationID(childComplexity), true
 
 	case "Member.account":
-		if e.complexity.Member.Account == nil {
+		if e.ComplexityRoot.Member.Account == nil {
 			break
 		}
 
-		return e.complexity.Member.Account(childComplexity), true
+		return e.ComplexityRoot.Member.Account(childComplexity), true
 	case "Member.createdAt":
-		if e.complexity.Member.CreatedAt == nil {
+		if e.ComplexityRoot.Member.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.Member.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.Member.CreatedAt(childComplexity), true
 	case "Member.deletedAt":
-		if e.complexity.Member.DeletedAt == nil {
+		if e.ComplexityRoot.Member.DeletedAt == nil {
 			break
 		}
 
-		return e.complexity.Member.DeletedAt(childComplexity), true
+		return e.ComplexityRoot.Member.DeletedAt(childComplexity), true
 	case "Member.ID":
-		if e.complexity.Member.ID == nil {
+		if e.ComplexityRoot.Member.ID == nil {
 			break
 		}
 
-		return e.complexity.Member.ID(childComplexity), true
+		return e.ComplexityRoot.Member.ID(childComplexity), true
 	case "Member.isAdmin":
-		if e.complexity.Member.IsAdmin == nil {
+		if e.ComplexityRoot.Member.IsAdmin == nil {
 			break
 		}
 
-		return e.complexity.Member.IsAdmin(childComplexity), true
+		return e.ComplexityRoot.Member.IsAdmin(childComplexity), true
 	case "Member.roles":
-		if e.complexity.Member.Roles == nil {
+		if e.ComplexityRoot.Member.Roles == nil {
 			break
 		}
 
-		return e.complexity.Member.Roles(childComplexity), true
+		return e.ComplexityRoot.Member.Roles(childComplexity), true
 	case "Member.status":
-		if e.complexity.Member.Status == nil {
+		if e.ComplexityRoot.Member.Status == nil {
 			break
 		}
 
-		return e.complexity.Member.Status(childComplexity), true
+		return e.ComplexityRoot.Member.Status(childComplexity), true
 	case "Member.updatedAt":
-		if e.complexity.Member.UpdatedAt == nil {
+		if e.ComplexityRoot.Member.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.Member.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.Member.UpdatedAt(childComplexity), true
 	case "Member.user":
-		if e.complexity.Member.User == nil {
+		if e.ComplexityRoot.Member.User == nil {
 			break
 		}
 
-		return e.complexity.Member.User(childComplexity), true
+		return e.ComplexityRoot.Member.User(childComplexity), true
 
 	case "MemberConnection.edges":
-		if e.complexity.MemberConnection.Edges == nil {
+		if e.ComplexityRoot.MemberConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.MemberConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.MemberConnection.Edges(childComplexity), true
 	case "MemberConnection.list":
-		if e.complexity.MemberConnection.List == nil {
+		if e.ComplexityRoot.MemberConnection.List == nil {
 			break
 		}
 
-		return e.complexity.MemberConnection.List(childComplexity), true
+		return e.ComplexityRoot.MemberConnection.List(childComplexity), true
 	case "MemberConnection.pageInfo":
-		if e.complexity.MemberConnection.PageInfo == nil {
+		if e.ComplexityRoot.MemberConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.MemberConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.MemberConnection.PageInfo(childComplexity), true
 	case "MemberConnection.totalCount":
-		if e.complexity.MemberConnection.TotalCount == nil {
+		if e.ComplexityRoot.MemberConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.MemberConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.MemberConnection.TotalCount(childComplexity), true
 
 	case "MemberEdge.cursor":
-		if e.complexity.MemberEdge.Cursor == nil {
+		if e.ComplexityRoot.MemberEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.MemberEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.MemberEdge.Cursor(childComplexity), true
 	case "MemberEdge.node":
-		if e.complexity.MemberEdge.Node == nil {
+		if e.ComplexityRoot.MemberEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.MemberEdge.Node(childComplexity), true
+		return e.ComplexityRoot.MemberEdge.Node(childComplexity), true
 
 	case "MemberPayload.clientMutationID":
-		if e.complexity.MemberPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.MemberPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.MemberPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.MemberPayload.ClientMutationID(childComplexity), true
 	case "MemberPayload.member":
-		if e.complexity.MemberPayload.Member == nil {
+		if e.ComplexityRoot.MemberPayload.Member == nil {
 			break
 		}
 
-		return e.complexity.MemberPayload.Member(childComplexity), true
+		return e.ComplexityRoot.MemberPayload.Member(childComplexity), true
 	case "MemberPayload.memberID":
-		if e.complexity.MemberPayload.MemberID == nil {
+		if e.ComplexityRoot.MemberPayload.MemberID == nil {
 			break
 		}
 
-		return e.complexity.MemberPayload.MemberID(childComplexity), true
+		return e.ComplexityRoot.MemberPayload.MemberID(childComplexity), true
 
 	case "Mutation.approveAccount":
-		if e.complexity.Mutation.ApproveAccount == nil {
+		if e.ComplexityRoot.Mutation.ApproveAccount == nil {
 			break
 		}
 
@@ -1192,9 +1179,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ApproveAccount(childComplexity, args["id"].(uint64), args["msg"].(string)), true
+		return e.ComplexityRoot.Mutation.ApproveAccount(childComplexity, args["id"].(uint64), args["msg"].(string)), true
 	case "Mutation.approveAccountMember":
-		if e.complexity.Mutation.ApproveAccountMember == nil {
+		if e.ComplexityRoot.Mutation.ApproveAccountMember == nil {
 			break
 		}
 
@@ -1203,9 +1190,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ApproveAccountMember(childComplexity, args["memberID"].(uint64), args["msg"].(string)), true
+		return e.ComplexityRoot.Mutation.ApproveAccountMember(childComplexity, args["memberID"].(uint64), args["msg"].(string)), true
 	case "Mutation.approveUser":
-		if e.complexity.Mutation.ApproveUser == nil {
+		if e.ComplexityRoot.Mutation.ApproveUser == nil {
 			break
 		}
 
@@ -1214,9 +1201,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ApproveUser(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
+		return e.ComplexityRoot.Mutation.ApproveUser(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
 	case "Mutation.createAuthClient":
-		if e.complexity.Mutation.CreateAuthClient == nil {
+		if e.ComplexityRoot.Mutation.CreateAuthClient == nil {
 			break
 		}
 
@@ -1225,9 +1212,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAuthClient(childComplexity, args["input"].(models.AuthClientInput)), true
+		return e.ComplexityRoot.Mutation.CreateAuthClient(childComplexity, args["input"].(models.AuthClientCreateInput)), true
 	case "Mutation.createRole":
-		if e.complexity.Mutation.CreateRole == nil {
+		if e.ComplexityRoot.Mutation.CreateRole == nil {
 			break
 		}
 
@@ -1236,9 +1223,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateRole(childComplexity, args["input"].(models.RBACRoleInput)), true
+		return e.ComplexityRoot.Mutation.CreateRole(childComplexity, args["input"].(models.RBACRoleInput)), true
 	case "Mutation.createUser":
-		if e.complexity.Mutation.CreateUser == nil {
+		if e.ComplexityRoot.Mutation.CreateUser == nil {
 			break
 		}
 
@@ -1247,9 +1234,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(models.UserInput)), true
+		return e.ComplexityRoot.Mutation.CreateUser(childComplexity, args["input"].(models.UserInput)), true
 	case "Mutation.deleteAuthClient":
-		if e.complexity.Mutation.DeleteAuthClient == nil {
+		if e.ComplexityRoot.Mutation.DeleteAuthClient == nil {
 			break
 		}
 
@@ -1258,9 +1245,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteAuthClient(childComplexity, args["id"].(string), args["msg"].(*string)), true
+		return e.ComplexityRoot.Mutation.DeleteAuthClient(childComplexity, args["id"].(string), args["msg"].(*string)), true
 	case "Mutation.deleteRole":
-		if e.complexity.Mutation.DeleteRole == nil {
+		if e.ComplexityRoot.Mutation.DeleteRole == nil {
 			break
 		}
 
@@ -1269,9 +1256,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteRole(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
+		return e.ComplexityRoot.Mutation.DeleteRole(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
 	case "Mutation.disconnectSocialAccount":
-		if e.complexity.Mutation.DisconnectSocialAccount == nil {
+		if e.ComplexityRoot.Mutation.DisconnectSocialAccount == nil {
 			break
 		}
 
@@ -1280,9 +1267,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DisconnectSocialAccount(childComplexity, args["id"].(uint64)), true
+		return e.ComplexityRoot.Mutation.DisconnectSocialAccount(childComplexity, args["id"].(uint64)), true
 	case "Mutation.generateDirectAccessToken":
-		if e.complexity.Mutation.GenerateDirectAccessToken == nil {
+		if e.ComplexityRoot.Mutation.GenerateDirectAccessToken == nil {
 			break
 		}
 
@@ -1291,9 +1278,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.GenerateDirectAccessToken(childComplexity, args["userID"].(*uint64), args["description"].(string), args["expiresAt"].(*time.Time)), true
+		return e.ComplexityRoot.Mutation.GenerateDirectAccessToken(childComplexity, args["userID"].(*uint64), args["description"].(string), args["expiresAt"].(*time.Time)), true
 	case "Mutation.inviteAccountMember":
-		if e.complexity.Mutation.InviteAccountMember == nil {
+		if e.ComplexityRoot.Mutation.InviteAccountMember == nil {
 			break
 		}
 
@@ -1302,9 +1289,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.InviteAccountMember(childComplexity, args["accountID"].(uint64), args["member"].(models.InviteMemberInput)), true
+		return e.ComplexityRoot.Mutation.InviteAccountMember(childComplexity, args["accountID"].(uint64), args["member"].(models.InviteMemberInput)), true
 	case "Mutation.login":
-		if e.complexity.Mutation.Login == nil {
+		if e.ComplexityRoot.Mutation.Login == nil {
 			break
 		}
 
@@ -1313,21 +1300,21 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Login(childComplexity, args["login"].(string), args["password"].(string)), true
+		return e.ComplexityRoot.Mutation.Login(childComplexity, args["login"].(string), args["password"].(string)), true
 	case "Mutation.logout":
-		if e.complexity.Mutation.Logout == nil {
+		if e.ComplexityRoot.Mutation.Logout == nil {
 			break
 		}
 
-		return e.complexity.Mutation.Logout(childComplexity), true
+		return e.ComplexityRoot.Mutation.Logout(childComplexity), true
 	case "Mutation.poke":
-		if e.complexity.Mutation.Poke == nil {
+		if e.ComplexityRoot.Mutation.Poke == nil {
 			break
 		}
 
-		return e.complexity.Mutation.Poke(childComplexity), true
+		return e.ComplexityRoot.Mutation.Poke(childComplexity), true
 	case "Mutation.registerAccount":
-		if e.complexity.Mutation.RegisterAccount == nil {
+		if e.ComplexityRoot.Mutation.RegisterAccount == nil {
 			break
 		}
 
@@ -1336,9 +1323,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RegisterAccount(childComplexity, args["input"].(models.AccountCreateInput)), true
+		return e.ComplexityRoot.Mutation.RegisterAccount(childComplexity, args["input"].(models.AccountCreateInput)), true
 	case "Mutation.rejectAccount":
-		if e.complexity.Mutation.RejectAccount == nil {
+		if e.ComplexityRoot.Mutation.RejectAccount == nil {
 			break
 		}
 
@@ -1347,9 +1334,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RejectAccount(childComplexity, args["id"].(uint64), args["msg"].(string)), true
+		return e.ComplexityRoot.Mutation.RejectAccount(childComplexity, args["id"].(uint64), args["msg"].(string)), true
 	case "Mutation.rejectAccountMember":
-		if e.complexity.Mutation.RejectAccountMember == nil {
+		if e.ComplexityRoot.Mutation.RejectAccountMember == nil {
 			break
 		}
 
@@ -1358,9 +1345,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RejectAccountMember(childComplexity, args["memberID"].(uint64), args["msg"].(string)), true
+		return e.ComplexityRoot.Mutation.RejectAccountMember(childComplexity, args["memberID"].(uint64), args["msg"].(string)), true
 	case "Mutation.rejectUser":
-		if e.complexity.Mutation.RejectUser == nil {
+		if e.ComplexityRoot.Mutation.RejectUser == nil {
 			break
 		}
 
@@ -1369,9 +1356,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RejectUser(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
+		return e.ComplexityRoot.Mutation.RejectUser(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
 	case "Mutation.removeAccountMember":
-		if e.complexity.Mutation.RemoveAccountMember == nil {
+		if e.ComplexityRoot.Mutation.RemoveAccountMember == nil {
 			break
 		}
 
@@ -1380,9 +1367,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RemoveAccountMember(childComplexity, args["memberID"].(uint64)), true
+		return e.ComplexityRoot.Mutation.RemoveAccountMember(childComplexity, args["memberID"].(uint64)), true
 	case "Mutation.resetUserPassword":
-		if e.complexity.Mutation.ResetUserPassword == nil {
+		if e.ComplexityRoot.Mutation.ResetUserPassword == nil {
 			break
 		}
 
@@ -1391,9 +1378,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ResetUserPassword(childComplexity, args["email"].(string)), true
+		return e.ComplexityRoot.Mutation.ResetUserPassword(childComplexity, args["email"].(string)), true
 	case "Mutation.revokeDirectAccessToken":
-		if e.complexity.Mutation.RevokeDirectAccessToken == nil {
+		if e.ComplexityRoot.Mutation.RevokeDirectAccessToken == nil {
 			break
 		}
 
@@ -1402,9 +1389,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RevokeDirectAccessToken(childComplexity, args["filter"].(models.DirectAccessTokenListFilter)), true
+		return e.ComplexityRoot.Mutation.RevokeDirectAccessToken(childComplexity, args["filter"].(models.DirectAccessTokenListFilter)), true
 	case "Mutation.setOption":
-		if e.complexity.Mutation.SetOption == nil {
+		if e.ComplexityRoot.Mutation.SetOption == nil {
 			break
 		}
 
@@ -1413,9 +1400,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SetOption(childComplexity, args["name"].(string), args["value"].(*types.NullableJSON), args["type"].(models.OptionType), args["targetID"].(uint64)), true
+		return e.ComplexityRoot.Mutation.SetOption(childComplexity, args["name"].(string), args["value"].(*types.NullableJSON), args["type"].(models.OptionType), args["targetID"].(uint64)), true
 	case "Mutation.switchAccount":
-		if e.complexity.Mutation.SwitchAccount == nil {
+		if e.ComplexityRoot.Mutation.SwitchAccount == nil {
 			break
 		}
 
@@ -1424,9 +1411,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SwitchAccount(childComplexity, args["id"].(uint64)), true
+		return e.ComplexityRoot.Mutation.SwitchAccount(childComplexity, args["id"].(uint64)), true
 	case "Mutation.updateAccount":
-		if e.complexity.Mutation.UpdateAccount == nil {
+		if e.ComplexityRoot.Mutation.UpdateAccount == nil {
 			break
 		}
 
@@ -1435,9 +1422,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateAccount(childComplexity, args["id"].(uint64), args["input"].(models.AccountInput)), true
+		return e.ComplexityRoot.Mutation.UpdateAccount(childComplexity, args["id"].(uint64), args["input"].(models.AccountInput)), true
 	case "Mutation.updateAccountMember":
-		if e.complexity.Mutation.UpdateAccountMember == nil {
+		if e.ComplexityRoot.Mutation.UpdateAccountMember == nil {
 			break
 		}
 
@@ -1446,9 +1433,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateAccountMember(childComplexity, args["memberID"].(uint64), args["member"].(models.MemberInput)), true
+		return e.ComplexityRoot.Mutation.UpdateAccountMember(childComplexity, args["memberID"].(uint64), args["member"].(models.MemberInput)), true
 	case "Mutation.updateAuthClient":
-		if e.complexity.Mutation.UpdateAuthClient == nil {
+		if e.ComplexityRoot.Mutation.UpdateAuthClient == nil {
 			break
 		}
 
@@ -1457,9 +1444,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateAuthClient(childComplexity, args["id"].(string), args["input"].(models.AuthClientInput)), true
+		return e.ComplexityRoot.Mutation.UpdateAuthClient(childComplexity, args["id"].(string), args["input"].(models.AuthClientUpdateInput)), true
 	case "Mutation.updateRole":
-		if e.complexity.Mutation.UpdateRole == nil {
+		if e.ComplexityRoot.Mutation.UpdateRole == nil {
 			break
 		}
 
@@ -1468,9 +1455,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateRole(childComplexity, args["id"].(uint64), args["input"].(models.RBACRoleInput)), true
+		return e.ComplexityRoot.Mutation.UpdateRole(childComplexity, args["id"].(uint64), args["input"].(models.RBACRoleInput)), true
 	case "Mutation.updateUser":
-		if e.complexity.Mutation.UpdateUser == nil {
+		if e.ComplexityRoot.Mutation.UpdateUser == nil {
 			break
 		}
 
@@ -1479,9 +1466,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(uint64), args["input"].(models.UserInput)), true
+		return e.ComplexityRoot.Mutation.UpdateUser(childComplexity, args["id"].(uint64), args["input"].(models.UserInput)), true
 	case "Mutation.updateUserPassword":
-		if e.complexity.Mutation.UpdateUserPassword == nil {
+		if e.ComplexityRoot.Mutation.UpdateUserPassword == nil {
 			break
 		}
 
@@ -1490,209 +1477,209 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUserPassword(childComplexity, args["token"].(string), args["email"].(string), args["password"].(string)), true
+		return e.ComplexityRoot.Mutation.UpdateUserPassword(childComplexity, args["token"].(string), args["email"].(string), args["password"].(string)), true
 
 	case "Option.name":
-		if e.complexity.Option.Name == nil {
+		if e.ComplexityRoot.Option.Name == nil {
 			break
 		}
 
-		return e.complexity.Option.Name(childComplexity), true
+		return e.ComplexityRoot.Option.Name(childComplexity), true
 	case "Option.targetID":
-		if e.complexity.Option.TargetID == nil {
+		if e.ComplexityRoot.Option.TargetID == nil {
 			break
 		}
 
-		return e.complexity.Option.TargetID(childComplexity), true
+		return e.ComplexityRoot.Option.TargetID(childComplexity), true
 	case "Option.type":
-		if e.complexity.Option.Type == nil {
+		if e.ComplexityRoot.Option.Type == nil {
 			break
 		}
 
-		return e.complexity.Option.Type(childComplexity), true
+		return e.ComplexityRoot.Option.Type(childComplexity), true
 	case "Option.value":
-		if e.complexity.Option.Value == nil {
+		if e.ComplexityRoot.Option.Value == nil {
 			break
 		}
 
-		return e.complexity.Option.Value(childComplexity), true
+		return e.ComplexityRoot.Option.Value(childComplexity), true
 
 	case "OptionConnection.edges":
-		if e.complexity.OptionConnection.Edges == nil {
+		if e.ComplexityRoot.OptionConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.OptionConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.OptionConnection.Edges(childComplexity), true
 	case "OptionConnection.list":
-		if e.complexity.OptionConnection.List == nil {
+		if e.ComplexityRoot.OptionConnection.List == nil {
 			break
 		}
 
-		return e.complexity.OptionConnection.List(childComplexity), true
+		return e.ComplexityRoot.OptionConnection.List(childComplexity), true
 	case "OptionConnection.pageInfo":
-		if e.complexity.OptionConnection.PageInfo == nil {
+		if e.ComplexityRoot.OptionConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.OptionConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.OptionConnection.PageInfo(childComplexity), true
 	case "OptionConnection.totalCount":
-		if e.complexity.OptionConnection.TotalCount == nil {
+		if e.ComplexityRoot.OptionConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.OptionConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.OptionConnection.TotalCount(childComplexity), true
 
 	case "OptionEdge.cursor":
-		if e.complexity.OptionEdge.Cursor == nil {
+		if e.ComplexityRoot.OptionEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.OptionEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.OptionEdge.Cursor(childComplexity), true
 	case "OptionEdge.node":
-		if e.complexity.OptionEdge.Node == nil {
+		if e.ComplexityRoot.OptionEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.OptionEdge.Node(childComplexity), true
+		return e.ComplexityRoot.OptionEdge.Node(childComplexity), true
 
 	case "OptionPayload.clientMutationId":
-		if e.complexity.OptionPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.OptionPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.OptionPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.OptionPayload.ClientMutationID(childComplexity), true
 	case "OptionPayload.name":
-		if e.complexity.OptionPayload.Name == nil {
+		if e.ComplexityRoot.OptionPayload.Name == nil {
 			break
 		}
 
-		return e.complexity.OptionPayload.Name(childComplexity), true
+		return e.ComplexityRoot.OptionPayload.Name(childComplexity), true
 	case "OptionPayload.option":
-		if e.complexity.OptionPayload.Option == nil {
+		if e.ComplexityRoot.OptionPayload.Option == nil {
 			break
 		}
 
-		return e.complexity.OptionPayload.Option(childComplexity), true
+		return e.ComplexityRoot.OptionPayload.Option(childComplexity), true
 
 	case "PageInfo.count":
-		if e.complexity.PageInfo.Count == nil {
+		if e.ComplexityRoot.PageInfo.Count == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.Count(childComplexity), true
+		return e.ComplexityRoot.PageInfo.Count(childComplexity), true
 	case "PageInfo.endCursor":
-		if e.complexity.PageInfo.EndCursor == nil {
+		if e.ComplexityRoot.PageInfo.EndCursor == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.EndCursor(childComplexity), true
+		return e.ComplexityRoot.PageInfo.EndCursor(childComplexity), true
 	case "PageInfo.hasNextPage":
-		if e.complexity.PageInfo.HasNextPage == nil {
+		if e.ComplexityRoot.PageInfo.HasNextPage == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.HasNextPage(childComplexity), true
+		return e.ComplexityRoot.PageInfo.HasNextPage(childComplexity), true
 	case "PageInfo.hasPreviousPage":
-		if e.complexity.PageInfo.HasPreviousPage == nil {
+		if e.ComplexityRoot.PageInfo.HasPreviousPage == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.HasPreviousPage(childComplexity), true
+		return e.ComplexityRoot.PageInfo.HasPreviousPage(childComplexity), true
 	case "PageInfo.page":
-		if e.complexity.PageInfo.Page == nil {
+		if e.ComplexityRoot.PageInfo.Page == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.Page(childComplexity), true
+		return e.ComplexityRoot.PageInfo.Page(childComplexity), true
 	case "PageInfo.startCursor":
-		if e.complexity.PageInfo.StartCursor == nil {
+		if e.ComplexityRoot.PageInfo.StartCursor == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.StartCursor(childComplexity), true
+		return e.ComplexityRoot.PageInfo.StartCursor(childComplexity), true
 	case "PageInfo.total":
-		if e.complexity.PageInfo.Total == nil {
+		if e.ComplexityRoot.PageInfo.Total == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.Total(childComplexity), true
+		return e.ComplexityRoot.PageInfo.Total(childComplexity), true
 
 	case "Profile.about":
-		if e.complexity.Profile.About == nil {
+		if e.ComplexityRoot.Profile.About == nil {
 			break
 		}
 
-		return e.complexity.Profile.About(childComplexity), true
+		return e.ComplexityRoot.Profile.About(childComplexity), true
 	case "Profile.companyName":
-		if e.complexity.Profile.CompanyName == nil {
+		if e.ComplexityRoot.Profile.CompanyName == nil {
 			break
 		}
 
-		return e.complexity.Profile.CompanyName(childComplexity), true
+		return e.ComplexityRoot.Profile.CompanyName(childComplexity), true
 	case "Profile.createdAt":
-		if e.complexity.Profile.CreatedAt == nil {
+		if e.ComplexityRoot.Profile.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.Profile.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.Profile.CreatedAt(childComplexity), true
 	case "Profile.email":
-		if e.complexity.Profile.Email == nil {
+		if e.ComplexityRoot.Profile.Email == nil {
 			break
 		}
 
-		return e.complexity.Profile.Email(childComplexity), true
+		return e.ComplexityRoot.Profile.Email(childComplexity), true
 	case "Profile.firstName":
-		if e.complexity.Profile.FirstName == nil {
+		if e.ComplexityRoot.Profile.FirstName == nil {
 			break
 		}
 
-		return e.complexity.Profile.FirstName(childComplexity), true
+		return e.ComplexityRoot.Profile.FirstName(childComplexity), true
 	case "Profile.ID":
-		if e.complexity.Profile.ID == nil {
+		if e.ComplexityRoot.Profile.ID == nil {
 			break
 		}
 
-		return e.complexity.Profile.ID(childComplexity), true
+		return e.ComplexityRoot.Profile.ID(childComplexity), true
 	case "Profile.lastName":
-		if e.complexity.Profile.LastName == nil {
+		if e.ComplexityRoot.Profile.LastName == nil {
 			break
 		}
 
-		return e.complexity.Profile.LastName(childComplexity), true
+		return e.ComplexityRoot.Profile.LastName(childComplexity), true
 	case "Profile.messgangers":
-		if e.complexity.Profile.Messgangers == nil {
+		if e.ComplexityRoot.Profile.Messgangers == nil {
 			break
 		}
 
-		return e.complexity.Profile.Messgangers(childComplexity), true
+		return e.ComplexityRoot.Profile.Messgangers(childComplexity), true
 	case "Profile.updatedAt":
-		if e.complexity.Profile.UpdatedAt == nil {
+		if e.ComplexityRoot.Profile.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.Profile.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.Profile.UpdatedAt(childComplexity), true
 	case "Profile.user":
-		if e.complexity.Profile.User == nil {
+		if e.ComplexityRoot.Profile.User == nil {
 			break
 		}
 
-		return e.complexity.Profile.User(childComplexity), true
+		return e.ComplexityRoot.Profile.User(childComplexity), true
 
 	case "ProfileMessanger.address":
-		if e.complexity.ProfileMessanger.Address == nil {
+		if e.ComplexityRoot.ProfileMessanger.Address == nil {
 			break
 		}
 
-		return e.complexity.ProfileMessanger.Address(childComplexity), true
+		return e.ComplexityRoot.ProfileMessanger.Address(childComplexity), true
 	case "ProfileMessanger.mtype":
-		if e.complexity.ProfileMessanger.Mtype == nil {
+		if e.ComplexityRoot.ProfileMessanger.Mtype == nil {
 			break
 		}
 
-		return e.complexity.ProfileMessanger.Mtype(childComplexity), true
+		return e.ComplexityRoot.ProfileMessanger.Mtype(childComplexity), true
 
 	case "Query.account":
-		if e.complexity.Query.Account == nil {
+		if e.ComplexityRoot.Query.Account == nil {
 			break
 		}
 
@@ -1701,9 +1688,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Account(childComplexity, args["id"].(uint64)), true
+		return e.ComplexityRoot.Query.Account(childComplexity, args["id"].(uint64)), true
 	case "Query.authClient":
-		if e.complexity.Query.AuthClient == nil {
+		if e.ComplexityRoot.Query.AuthClient == nil {
 			break
 		}
 
@@ -1712,9 +1699,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.AuthClient(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Query.AuthClient(childComplexity, args["id"].(string)), true
 	case "Query.checkPermission":
-		if e.complexity.Query.CheckPermission == nil {
+		if e.ComplexityRoot.Query.CheckPermission == nil {
 			break
 		}
 
@@ -1723,21 +1710,21 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.CheckPermission(childComplexity, args["name"].(string), args["key"].(*string), args["targetID"].(*string), args["idKey"].(*string)), true
+		return e.ComplexityRoot.Query.CheckPermission(childComplexity, args["name"].(string), args["key"].(*string), args["targetID"].(*string), args["idKey"].(*string)), true
 	case "Query.currentAccount":
-		if e.complexity.Query.CurrentAccount == nil {
+		if e.ComplexityRoot.Query.CurrentAccount == nil {
 			break
 		}
 
-		return e.complexity.Query.CurrentAccount(childComplexity), true
+		return e.ComplexityRoot.Query.CurrentAccount(childComplexity), true
 	case "Query.currentSession":
-		if e.complexity.Query.CurrentSession == nil {
+		if e.ComplexityRoot.Query.CurrentSession == nil {
 			break
 		}
 
-		return e.complexity.Query.CurrentSession(childComplexity), true
+		return e.ComplexityRoot.Query.CurrentSession(childComplexity), true
 	case "Query.currentSocialAccounts":
-		if e.complexity.Query.CurrentSocialAccounts == nil {
+		if e.ComplexityRoot.Query.CurrentSocialAccounts == nil {
 			break
 		}
 
@@ -1746,15 +1733,15 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.CurrentSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter), args["order"].(*models.SocialAccountListOrder)), true
+		return e.ComplexityRoot.Query.CurrentSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter), args["order"].(*models.SocialAccountListOrder)), true
 	case "Query.currentUser":
-		if e.complexity.Query.CurrentUser == nil {
+		if e.ComplexityRoot.Query.CurrentUser == nil {
 			break
 		}
 
-		return e.complexity.Query.CurrentUser(childComplexity), true
+		return e.ComplexityRoot.Query.CurrentUser(childComplexity), true
 	case "Query.getDirectAccessToken":
-		if e.complexity.Query.GetDirectAccessToken == nil {
+		if e.ComplexityRoot.Query.GetDirectAccessToken == nil {
 			break
 		}
 
@@ -1763,9 +1750,10 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.GetDirectAccessToken(childComplexity, args["id"].(uint64)), true
+		return e.ComplexityRoot.Query.GetDirectAccessToken(childComplexity, args["id"].(uint64)), true
+
 	case "Query.listAccountRolesAndPermissions":
-		if e.complexity.Query.ListAccountRolesAndPermissions == nil {
+		if e.ComplexityRoot.Query.ListAccountRolesAndPermissions == nil {
 			break
 		}
 
@@ -1774,9 +1762,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListAccountRolesAndPermissions(childComplexity, args["accountID"].(uint64), args["order"].(*models.RBACRoleListOrder)), true
+		return e.ComplexityRoot.Query.ListAccountRolesAndPermissions(childComplexity, args["accountID"].(uint64), args["order"].(*models.RBACRoleListOrder)), true
 	case "Query.listAccounts":
-		if e.complexity.Query.ListAccounts == nil {
+		if e.ComplexityRoot.Query.ListAccounts == nil {
 			break
 		}
 
@@ -1785,9 +1773,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListAccounts(childComplexity, args["filter"].(*models.AccountListFilter), args["order"].(*models.AccountListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListAccounts(childComplexity, args["filter"].(*models.AccountListFilter), args["order"].(*models.AccountListOrder), args["page"].(*models.Page)), true
 	case "Query.listAuthClients":
-		if e.complexity.Query.ListAuthClients == nil {
+		if e.ComplexityRoot.Query.ListAuthClients == nil {
 			break
 		}
 
@@ -1796,9 +1784,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListAuthClients(childComplexity, args["filter"].(*models.AuthClientListFilter), args["order"].(*models.AuthClientListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListAuthClients(childComplexity, args["filter"].(*models.AuthClientListFilter), args["order"].([]*models.AuthClientListOrder), args["page"].(*models.Page)), true
 	case "Query.listDirectAccessTokens":
-		if e.complexity.Query.ListDirectAccessTokens == nil {
+		if e.ComplexityRoot.Query.ListDirectAccessTokens == nil {
 			break
 		}
 
@@ -1807,9 +1795,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListDirectAccessTokens(childComplexity, args["filter"].(*models.DirectAccessTokenListFilter), args["order"].(*models.DirectAccessTokenListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListDirectAccessTokens(childComplexity, args["filter"].(*models.DirectAccessTokenListFilter), args["order"].(*models.DirectAccessTokenListOrder), args["page"].(*models.Page)), true
 	case "Query.listHistory":
-		if e.complexity.Query.ListHistory == nil {
+		if e.ComplexityRoot.Query.ListHistory == nil {
 			break
 		}
 
@@ -1818,9 +1806,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListHistory(childComplexity, args["filter"].(*models.HistoryActionListFilter), args["order"].(*models.HistoryActionListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListHistory(childComplexity, args["filter"].(*models.HistoryActionListFilter), args["order"].(*models.HistoryActionListOrder), args["page"].(*models.Page)), true
 	case "Query.listMembers":
-		if e.complexity.Query.ListMembers == nil {
+		if e.ComplexityRoot.Query.ListMembers == nil {
 			break
 		}
 
@@ -1829,9 +1817,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListMembers(childComplexity, args["filter"].(*models.MemberListFilter), args["order"].(*models.MemberListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListMembers(childComplexity, args["filter"].(*models.MemberListFilter), args["order"].(*models.MemberListOrder), args["page"].(*models.Page)), true
 	case "Query.listMyPermissions":
-		if e.complexity.Query.ListMyPermissions == nil {
+		if e.ComplexityRoot.Query.ListMyPermissions == nil {
 			break
 		}
 
@@ -1840,9 +1828,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListMyPermissions(childComplexity, args["patterns"].([]string)), true
+		return e.ComplexityRoot.Query.ListMyPermissions(childComplexity, args["patterns"].([]string)), true
 	case "Query.listOptions":
-		if e.complexity.Query.ListOptions == nil {
+		if e.ComplexityRoot.Query.ListOptions == nil {
 			break
 		}
 
@@ -1851,9 +1839,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListOptions(childComplexity, args["filter"].(*models.OptionListFilter), args["order"].(*models.OptionListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListOptions(childComplexity, args["filter"].(*models.OptionListFilter), args["order"].(*models.OptionListOrder), args["page"].(*models.Page)), true
 	case "Query.listPermissions":
-		if e.complexity.Query.ListPermissions == nil {
+		if e.ComplexityRoot.Query.ListPermissions == nil {
 			break
 		}
 
@@ -1862,9 +1850,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListPermissions(childComplexity, args["patterns"].([]string)), true
+		return e.ComplexityRoot.Query.ListPermissions(childComplexity, args["patterns"].([]string)), true
 	case "Query.listRoles":
-		if e.complexity.Query.ListRoles == nil {
+		if e.ComplexityRoot.Query.ListRoles == nil {
 			break
 		}
 
@@ -1873,9 +1861,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListRoles(childComplexity, args["filter"].(*models.RBACRoleListFilter), args["order"].(*models.RBACRoleListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListRoles(childComplexity, args["filter"].(*models.RBACRoleListFilter), args["order"].(*models.RBACRoleListOrder), args["page"].(*models.Page)), true
 	case "Query.listSocialAccounts":
-		if e.complexity.Query.ListSocialAccounts == nil {
+		if e.ComplexityRoot.Query.ListSocialAccounts == nil {
 			break
 		}
 
@@ -1884,9 +1872,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter), args["order"].(*models.SocialAccountListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListSocialAccounts(childComplexity, args["filter"].(*models.SocialAccountListFilter), args["order"].(*models.SocialAccountListOrder), args["page"].(*models.Page)), true
 	case "Query.listUsers":
-		if e.complexity.Query.ListUsers == nil {
+		if e.ComplexityRoot.Query.ListUsers == nil {
 			break
 		}
 
@@ -1895,9 +1883,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.ListUsers(childComplexity, args["filter"].(*models.UserListFilter), args["order"].(*models.UserListOrder), args["page"].(*models.Page)), true
+		return e.ComplexityRoot.Query.ListUsers(childComplexity, args["filter"].(*models.UserListFilter), args["order"].(*models.UserListOrder), args["page"].(*models.Page)), true
 	case "Query.option":
-		if e.complexity.Query.Option == nil {
+		if e.ComplexityRoot.Query.Option == nil {
 			break
 		}
 
@@ -1906,9 +1894,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Option(childComplexity, args["name"].(string), args["type"].(models.OptionType), args["targetID"].(uint64)), true
+		return e.ComplexityRoot.Query.Option(childComplexity, args["name"].(string), args["type"].(models.OptionType), args["targetID"].(uint64)), true
 	case "Query.role":
-		if e.complexity.Query.Role == nil {
+		if e.ComplexityRoot.Query.Role == nil {
 			break
 		}
 
@@ -1917,15 +1905,15 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Role(childComplexity, args["id"].(uint64)), true
+		return e.ComplexityRoot.Query.Role(childComplexity, args["id"].(uint64)), true
 	case "Query.serviceVersion":
-		if e.complexity.Query.ServiceVersion == nil {
+		if e.ComplexityRoot.Query.ServiceVersion == nil {
 			break
 		}
 
-		return e.complexity.Query.ServiceVersion(childComplexity), true
+		return e.ComplexityRoot.Query.ServiceVersion(childComplexity), true
 	case "Query.socialAccount":
-		if e.complexity.Query.SocialAccount == nil {
+		if e.ComplexityRoot.Query.SocialAccount == nil {
 			break
 		}
 
@@ -1934,9 +1922,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.SocialAccount(childComplexity, args["id"].(uint64)), true
+		return e.ComplexityRoot.Query.SocialAccount(childComplexity, args["id"].(uint64)), true
 	case "Query.user":
-		if e.complexity.Query.User == nil {
+		if e.ComplexityRoot.Query.User == nil {
 			break
 		}
 
@@ -1945,509 +1933,509 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.User(childComplexity, args["id"].(uint64), args["username"].(string)), true
+		return e.ComplexityRoot.Query.User(childComplexity, args["id"].(uint64), args["username"].(string)), true
 
 	case "RBACPermission.access":
-		if e.complexity.RBACPermission.Access == nil {
+		if e.ComplexityRoot.RBACPermission.Access == nil {
 			break
 		}
 
-		return e.complexity.RBACPermission.Access(childComplexity), true
+		return e.ComplexityRoot.RBACPermission.Access(childComplexity), true
 	case "RBACPermission.description":
-		if e.complexity.RBACPermission.Description == nil {
+		if e.ComplexityRoot.RBACPermission.Description == nil {
 			break
 		}
 
-		return e.complexity.RBACPermission.Description(childComplexity), true
+		return e.ComplexityRoot.RBACPermission.Description(childComplexity), true
 	case "RBACPermission.fullname":
-		if e.complexity.RBACPermission.Fullname == nil {
+		if e.ComplexityRoot.RBACPermission.Fullname == nil {
 			break
 		}
 
-		return e.complexity.RBACPermission.Fullname(childComplexity), true
+		return e.ComplexityRoot.RBACPermission.Fullname(childComplexity), true
 	case "RBACPermission.name":
-		if e.complexity.RBACPermission.Name == nil {
+		if e.ComplexityRoot.RBACPermission.Name == nil {
 			break
 		}
 
-		return e.complexity.RBACPermission.Name(childComplexity), true
+		return e.ComplexityRoot.RBACPermission.Name(childComplexity), true
 	case "RBACPermission.object":
-		if e.complexity.RBACPermission.Object == nil {
+		if e.ComplexityRoot.RBACPermission.Object == nil {
 			break
 		}
 
-		return e.complexity.RBACPermission.Object(childComplexity), true
+		return e.ComplexityRoot.RBACPermission.Object(childComplexity), true
 
 	case "RBACRole.childRoles":
-		if e.complexity.RBACRole.ChildRoles == nil {
+		if e.ComplexityRoot.RBACRole.ChildRoles == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.ChildRoles(childComplexity), true
+		return e.ComplexityRoot.RBACRole.ChildRoles(childComplexity), true
 	case "RBACRole.context":
-		if e.complexity.RBACRole.Context == nil {
+		if e.ComplexityRoot.RBACRole.Context == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.Context(childComplexity), true
+		return e.ComplexityRoot.RBACRole.Context(childComplexity), true
 	case "RBACRole.createdAt":
-		if e.complexity.RBACRole.CreatedAt == nil {
+		if e.ComplexityRoot.RBACRole.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.RBACRole.CreatedAt(childComplexity), true
 	case "RBACRole.deletedAt":
-		if e.complexity.RBACRole.DeletedAt == nil {
+		if e.ComplexityRoot.RBACRole.DeletedAt == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.DeletedAt(childComplexity), true
+		return e.ComplexityRoot.RBACRole.DeletedAt(childComplexity), true
 	case "RBACRole.description":
-		if e.complexity.RBACRole.Description == nil {
+		if e.ComplexityRoot.RBACRole.Description == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.Description(childComplexity), true
+		return e.ComplexityRoot.RBACRole.Description(childComplexity), true
 	case "RBACRole.ID":
-		if e.complexity.RBACRole.ID == nil {
+		if e.ComplexityRoot.RBACRole.ID == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.ID(childComplexity), true
+		return e.ComplexityRoot.RBACRole.ID(childComplexity), true
 	case "RBACRole.name":
-		if e.complexity.RBACRole.Name == nil {
+		if e.ComplexityRoot.RBACRole.Name == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.Name(childComplexity), true
+		return e.ComplexityRoot.RBACRole.Name(childComplexity), true
 	case "RBACRole.permissionPatterns":
-		if e.complexity.RBACRole.PermissionPatterns == nil {
+		if e.ComplexityRoot.RBACRole.PermissionPatterns == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.PermissionPatterns(childComplexity), true
+		return e.ComplexityRoot.RBACRole.PermissionPatterns(childComplexity), true
 	case "RBACRole.permissions":
-		if e.complexity.RBACRole.Permissions == nil {
+		if e.ComplexityRoot.RBACRole.Permissions == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.Permissions(childComplexity), true
+		return e.ComplexityRoot.RBACRole.Permissions(childComplexity), true
 	case "RBACRole.title":
-		if e.complexity.RBACRole.Title == nil {
+		if e.ComplexityRoot.RBACRole.Title == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.Title(childComplexity), true
+		return e.ComplexityRoot.RBACRole.Title(childComplexity), true
 	case "RBACRole.updatedAt":
-		if e.complexity.RBACRole.UpdatedAt == nil {
+		if e.ComplexityRoot.RBACRole.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.RBACRole.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.RBACRole.UpdatedAt(childComplexity), true
 
 	case "RBACRoleConnection.edges":
-		if e.complexity.RBACRoleConnection.Edges == nil {
+		if e.ComplexityRoot.RBACRoleConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.RBACRoleConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.RBACRoleConnection.Edges(childComplexity), true
 	case "RBACRoleConnection.list":
-		if e.complexity.RBACRoleConnection.List == nil {
+		if e.ComplexityRoot.RBACRoleConnection.List == nil {
 			break
 		}
 
-		return e.complexity.RBACRoleConnection.List(childComplexity), true
+		return e.ComplexityRoot.RBACRoleConnection.List(childComplexity), true
 	case "RBACRoleConnection.pageInfo":
-		if e.complexity.RBACRoleConnection.PageInfo == nil {
+		if e.ComplexityRoot.RBACRoleConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.RBACRoleConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.RBACRoleConnection.PageInfo(childComplexity), true
 	case "RBACRoleConnection.totalCount":
-		if e.complexity.RBACRoleConnection.TotalCount == nil {
+		if e.ComplexityRoot.RBACRoleConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.RBACRoleConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.RBACRoleConnection.TotalCount(childComplexity), true
 
 	case "RBACRoleEdge.cursor":
-		if e.complexity.RBACRoleEdge.Cursor == nil {
+		if e.ComplexityRoot.RBACRoleEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.RBACRoleEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.RBACRoleEdge.Cursor(childComplexity), true
 	case "RBACRoleEdge.node":
-		if e.complexity.RBACRoleEdge.Node == nil {
+		if e.ComplexityRoot.RBACRoleEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.RBACRoleEdge.Node(childComplexity), true
+		return e.ComplexityRoot.RBACRoleEdge.Node(childComplexity), true
 
 	case "RBACRolePayload.clientMutationID":
-		if e.complexity.RBACRolePayload.ClientMutationID == nil {
+		if e.ComplexityRoot.RBACRolePayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.RBACRolePayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.RBACRolePayload.ClientMutationID(childComplexity), true
 	case "RBACRolePayload.role":
-		if e.complexity.RBACRolePayload.Role == nil {
+		if e.ComplexityRoot.RBACRolePayload.Role == nil {
 			break
 		}
 
-		return e.complexity.RBACRolePayload.Role(childComplexity), true
+		return e.ComplexityRoot.RBACRolePayload.Role(childComplexity), true
 	case "RBACRolePayload.roleID":
-		if e.complexity.RBACRolePayload.RoleID == nil {
+		if e.ComplexityRoot.RBACRolePayload.RoleID == nil {
 			break
 		}
 
-		return e.complexity.RBACRolePayload.RoleID(childComplexity), true
+		return e.ComplexityRoot.RBACRolePayload.RoleID(childComplexity), true
 
 	case "SessionToken.expiresAt":
-		if e.complexity.SessionToken.ExpiresAt == nil {
+		if e.ComplexityRoot.SessionToken.ExpiresAt == nil {
 			break
 		}
 
-		return e.complexity.SessionToken.ExpiresAt(childComplexity), true
+		return e.ComplexityRoot.SessionToken.ExpiresAt(childComplexity), true
 	case "SessionToken.isAdmin":
-		if e.complexity.SessionToken.IsAdmin == nil {
+		if e.ComplexityRoot.SessionToken.IsAdmin == nil {
 			break
 		}
 
-		return e.complexity.SessionToken.IsAdmin(childComplexity), true
+		return e.ComplexityRoot.SessionToken.IsAdmin(childComplexity), true
 	case "SessionToken.roles":
-		if e.complexity.SessionToken.Roles == nil {
+		if e.ComplexityRoot.SessionToken.Roles == nil {
 			break
 		}
 
-		return e.complexity.SessionToken.Roles(childComplexity), true
+		return e.ComplexityRoot.SessionToken.Roles(childComplexity), true
 	case "SessionToken.token":
-		if e.complexity.SessionToken.Token == nil {
+		if e.ComplexityRoot.SessionToken.Token == nil {
 			break
 		}
 
-		return e.complexity.SessionToken.Token(childComplexity), true
+		return e.ComplexityRoot.SessionToken.Token(childComplexity), true
 
 	case "SocialAccount.avatar":
-		if e.complexity.SocialAccount.Avatar == nil {
+		if e.ComplexityRoot.SocialAccount.Avatar == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Avatar(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Avatar(childComplexity), true
 	case "SocialAccount.createdAt":
-		if e.complexity.SocialAccount.CreatedAt == nil {
+		if e.ComplexityRoot.SocialAccount.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.CreatedAt(childComplexity), true
 	case "SocialAccount.data":
-		if e.complexity.SocialAccount.Data == nil {
+		if e.ComplexityRoot.SocialAccount.Data == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Data(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Data(childComplexity), true
 	case "SocialAccount.deletedAt":
-		if e.complexity.SocialAccount.DeletedAt == nil {
+		if e.ComplexityRoot.SocialAccount.DeletedAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.DeletedAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.DeletedAt(childComplexity), true
 	case "SocialAccount.email":
-		if e.complexity.SocialAccount.Email == nil {
+		if e.ComplexityRoot.SocialAccount.Email == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Email(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Email(childComplexity), true
 	case "SocialAccount.firstName":
-		if e.complexity.SocialAccount.FirstName == nil {
+		if e.ComplexityRoot.SocialAccount.FirstName == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.FirstName(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.FirstName(childComplexity), true
 	case "SocialAccount.ID":
-		if e.complexity.SocialAccount.ID == nil {
+		if e.ComplexityRoot.SocialAccount.ID == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.ID(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.ID(childComplexity), true
 	case "SocialAccount.lastName":
-		if e.complexity.SocialAccount.LastName == nil {
+		if e.ComplexityRoot.SocialAccount.LastName == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.LastName(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.LastName(childComplexity), true
 	case "SocialAccount.link":
-		if e.complexity.SocialAccount.Link == nil {
+		if e.ComplexityRoot.SocialAccount.Link == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Link(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Link(childComplexity), true
 	case "SocialAccount.provider":
-		if e.complexity.SocialAccount.Provider == nil {
+		if e.ComplexityRoot.SocialAccount.Provider == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Provider(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Provider(childComplexity), true
 	case "SocialAccount.sessions":
-		if e.complexity.SocialAccount.Sessions == nil {
+		if e.ComplexityRoot.SocialAccount.Sessions == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Sessions(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Sessions(childComplexity), true
 	case "SocialAccount.socialID":
-		if e.complexity.SocialAccount.SocialID == nil {
+		if e.ComplexityRoot.SocialAccount.SocialID == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.SocialID(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.SocialID(childComplexity), true
 	case "SocialAccount.updatedAt":
-		if e.complexity.SocialAccount.UpdatedAt == nil {
+		if e.ComplexityRoot.SocialAccount.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.UpdatedAt(childComplexity), true
 	case "SocialAccount.userID":
-		if e.complexity.SocialAccount.UserID == nil {
+		if e.ComplexityRoot.SocialAccount.UserID == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.UserID(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.UserID(childComplexity), true
 	case "SocialAccount.username":
-		if e.complexity.SocialAccount.Username == nil {
+		if e.ComplexityRoot.SocialAccount.Username == nil {
 			break
 		}
 
-		return e.complexity.SocialAccount.Username(childComplexity), true
+		return e.ComplexityRoot.SocialAccount.Username(childComplexity), true
 
 	case "SocialAccountConnection.edges":
-		if e.complexity.SocialAccountConnection.Edges == nil {
+		if e.ComplexityRoot.SocialAccountConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.SocialAccountConnection.Edges(childComplexity), true
 	case "SocialAccountConnection.list":
-		if e.complexity.SocialAccountConnection.List == nil {
+		if e.ComplexityRoot.SocialAccountConnection.List == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountConnection.List(childComplexity), true
+		return e.ComplexityRoot.SocialAccountConnection.List(childComplexity), true
 	case "SocialAccountConnection.pageInfo":
-		if e.complexity.SocialAccountConnection.PageInfo == nil {
+		if e.ComplexityRoot.SocialAccountConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.SocialAccountConnection.PageInfo(childComplexity), true
 	case "SocialAccountConnection.totalCount":
-		if e.complexity.SocialAccountConnection.TotalCount == nil {
+		if e.ComplexityRoot.SocialAccountConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.SocialAccountConnection.TotalCount(childComplexity), true
 
 	case "SocialAccountEdge.cursor":
-		if e.complexity.SocialAccountEdge.Cursor == nil {
+		if e.ComplexityRoot.SocialAccountEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.SocialAccountEdge.Cursor(childComplexity), true
 	case "SocialAccountEdge.node":
-		if e.complexity.SocialAccountEdge.Node == nil {
+		if e.ComplexityRoot.SocialAccountEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountEdge.Node(childComplexity), true
+		return e.ComplexityRoot.SocialAccountEdge.Node(childComplexity), true
 
 	case "SocialAccountPayload.clientMutationID":
-		if e.complexity.SocialAccountPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.SocialAccountPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.SocialAccountPayload.ClientMutationID(childComplexity), true
 	case "SocialAccountPayload.socialAccount":
-		if e.complexity.SocialAccountPayload.SocialAccount == nil {
+		if e.ComplexityRoot.SocialAccountPayload.SocialAccount == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountPayload.SocialAccount(childComplexity), true
+		return e.ComplexityRoot.SocialAccountPayload.SocialAccount(childComplexity), true
 	case "SocialAccountPayload.socialAccountID":
-		if e.complexity.SocialAccountPayload.SocialAccountID == nil {
+		if e.ComplexityRoot.SocialAccountPayload.SocialAccountID == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountPayload.SocialAccountID(childComplexity), true
+		return e.ComplexityRoot.SocialAccountPayload.SocialAccountID(childComplexity), true
 
 	case "SocialAccountSession.accessToken":
-		if e.complexity.SocialAccountSession.AccessToken == nil {
+		if e.ComplexityRoot.SocialAccountSession.AccessToken == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.AccessToken(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.AccessToken(childComplexity), true
 	case "SocialAccountSession.createdAt":
-		if e.complexity.SocialAccountSession.CreatedAt == nil {
+		if e.ComplexityRoot.SocialAccountSession.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.CreatedAt(childComplexity), true
 	case "SocialAccountSession.deletedAt":
-		if e.complexity.SocialAccountSession.DeletedAt == nil {
+		if e.ComplexityRoot.SocialAccountSession.DeletedAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.DeletedAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.DeletedAt(childComplexity), true
 	case "SocialAccountSession.expiresAt":
-		if e.complexity.SocialAccountSession.ExpiresAt == nil {
+		if e.ComplexityRoot.SocialAccountSession.ExpiresAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.ExpiresAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.ExpiresAt(childComplexity), true
 	case "SocialAccountSession.name":
-		if e.complexity.SocialAccountSession.Name == nil {
+		if e.ComplexityRoot.SocialAccountSession.Name == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.Name(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.Name(childComplexity), true
 	case "SocialAccountSession.refreshToken":
-		if e.complexity.SocialAccountSession.RefreshToken == nil {
+		if e.ComplexityRoot.SocialAccountSession.RefreshToken == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.RefreshToken(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.RefreshToken(childComplexity), true
 	case "SocialAccountSession.scope":
-		if e.complexity.SocialAccountSession.Scope == nil {
+		if e.ComplexityRoot.SocialAccountSession.Scope == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.Scope(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.Scope(childComplexity), true
 	case "SocialAccountSession.socialAccountID":
-		if e.complexity.SocialAccountSession.SocialAccountID == nil {
+		if e.ComplexityRoot.SocialAccountSession.SocialAccountID == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.SocialAccountID(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.SocialAccountID(childComplexity), true
 	case "SocialAccountSession.tokenType":
-		if e.complexity.SocialAccountSession.TokenType == nil {
+		if e.ComplexityRoot.SocialAccountSession.TokenType == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.TokenType(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.TokenType(childComplexity), true
 	case "SocialAccountSession.updatedAt":
-		if e.complexity.SocialAccountSession.UpdatedAt == nil {
+		if e.ComplexityRoot.SocialAccountSession.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.SocialAccountSession.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.SocialAccountSession.UpdatedAt(childComplexity), true
 
 	case "StatusResponse.clientMutationID":
-		if e.complexity.StatusResponse.ClientMutationID == nil {
+		if e.ComplexityRoot.StatusResponse.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.StatusResponse.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.StatusResponse.ClientMutationID(childComplexity), true
 	case "StatusResponse.message":
-		if e.complexity.StatusResponse.Message == nil {
+		if e.ComplexityRoot.StatusResponse.Message == nil {
 			break
 		}
 
-		return e.complexity.StatusResponse.Message(childComplexity), true
+		return e.ComplexityRoot.StatusResponse.Message(childComplexity), true
 	case "StatusResponse.status":
-		if e.complexity.StatusResponse.Status == nil {
+		if e.ComplexityRoot.StatusResponse.Status == nil {
 			break
 		}
 
-		return e.complexity.StatusResponse.Status(childComplexity), true
+		return e.ComplexityRoot.StatusResponse.Status(childComplexity), true
 
 	case "User.createdAt":
-		if e.complexity.User.CreatedAt == nil {
+		if e.ComplexityRoot.User.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.User.CreatedAt(childComplexity), true
+		return e.ComplexityRoot.User.CreatedAt(childComplexity), true
 	case "User.ID":
-		if e.complexity.User.ID == nil {
+		if e.ComplexityRoot.User.ID == nil {
 			break
 		}
 
-		return e.complexity.User.ID(childComplexity), true
+		return e.ComplexityRoot.User.ID(childComplexity), true
 	case "User.status":
-		if e.complexity.User.Status == nil {
+		if e.ComplexityRoot.User.Status == nil {
 			break
 		}
 
-		return e.complexity.User.Status(childComplexity), true
+		return e.ComplexityRoot.User.Status(childComplexity), true
 	case "User.statusMessage":
-		if e.complexity.User.StatusMessage == nil {
+		if e.ComplexityRoot.User.StatusMessage == nil {
 			break
 		}
 
-		return e.complexity.User.StatusMessage(childComplexity), true
+		return e.ComplexityRoot.User.StatusMessage(childComplexity), true
 	case "User.updatedAt":
-		if e.complexity.User.UpdatedAt == nil {
+		if e.ComplexityRoot.User.UpdatedAt == nil {
 			break
 		}
 
-		return e.complexity.User.UpdatedAt(childComplexity), true
+		return e.ComplexityRoot.User.UpdatedAt(childComplexity), true
 	case "User.username":
-		if e.complexity.User.Username == nil {
+		if e.ComplexityRoot.User.Username == nil {
 			break
 		}
 
-		return e.complexity.User.Username(childComplexity), true
+		return e.ComplexityRoot.User.Username(childComplexity), true
 
 	case "UserConnection.edges":
-		if e.complexity.UserConnection.Edges == nil {
+		if e.ComplexityRoot.UserConnection.Edges == nil {
 			break
 		}
 
-		return e.complexity.UserConnection.Edges(childComplexity), true
+		return e.ComplexityRoot.UserConnection.Edges(childComplexity), true
 	case "UserConnection.list":
-		if e.complexity.UserConnection.List == nil {
+		if e.ComplexityRoot.UserConnection.List == nil {
 			break
 		}
 
-		return e.complexity.UserConnection.List(childComplexity), true
+		return e.ComplexityRoot.UserConnection.List(childComplexity), true
 	case "UserConnection.pageInfo":
-		if e.complexity.UserConnection.PageInfo == nil {
+		if e.ComplexityRoot.UserConnection.PageInfo == nil {
 			break
 		}
 
-		return e.complexity.UserConnection.PageInfo(childComplexity), true
+		return e.ComplexityRoot.UserConnection.PageInfo(childComplexity), true
 	case "UserConnection.totalCount":
-		if e.complexity.UserConnection.TotalCount == nil {
+		if e.ComplexityRoot.UserConnection.TotalCount == nil {
 			break
 		}
 
-		return e.complexity.UserConnection.TotalCount(childComplexity), true
+		return e.ComplexityRoot.UserConnection.TotalCount(childComplexity), true
 
 	case "UserEdge.cursor":
-		if e.complexity.UserEdge.Cursor == nil {
+		if e.ComplexityRoot.UserEdge.Cursor == nil {
 			break
 		}
 
-		return e.complexity.UserEdge.Cursor(childComplexity), true
+		return e.ComplexityRoot.UserEdge.Cursor(childComplexity), true
 	case "UserEdge.node":
-		if e.complexity.UserEdge.Node == nil {
+		if e.ComplexityRoot.UserEdge.Node == nil {
 			break
 		}
 
-		return e.complexity.UserEdge.Node(childComplexity), true
+		return e.ComplexityRoot.UserEdge.Node(childComplexity), true
 
 	case "UserPayload.clientMutationID":
-		if e.complexity.UserPayload.ClientMutationID == nil {
+		if e.ComplexityRoot.UserPayload.ClientMutationID == nil {
 			break
 		}
 
-		return e.complexity.UserPayload.ClientMutationID(childComplexity), true
+		return e.ComplexityRoot.UserPayload.ClientMutationID(childComplexity), true
 	case "UserPayload.user":
-		if e.complexity.UserPayload.User == nil {
+		if e.ComplexityRoot.UserPayload.User == nil {
 			break
 		}
 
-		return e.complexity.UserPayload.User(childComplexity), true
+		return e.ComplexityRoot.UserPayload.User(childComplexity), true
 	case "UserPayload.userID":
-		if e.complexity.UserPayload.UserID == nil {
+		if e.ComplexityRoot.UserPayload.UserID == nil {
 			break
 		}
 
-		return e.complexity.UserPayload.UserID(childComplexity), true
+		return e.ComplexityRoot.UserPayload.UserID(childComplexity), true
 
 	}
 	return 0, false
@@ -2455,15 +2443,16 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
-	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
+	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAccountCreateInput,
 		ec.unmarshalInputAccountInput,
 		ec.unmarshalInputAccountListFilter,
 		ec.unmarshalInputAccountListOrder,
-		ec.unmarshalInputAuthClientInput,
+		ec.unmarshalInputAuthClientCreateInput,
 		ec.unmarshalInputAuthClientListFilter,
 		ec.unmarshalInputAuthClientListOrder,
+		ec.unmarshalInputAuthClientUpdateInput,
 		ec.unmarshalInputDirectAccessTokenListFilter,
 		ec.unmarshalInputDirectAccessTokenListOrder,
 		ec.unmarshalInputHistoryActionListFilter,
@@ -2496,9 +2485,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 				data = ec._Query(ctx, opCtx.Operation.SelectionSet)
 			} else {
-				if atomic.LoadInt32(&ec.pendingDeferred) > 0 {
-					result := <-ec.deferredResults
-					atomic.AddInt32(&ec.pendingDeferred, -1)
+				if atomic.LoadInt32(&ec.PendingDeferred) > 0 {
+					result := <-ec.DeferredResults
+					atomic.AddInt32(&ec.PendingDeferred, -1)
 					data = result.Result
 					response.Path = result.Path
 					response.Label = result.Label
@@ -2510,8 +2499,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 			response.Data = buf.Bytes()
-			if atomic.LoadInt32(&ec.deferred) > 0 {
-				hasNext := atomic.LoadInt32(&ec.pendingDeferred) > 0
+			if atomic.LoadInt32(&ec.Deferred) > 0 {
+				hasNext := atomic.LoadInt32(&ec.PendingDeferred) > 0
 				response.HasNext = &hasNext
 			}
 
@@ -2539,48 +2528,487 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 }
 
 type executionContext struct {
-	*graphql.OperationContext
-	*executableSchema
-	deferred        int32
-	pendingDeferred int32
-	deferredResults chan graphql.DeferredResult
+	*graphql.ExecutionContextState[ResolverRoot, DirectiveRoot, ComplexityRoot]
 }
 
-func (ec *executionContext) processDeferredGroup(dg graphql.DeferredGroup) {
-	atomic.AddInt32(&ec.pendingDeferred, 1)
-	go func() {
-		ctx := graphql.WithFreshResponseContext(dg.Context)
-		dg.FieldSet.Dispatch(ctx)
-		ds := graphql.DeferredResult{
-			Path:   dg.Path,
-			Label:  dg.Label,
-			Result: dg.FieldSet,
-			Errors: graphql.GetErrors(ctx),
-		}
-		// null fields should bubble up
-		if dg.FieldSet.Invalids > 0 {
-			ds.Result = graphql.Null
-		}
-		ec.deferredResults <- ds
-	}()
-}
-
-func (ec *executionContext) introspectSchema() (*introspection.Schema, error) {
-	if ec.DisableIntrospection {
-		return nil, errors.New("introspection disabled")
+func newExecutionContext(
+	opCtx *graphql.OperationContext,
+	execSchema *executableSchema,
+	deferredResults chan graphql.DeferredResult,
+) executionContext {
+	return executionContext{
+		ExecutionContextState: graphql.NewExecutionContextState[ResolverRoot, DirectiveRoot, ComplexityRoot](
+			opCtx,
+			(*graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot])(execSchema),
+			parsedSchema,
+			deferredResults,
+		),
 	}
-	return introspection.WrapSchema(ec.Schema()), nil
-}
-
-func (ec *executionContext) introspectType(name string) (*introspection.Type, error) {
-	if ec.DisableIntrospection {
-		return nil, errors.New("introspection disabled")
-	}
-	return introspection.WrapTypeFromDef(ec.Schema(), ec.Schema().Types[name]), nil
 }
 
 var sources = []*ast.Source{
-	{Name: "../../../../../../protocol/graphql/schemas/account_base.graphql", Input: `"""
+	{Name: "../../../../../../protocol/graphql/schemas/account_users.graphql", Input: `
+"""
+User represents a user object of the system
+"""
+type User {
+  """
+  The primary key of the user
+  """
+  ID:       ID64!
+
+  """
+  Unical user name
+  """
+  username: String!
+
+  """
+  Status of user active
+  """
+  status: ApproveStatus!
+
+  """
+  Message which defined during user approve/rejection process
+  """
+  statusMessage: String
+
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type UserEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: User
+}
+
+"""
+UserConnection implements collection accessor interface with pagination.
+"""
+type UserConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the users's lists
+  """
+  edges: [UserEdge!]
+
+  """
+  A list of the users, as a convenience when edges are not needed.
+  """
+  list: [User!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+UserPayload wrapper to access of user oprtation results
+"""
+type UserPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  User ID operation result
+  """
+  userID: ID64!
+
+  """
+  User object accessor
+  """
+  user: User
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+"""
+UserListFilter implements filter for user list query
+"""
+input UserListFilter {
+  ID: [ID64!]
+  accountID: [ID64!]
+  emails: [String!]
+  roles: [ID64!]
+}
+
+"""
+UserListOrder implements order for user list query
+"""
+input UserListOrder {
+  ID:                 Ordering
+  email:              Ordering
+  username:           Ordering
+  status:             Ordering
+  registrationDate:   Ordering
+  country:            Ordering
+  manager:            Ordering
+  createdAt:          Ordering
+  updatedAt:          Ordering
+}
+
+###############################################################################
+# Mutations
+###############################################################################
+
+input UserInput {
+  username: String
+  status: ApproveStatus
+}
+
+type Profile {
+  ID:           ID64!
+  user:         User!
+  firstName:    String!
+  lastName:     String!
+  companyName:  String!
+  about:        String!
+  email:        String!
+  messgangers: [ProfileMessanger!]
+
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+enum MessangerType {
+  SKYPE
+  AIM
+  ICQ
+  WHATSAPP
+  TELEGRAM
+  VIBER
+  PHONE
+}
+
+type ProfileMessanger {
+  mtype: MessangerType!
+  address: String!
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+extend type Query {
+  """
+  Current user from the session
+  """
+  currentUser: UserPayload! @hasPermissions(permissions: ["user.view.*"])
+
+  """
+  Get user object by ID or username
+  """
+  user(
+    id: ID64! = 0,
+    username: String! = ""
+  ): UserPayload! @hasPermissions(permissions: ["user.view.*"])
+
+  """
+  List of the user objects which can be filtered and ordered by some fields
+  """
+  listUsers(
+    filter: UserListFilter = null,
+    order: UserListOrder = null,
+    page: Page = null
+  ): UserConnection @hasPermissions(permissions: ["user.list.*"])
+}
+
+extend type Mutation {
+  """
+  Create the new user
+  """
+  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.create.*"])
+
+  """
+  Update user info
+  """
+  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.update.*"])
+
+  """
+  Approve user and leave the comment
+  """
+  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.approve.*"])
+
+  """
+  Reject user and leave the comment
+  """
+  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.reject.*"])
+
+  """
+  Reset password of the particular user in case if user forgot it
+  """
+  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
+
+  """
+  Update password of the particular user
+  """
+  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
+}
+`, BuiltIn: false},
+	{Name: "../../../../../../protocol/graphql/schemas/constants.graphql", Input: `
+"""
+The list of statuses that shows is object approved or not
+"""
+enum ApproveStatus {
+  """
+  Pending status of the just inited objects
+  """
+  PENDING
+
+  """
+  Approved status of object could be obtained from the some authorized user who have permissions
+  """
+  APPROVED
+
+  """
+  Rejected status of object could be obtained from the some authorized user who have permissions
+  """
+  REJECTED
+}
+
+"""
+The list of statuses that shows is particular object active or paused
+"""
+enum ActiveStatus {
+  """
+  All object by default have to be paused
+  """
+  PAUSED
+
+  """
+  Status of the active object
+  """
+  ACTIVE
+}
+
+"""
+The list of statuses that shows is particular object is available
+"""
+enum AvailableStatus {
+  """
+  All object by default have to be undefined
+  """
+  UNDEFINED
+
+  """
+  Status of the available object
+  """
+  AVAILABLE
+
+  """
+  Status of the unavailable object
+  """
+  UNAVAILABLE
+}
+
+"""
+Constants of the order of data
+"""
+enum Ordering {
+  """
+  Ascending ordering of data
+  """
+  ASC
+
+  """
+  Descending ordering of data
+  """
+  DESC
+}
+
+"""
+Constants of the response status
+"""
+enum ResponseStatus {
+  """
+  Success status of the response
+  """
+  SUCCESS
+
+  """
+  Error status of the response
+  """
+  ERROR
+}
+`, BuiltIn: false},
+	{Name: "../../../../../../protocol/graphql/schemas/directives.graphql", Input: `"Prevents access to a field if the user is not authenticated"
+directive @auth on FIELD_DEFINITION | FIELD
+
+"Prevents access to a field/method if the user doesnt have the matching permissions"
+directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+
+"Prevents access to a field/method if the user doesnt have the matching permissions"
+directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
+
+"Prevents access to a field/method if the user doesnt have the matching permissions"
+directive @skipNoPermissions(permissions: [String!]) on FIELD_DEFINITION | FIELD
+
+"Caches the result of a field/method for a specified time to live (ttl) in seconds"
+directive @cacheData(
+  ttl: Int!
+  key: String
+  fields: [String!]
+) on FIELD_DEFINITION | FIELD
+
+# Validation directives
+
+## @length validates the length of a string or array.
+directive @length(
+  min: Int!
+  max: Int! = 0
+  trim: Boolean! = false
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+## @notempty validates that a string or array is not empty.
+directive @notempty(
+  trim: Boolean! = false
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+## @regex validates a string against a regular expression.
+directive @regex(
+  pattern: String!
+  trim: Boolean! = true
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+## @range validates that a number is within a specified range.
+directive @range(
+  min: Float!
+  max: Float! = 0
+  ornil: Boolean! = false
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+`, BuiltIn: false},
+	{Name: "../../../../../../protocol/graphql/schemas/pagination.graphql", Input: `
+# @link https://developer.github.com/v4/object/pageinfo/
+
+"""
+Information for paginating
+"""
+type PageInfo {
+  """
+  When paginating backwards, the cursor to continue.
+  """
+  startCursor: String!
+
+  """
+  When paginating forwards, the cursor to continue.
+  """
+  endCursor: String!
+
+  """
+  When paginating backwards, are there more items?
+  """
+  hasPreviousPage: Boolean!
+
+  """
+  When paginating forwards, are there more items?
+  """
+  hasNextPage: Boolean!
+
+  """
+  Total number of pages available
+  """
+  total: Int!
+
+  """
+  Current page number
+  """
+  page: Int!
+
+  """
+  Number of pages
+  """
+  count: Int!
+}
+
+"""
+Information for paginating
+"""
+input Page {
+  """
+  Start after the cursor ID
+  """
+  after: String
+
+  """
+  Start after some records
+  """
+  offset: Int
+
+  """
+  Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
+  """
+  startPage: Int
+
+  """
+  Maximum number of items to return
+  """
+  size: Int
+}
+`, BuiltIn: false},
+	{Name: "../../../../../../protocol/graphql/schemas/schema.graphql", Input: `# https://github.com/prisma/graphql-import
+# Pagination https://graphql.org/learn/pagination/#pagination-and-edges
+
+scalar Time
+scalar TimeDuration
+scalar DateTime
+scalar Map
+scalar JSON
+scalar NullableJSON
+scalar UUID
+scalar ID64
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  serviceVersion: String!
+}
+
+type Mutation {
+  poke: String!
+}
+`, BuiltIn: false},
+	{Name: "../../../../../../protocol/graphql/schemas/status.graphql", Input: `"""
+Simple response type for the API
+"""
+type StatusResponse {
+  """
+  Unique identifier for the client performing the mutation
+  """
+  clientMutationID: String!
+
+  """
+  The status of the response
+  """
+  status: ResponseStatus!
+
+  """
+  The message of the response
+  """
+  message: String
+}
+`, BuiltIn: false},
+	{Name: "../../../../../../repository/account/delivery/graphql/account_base.graphql", Input: `"""
 Account is a company account that can be used to login to the system.
 """
 type Account {
@@ -2603,37 +3031,37 @@ type Account {
   description: String!
 
   """
-	logoURI is an URL string that references a logo for the client.
+  logoURI is an URL string that references a logo for the client.
   """
-	logoURI: String!
+  logoURI: String!
 
   """
-	policyURI is a URL string that points to a human-readable privacy policy document
-	that describes how the deployment organization collects, uses,
-	retains, and discloses personal data.
+  policyURI is a URL string that points to a human-readable privacy policy document
+  that describes how the deployment organization collects, uses,
+  retains, and discloses personal data.
   """
-	policyURI: String!
+  policyURI: String!
 
   """
-	termsOfServiceURI is a URL string that points to a human-readable terms of service
-	document for the client that describes a contractual relationship
-	between the end-user and the client that the end-user accepts when
-	authorizing the client.
+  termsOfServiceURI is a URL string that points to a human-readable terms of service
+  document for the client that describes a contractual relationship
+  between the end-user and the client that the end-user accepts when
+  authorizing the client.
   """
-	termsOfServiceURI: String!
+  termsOfServiceURI: String!
 
   """
-	clientURI is an URL string of a web page providing information about the client.
-	If present, the server SHOULD display this URL to the end-user in
-	a clickable fashion.
+  clientURI is an URL string of a web page providing information about the client.
+  If present, the server SHOULD display this URL to the end-user in
+  a clickable fashion.
   """
-	clientURI: String!
+  clientURI: String!
 
   """
-	contacts is a array of strings representing ways to contact people responsible
-	for this client, typically email addresses.
+  contacts is a array of strings representing ways to contact people responsible
+  for this client, typically email addresses.
   """
-	contacts: [String!]
+  contacts: [String!]
 
   createdAt: Time!
   updatedAt: Time!
@@ -2696,6 +3124,16 @@ type AccountPayload {
   account: Account
 }
 
+"""
+SessionToken object represents an OAuth 2.0 / JWT session token
+"""
+type SessionToken {
+  token: String!
+  expiresAt: Time!
+  isAdmin: Boolean!
+  roles: [String!]
+}
+
 ###############################################################################
 # Query
 ###############################################################################
@@ -2721,17 +3159,17 @@ input AccountInput {
   status: ApproveStatus
   title: String
   description: String
-	logoURI: String
-	policyURI: String
-	termsOfServiceURI: String
-	clientURI: String
-	contacts: [String!]
+  logoURI: String
+  policyURI: String
+  termsOfServiceURI: String
+  clientURI: String
+  contacts: [String!]
 }
 
 input AccountCreateInput {
-  ownerID:  ID64
-  owner:    UserInput
-  account:  AccountInput!
+  ownerID: ID64
+  owner: UserInput
+  account: AccountInput!
   password: String!
 }
 
@@ -2765,26 +3203,31 @@ extend type Query {
   """
   Current account from the session
   """
-  currentAccount: AccountPayload! @hasPermissions(permissions: ["account.view.*"])
+  currentAccount: AccountPayload!
+    @hasPermissions(permissions: ["account.view.*"])
 
   """
   Get account object by ID
   """
-  account(id: ID64!): AccountPayload! @hasPermissions(permissions: ["account.view.*"])
+  account(id: ID64!): AccountPayload!
+    @hasPermissions(permissions: ["account.view.*"])
 
   """
   List of the account objects which can be filtered and ordered by some fields
   """
   listAccounts(
-    filter: AccountListFilter = null,
-    order: AccountListOrder = null,
+    filter: AccountListFilter = null
+    order: AccountListOrder = null
     page: Page = null
   ): AccountConnection @hasPermissions(permissions: ["account.list.*"])
 
   """
   List of the account roles/permissions
   """
-  listAccountRolesAndPermissions(accountID: ID64!, order: RBACRoleListOrder = null): RBACRoleConnection @hasPermissions(permissions: ["account.view.*"])
+  listAccountRolesAndPermissions(
+    accountID: ID64!
+    order: RBACRoleListOrder = null
+  ): RBACRoleConnection @hasPermissions(permissions: ["account.view.*"])
 }
 
 extend type Mutation {
@@ -2806,25 +3249,29 @@ extend type Mutation {
   """
   Register the new account
   """
-  registerAccount(input: AccountCreateInput!): AccountCreatePayload! @hasPermissions(permissions: ["account.register"])
+  registerAccount(input: AccountCreateInput!): AccountCreatePayload!
+    @hasPermissions(permissions: ["account.register"])
 
   """
   Update account info
   """
-  updateAccount(id: ID64!, input: AccountInput!): AccountPayload! @hasPermissions(permissions: ["account.update.*"])
+  updateAccount(id: ID64!, input: AccountInput!): AccountPayload!
+    @hasPermissions(permissions: ["account.update.*"])
 
   """
   Approve account and leave the comment
   """
-  approveAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.approve.*"])
+  approveAccount(id: ID64!, msg: String!): AccountPayload!
+    @hasPermissions(permissions: ["account.approve.*"])
 
   """
   Reject account and leave the comment
   """
-  rejectAccount(id: ID64!, msg: String!): AccountPayload! @hasPermissions(permissions: ["account.reject.*"])
+  rejectAccount(id: ID64!, msg: String!): AccountPayload!
+    @hasPermissions(permissions: ["account.reject.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/account_member.graphql", Input: `"""
+	{Name: "../../../../../../repository/account/delivery/graphql/account_member.graphql", Input: `"""
 Account Member represents a member of the account
 """
 type Member {
@@ -3060,471 +3507,94 @@ extend type Mutation {
   ): MemberPayload! @acl(permissions: ["account.member.reject.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/account_social.graphql", Input: `type SocialAccountSession {
-  """
-  The unique name of the session to destinguish between different sessions with different scopes
-  """
-  name: String!
-  socialAccountID: ID64!
-
-  tokenType: String!
-  accessToken: String!
-  refreshToken: String!
-  scope: [String!]
-
-  createdAt: Time!
-  updatedAt: Time!
-  expiresAt: Time
-  deletedAt: Time
-}
-
-type SocialAccount {
-  ID: ID64!
-  userID: ID64!
-
-  socialID: String!
-  provider: String!
-  email: String!
-  username: String!
-
-  firstName: String!
-  lastName: String!
-  avatar: String!
-  link: String!
-
-  data: NullableJSON!
-
-  """
-  Social Account session object accessor
-  """
-  sessions: [SocialAccountSession!]
-
-  createdAt: Time!
-  updatedAt: Time!
-  deletedAt: Time
-}
-
-type SocialAccountEdge {
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-
-  """
-  The item at the end of the edge.
-  """
-  node: SocialAccount
-}
-
-"""
-SocialAccountConnection implements collection accessor interface with pagination
-"""
-type SocialAccountConnection {
-  """
-  The total number of records
-  """
-  totalCount: Int!
-
-  """
-  The edges for each of the social account's lists
-  """
-  edges: [SocialAccountEdge!]
-
-  """
-  A list of the social accounts, as a convenience when edges are not needed.
-  """
-  list: [SocialAccount!]
-
-  """
-  Information for paginating this connection
-  """
-  pageInfo: PageInfo!
-}
-
-"""
-SocialAccountPayload wrapper to access of SocialAccount oprtation results
-"""
-type SocialAccountPayload {
-  """
-  A unique identifier for the client performing the mutation.
-  """
-  clientMutationID: String!
-
-  """
-  Social Account ID operation result
-  """
-  socialAccountID: ID64!
-
-  """
-  Social Account object accessor
-  """
-  socialAccount: SocialAccount
-}
-
-###############################################################################
-# Query
-###############################################################################
-
-input SocialAccountListFilter {
-  ID: [ID64!]
-  userID: [ID64!]
-  provider: [String!]
-  username: [String!]
-  email: [String!]
-}
-
-input SocialAccountListOrder {
-  ID: Ordering
-  userID: Ordering
-  provider: Ordering
-  email: Ordering
-  username: Ordering
-  firstName: Ordering
-  lastName: Ordering
-}
-
-extend type Query {
-  """
-  Get a social account by its unique identifier
-  """
-  socialAccount(
-    """
-    The unique identifier of the social account
-    """
-    id: ID64!
-  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.view.*"])
-
-  """
-  Get the current user's social accounts
-  """
-  currentSocialAccounts(
-    filter: SocialAccountListFilter = null,
-    order: SocialAccountListOrder = null
-  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
-
-  """
-  List all social accounts
-  """
-  listSocialAccounts(
-    filter: SocialAccountListFilter = null,
-    order: SocialAccountListOrder = null,
-    page: Page = null
-  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
-}
-
-extend type Mutation {
-  """
-  Disconnect a social account
-  """
-  disconnectSocialAccount(
-    """
-    The unique identifier of the social account to disconnect
-    """
-    id: ID64!
-  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.disconnect.*"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/account_users.graphql", Input: `
-"""
-User represents a user object of the system
-"""
-type User {
-  """
-  The primary key of the user
-  """
-  ID:       ID64!
-
-  """
-  Unical user name
-  """
-  username: String!
-
-  """
-  Status of user active
-  """
-  status: ApproveStatus!
-
-  """
-  Message which defined during user approve/rejection process
-  """
-  statusMessage: String
-
-  createdAt: Time!
-  updatedAt: Time!
-}
-
-type UserEdge {
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-
-  """
-  The item at the end of the edge.
-  """
-  node: User
-}
-
-"""
-UserConnection implements collection accessor interface with pagination.
-"""
-type UserConnection {
-  """
-  The total number of campaigns
-  """
-  totalCount: Int!
-
-  """
-  The edges for each of the users's lists
-  """
-  edges: [UserEdge!]
-
-  """
-  A list of the users, as a convenience when edges are not needed.
-  """
-  list: [User!]
-
-  """
-  Information for paginating this connection
-  """
-  pageInfo: PageInfo!
-}
-
-"""
-UserPayload wrapper to access of user oprtation results
-"""
-type UserPayload {
-  """
-  A unique identifier for the client performing the mutation.
-  """
-  clientMutationID: String!
-
-  """
-  User ID operation result
-  """
-  userID: ID64!
-
-  """
-  User object accessor
-  """
-  user: User
-}
-
-###############################################################################
-# Query
-###############################################################################
-
-"""
-UserListFilter implements filter for user list query
-"""
-input UserListFilter {
-  ID: [ID64!]
-  accountID: [ID64!]
-  emails: [String!]
-  roles: [ID64!]
-}
-
-"""
-UserListOrder implements order for user list query
-"""
-input UserListOrder {
-  ID:                 Ordering
-  email:              Ordering
-  username:           Ordering
-  status:             Ordering
-  registrationDate:   Ordering
-  country:            Ordering
-  manager:            Ordering
-  createdAt:          Ordering
-  updatedAt:          Ordering
-}
-
-###############################################################################
-# Mutations
-###############################################################################
-
-input UserInput {
-  username: String
-  status: ApproveStatus
-}
-
-type Profile {
-  ID:           ID64!
-  user:         User!
-  firstName:    String!
-  lastName:     String!
-  companyName:  String!
-  about:        String!
-  email:        String!
-  messgangers: [ProfileMessanger!]
-
-  createdAt: Time!
-  updatedAt: Time!
-}
-
-enum MessangerType {
-  SKYPE
-  AIM
-  ICQ
-  WHATSAPP
-  TELEGRAM
-  VIBER
-  PHONE
-}
-
-type ProfileMessanger {
-  mtype: MessangerType!
-  address: String!
-}
-
-###############################################################################
-# Query
-###############################################################################
-
-extend type Query {
-  """
-  Current user from the session
-  """
-  currentUser: UserPayload! @hasPermissions(permissions: ["user.view.*"])
-
-  """
-  Get user object by ID or username
-  """
-  user(
-    id: ID64! = 0,
-    username: String! = ""
-  ): UserPayload! @hasPermissions(permissions: ["user.view.*"])
-
-  """
-  List of the user objects which can be filtered and ordered by some fields
-  """
-  listUsers(
-    filter: UserListFilter = null,
-    order: UserListOrder = null,
-    page: Page = null
-  ): UserConnection @hasPermissions(permissions: ["user.list.*"])
-}
-
-extend type Mutation {
-  """
-  Create the new user
-  """
-  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.create.*"])
-
-  """
-  Update user info
-  """
-  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.update.*"])
-
-  """
-  Approve user and leave the comment
-  """
-  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.approve.*"])
-
-  """
-  Reject user and leave the comment
-  """
-  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.reject.*"])
-
-  """
-  Reset password of the particular user in case if user forgot it
-  """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
-
-  """
-  Update password of the particular user
-  """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
-}
-`, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/auth_client.graphql", Input: `"""
+	{Name: "../../../../../../repository/authclient/delivery/graphql/auth_client.graphql", Input: `"""
 AuthClient object represents an OAuth 2.0 client
 """
 type AuthClient {
   """
   ClientID is the client ID which represents unique connection indentificator
   """
-	ID: ID!
+  ID: ID!
 
-	# Owner and creator of the auth client
-	accountID: ID64!
-	userID: ID64!
-
-  """
-	Title of the AuthClient as himan readable name
-  """
-	title: String!
+  # Owner and creator of the auth client
+  accountID: ID64!
+  userID: ID64!
 
   """
-	Secret is the client's secret. The secret will be included in the create request as cleartext, and then
-	never again. The secret is stored using BCrypt so it is impossible to recover it. Tell your users
-	that they need to write the secret down as it will not be made available again.
+  Title of the AuthClient as himan readable name
   """
-	secret: String!
+  title: String!
 
   """
-	RedirectURIs is an array of allowed redirect urls for the client, for example http://mydomain/oauth/callback .
+  Secret is the client's secret. The secret will be included in the create request as cleartext, and then
+  never again. The secret is stored using BCrypt so it is impossible to recover it. Tell your users
+  that they need to write the secret down as it will not be made available again.
   """
-	redirectURIs: [String!]
+  secret: String!
 
   """
-	GrantTypes is an array of grant types the client is allowed to use.
-
-	Pattern: client_credentials|authorization_code|implicit|refresh_token
+  RedirectURIs is an array of allowed redirect urls for the client, for example http://mydomain/oauth/callback .
   """
-	grantTypes: [String!]
+  redirectURIs: [String!]
 
   """
-	ResponseTypes is an array of the OAuth 2.0 response type strings that the client can
-	use at the authorization endpoint.
-	
-	Pattern: id_token|code|token
+  GrantTypes is an array of grant types the client is allowed to use.
+
+  Pattern: client_credentials|authorization_code|implicit|refresh_token
   """
-	responseTypes: [String!]
+  grantTypes: [String!]
 
   """
-	Scope is a string containing a space-separated list of scope values (as
-	described in Section 3.3 of OAuth 2.0 [RFC6749]) that the client
-	can use when requesting access tokens.
-	
-	Pattern: ([a-zA-Z0-9\.\*]+\s?)+
+  ResponseTypes is an array of the OAuth 2.0 response type strings that the client can
+  use at the authorization endpoint.
+
+  Pattern: id_token|code|token
   """
-	scope: String!
+  responseTypes: [String!]
 
   """
-	Audience is a whitelist defining the audiences this client is allowed to request tokens for. An audience limits
-	the applicability of an OAuth 2.0 Access Token to, for example, certain API endpoints. The value is a list
-	of URLs. URLs MUST NOT contain whitespaces.
+  Scope is a string containing a space-separated list of scope values (as
+  described in Section 3.3 of OAuth 2.0 [RFC6749]) that the client
+  can use when requesting access tokens.
+
+  Pattern: ([a-zA-Z0-9\.\*]+\s?)+
   """
-	audience: [String!]
+  scope: String!
 
   """
-	SubjectType requested for responses to this Client. The subject_types_supported Discovery parameter contains a
-	list of the supported subject_type values for this server. Valid types include ` + "`" + `pairwise` + "`" + ` and ` + "`" + `public` + "`" + `.
+  Audience is a whitelist defining the audiences this client is allowed to request tokens for. An audience limits
+  the applicability of an OAuth 2.0 Access Token to, for example, certain API endpoints. The value is a list
+  of URLs. URLs MUST NOT contain whitespaces.
   """
-	subjectType: String!
+  audience: [String!]
 
   """
-	AllowedCORSOrigins are one or more URLs (scheme://host[:port]) which are allowed to make CORS requests
-	to the /oauth/token endpoint. If this array is empty, the sever's CORS origin configuration (` + "`" + `CORS_ALLOWED_ORIGINS` + "`" + `)
-	will be used instead. If this array is set, the allowed origins are appended to the server's CORS origin configuration.
-	Be aware that environment variable ` + "`" + `CORS_ENABLED` + "`" + ` MUST be set to ` + "`" + `true` + "`" + ` for this to work.
+  SubjectType requested for responses to this Client. The subject_types_supported Discovery parameter contains a
+  list of the supported subject_type values for this server. Valid types include ` + "`" + `pairwise` + "`" + ` and ` + "`" + `public` + "`" + `.
   """
-	allowedCORSOrigins: [String!]
+  subjectType: String!
 
   """
-	Public flag tells that the client is public
+  AllowedCORSOrigins are one or more URLs (scheme://host[:port]) which are allowed to make CORS requests
+  to the /oauth/token endpoint. If this array is empty, the sever's CORS origin configuration (` + "`" + `CORS_ALLOWED_ORIGINS` + "`" + `)
+  will be used instead. If this array is set, the allowed origins are appended to the server's CORS origin configuration.
+  Be aware that environment variable ` + "`" + `CORS_ENABLED` + "`" + ` MUST be set to ` + "`" + `true` + "`" + ` for this to work.
   """
-	public: Boolean!
+  allowedCORSOrigins: [String!]
 
   """
-	ExpiresAt contins the time of expiration of the client
+  Public flag tells that the client is public
   """
-	expiresAt: Time!
+  public: Boolean!
+
+  """
+  ExpiresAt contins the time of expiration of the client
+  """
+  expiresAt: Time!
 
   createdAt: Time!
   updatedAt: Time!
-	deletedAt: Time
+  deletedAt: Time
 }
 
 type AuthClientEdge {
@@ -3584,16 +3654,6 @@ type AuthClientPayload {
   authClient: AuthClient
 }
 
-"""
-SessionToken object represents an OAuth 2.0 / JWT session token
-"""
-type SessionToken {
-  token: String!
-  expiresAt: Time!
-  isAdmin: Boolean!
-  roles: [String!]
-}
-
 ###############################################################################
 # Query
 ###############################################################################
@@ -3606,32 +3666,160 @@ input AuthClientListFilter {
 }
 
 input AuthClientListOrder {
-  ID:                 Ordering
-  userID:             Ordering
-  accountID:          Ordering
-  title:              Ordering
-  public:             Ordering
-  lastUpdate:         Ordering
+  ID: Ordering
+  userID: Ordering
+  accountID: Ordering
+  title: Ordering
+  public: Ordering
+  lastUpdate: Ordering
 }
 
 ###############################################################################
 # Mutations
 ###############################################################################
 
-input AuthClientInput {
-	accountID: ID64
-	userID: ID64
-	title: String
-	secret: String
-	redirectURIs: [String!]
-	grantTypes: [String!]
-	responseTypes: [String!]
-	scope: String
-	audience: [String!]
-	subjectType: String!
-	allowedCORSOrigins: [String!]
-	public: Boolean
-	expiresAt: Time
+###############################################################################
+# Input Types
+###############################################################################
+
+"""
+AuthClientCreateInput is used to create a new OAuth 2.0 client
+"""
+input AuthClientCreateInput {
+  """
+  AccountID of the auth client owner
+  """
+  accountID: ID64 @notempty
+
+  """
+  UserID of the auth client creator
+  """
+  userID: ID64 @notempty
+
+  """
+  Title of the auth client as human readable name
+  """
+  title: String @notempty(trim: true)
+
+  """
+  Secret for the OAuth 2.0 client
+  """
+  secret: String @notempty(trim: true)
+
+  """
+  RedirectURIs allowed for this client
+  """
+  redirectURIs: [String!]
+
+  """
+  GrantTypes allowed for this client
+  """
+  grantTypes: [String!]
+
+  """
+  ResponseTypes allowed for this client
+  """
+  responseTypes: [String!]
+
+  """
+  Scope string for the client
+  """
+  scope: String
+
+  """
+  Audience whitelist for token requests
+  """
+  audience: [String!]
+
+  """
+  SubjectType for responses to this client
+  """
+  subjectType: String!
+
+  """
+  AllowedCORSOrigins for this client
+  """
+  allowedCORSOrigins: [String!]
+
+  """
+  Public flag for the client
+  """
+  public: Boolean
+
+  """
+  ExpiresAt time for the client
+  """
+  expiresAt: Time
+}
+
+"""
+AuthClientUpdateInput is used to update an existing OAuth 2.0 client
+"""
+input AuthClientUpdateInput {
+  """
+  AccountID of the auth client owner
+  """
+  accountID: ID64 @notempty(ornil: true)
+
+  """
+  UserID of the auth client creator
+  """
+  userID: ID64 @notempty(ornil: true)
+
+  """
+  Title of the auth client as human readable name
+  """
+  title: String @notempty(trim: true, ornil: true)
+
+  """
+  Secret for the OAuth 2.0 client
+  """
+  secret: String @notempty(trim: true, ornil: true)
+
+  """
+  RedirectURIs allowed for this client
+  """
+  redirectURIs: [String!] @notempty(ornil: true)
+
+  """
+  GrantTypes allowed for this client
+  """
+  grantTypes: [String!] @notempty(ornil: true)
+
+  """
+  ResponseTypes allowed for this client
+  """
+  responseTypes: [String!] @notempty(ornil: true)
+
+  """
+  Scope string for the client
+  """
+  scope: String @notempty(trim: true, ornil: true)
+
+  """
+  Audience whitelist for token requests
+  """
+  audience: [String!] @notempty(ornil: true)
+
+  """
+  SubjectType for responses to this client
+  """
+  subjectType: String @notempty(trim: true, ornil: true)
+
+  """
+  AllowedCORSOrigins for this client
+  """
+  allowedCORSOrigins: [String!] @notempty(ornil: true)
+
+  """
+  Public flag for the client
+  """
+  public: Boolean
+
+  """
+  ExpiresAt time for the client
+  """
+  expiresAt: Time @notempty(ornil: true)
 }
 
 ###############################################################################
@@ -3642,14 +3830,15 @@ extend type Query {
   """
   Get auth client object by ID
   """
-  authClient(id: ID!): AuthClientPayload! @hasPermissions(permissions: ["auth_client.view.*"])
+  authClient(id: ID!): AuthClientPayload!
+    @hasPermissions(permissions: ["auth_client.view.*"])
 
   """
   List of the auth client objects which can be filtered and ordered by some fields
   """
   listAuthClients(
-    filter: AuthClientListFilter = null,
-    order: AuthClientListOrder = null,
+    filter: AuthClientListFilter = null
+    order: [AuthClientListOrder] = null
     page: Page = null
   ): AuthClientConnection @hasPermissions(permissions: ["auth_client.list.*"])
 }
@@ -3658,106 +3847,23 @@ extend type Mutation {
   """
   Create the new auth client
   """
-  createAuthClient(input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: ["auth_client.create.*"])
+  createAuthClient(input: AuthClientCreateInput!): AuthClientPayload!
+    @hasPermissions(permissions: ["auth_client.create.*"])
 
   """
   Update auth client info
   """
-  updateAuthClient(id: ID!, input: AuthClientInput!): AuthClientPayload! @hasPermissions(permissions: ["auth_client.update.*"])
+  updateAuthClient(id: ID!, input: AuthClientUpdateInput!): AuthClientPayload!
+    @hasPermissions(permissions: ["auth_client.update.*"])
 
   """
   Delete auth client
   """
-  deleteAuthClient(id: ID!, msg: String = null): AuthClientPayload! @hasPermissions(permissions: ["auth_client.delete.*"])
+  deleteAuthClient(id: ID!, msg: String = null): AuthClientPayload!
+    @hasPermissions(permissions: ["auth_client.delete.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/constants.graphql", Input: `
-"""
-The list of statuses that shows is object approved or not
-"""
-enum ApproveStatus {
-  """
-  Pending status of the just inited objects
-  """
-  PENDING
-
-  """
-  Approved status of object could be obtained from the some authorized user who have permissions
-  """
-  APPROVED
-
-  """
-  Rejected status of object could be obtained from the some authorized user who have permissions
-  """
-  REJECTED
-}
-
-"""
-The list of statuses that shows is particular object active or paused
-"""
-enum ActiveStatus {
-  """
-  All object by default have to be paused
-  """
-  PAUSED
-
-  """
-  Status of the active object
-  """
-  ACTIVE
-}
-
-"""
-The list of statuses that shows is particular object is available
-"""
-enum AvailableStatus {
-  """
-  All object by default have to be undefined
-  """
-  UNDEFINED
-
-  """
-  Status of the available object
-  """
-  AVAILABLE
-
-  """
-  Status of the unavailable object
-  """
-  UNAVAILABLE
-}
-
-"""
-Constants of the order of data
-"""
-enum Ordering {
-  """
-  Ascending ordering of data
-  """
-  ASC
-
-  """
-  Descending ordering of data
-  """
-  DESC
-}
-
-"""
-Constants of the response status
-"""
-enum ResponseStatus {
-  """
-  Success status of the response
-  """
-  SUCCESS
-
-  """
-  Error status of the response
-  """
-  ERROR
-}
-`, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/directaccesstoken.graphql", Input: `type DirectAccessToken {
+	{Name: "../../../../../../repository/directaccesstoken/delivery/graphql/directaccesstoken.graphql", Input: `type DirectAccessToken {
   ID: ID64!
   token: String!
   description: String!
@@ -3884,26 +3990,7 @@ extend type Mutation {
   ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.delete.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/directives.graphql", Input: `"Prevents access to a field if the user is not authenticated"
-directive @auth on FIELD_DEFINITION | FIELD
-
-"Prevents access to a field/method if the user doesnt have the matching permissions"
-directive @hasPermissions(permissions: [String!]!) on FIELD_DEFINITION | FIELD
-
-"Prevents access to a field/method if the user doesnt have the matching permissions"
-directive @acl(permissions: [String!]!) on FIELD_DEFINITION | FIELD
-
-"Prevents access to a field/method if the user doesnt have the matching permissions"
-directive @skipNoPermissions(permissions: [String!]) on FIELD_DEFINITION | FIELD
-
-"Caches the result of a field/method for a specified time to live (ttl) in seconds"
-directive @cacheData(
-  ttl: Int!
-  key: String
-  fields: [String!]
-) on FIELD_DEFINITION | FIELD
-`, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/history.graphql", Input: `"""
+	{Name: "../../../../../../repository/historylog/delivery/graphql/history.graphql", Input: `"""
 HistoryAction is the model for history actions.
 """
 type HistoryAction {
@@ -4057,7 +4144,7 @@ extend type Query {
   ): HistoryActionConnection @hasPermissions(permissions: ["history_log.list.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/options.graphql", Input: `enum OptionType {
+	{Name: "../../../../../../repository/option/delivery/graphql/options.graphql", Input: `enum OptionType {
   UNDEFINED,
   USER,
   ACCOUNT,
@@ -4169,75 +4256,7 @@ extend type Mutation {
   setOption(name: String!, value: NullableJSON, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/pagination.graphql", Input: `
-# @link https://developer.github.com/v4/object/pageinfo/
-
-"""
-Information for paginating
-"""
-type PageInfo {
-  """
-  When paginating backwards, the cursor to continue.
-  """
-  startCursor: String!
-
-  """
-  When paginating forwards, the cursor to continue.
-  """
-  endCursor: String!
-
-  """
-  When paginating backwards, are there more items?
-  """
-  hasPreviousPage: Boolean!
-
-  """
-  When paginating forwards, are there more items?
-  """
-  hasNextPage: Boolean!
-
-  """
-  Total number of pages available
-  """
-  total: Int!
-
-  """
-  Current page number
-  """
-  page: Int!
-
-  """
-  Number of pages
-  """
-  count: Int!
-}
-
-"""
-Information for paginating
-"""
-input Page {
-  """
-  Start after the cursor ID
-  """
-  after: String
-
-  """
-  Start after some records
-  """
-  offset: Int
-
-  """
-  Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
-  """
-  startPage: Int
-
-  """
-  Maximum number of items to return
-  """
-  size: Int
-}
-`, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/rbac.graphql", Input: `type RBACPermission {
+	{Name: "../../../../../../repository/rbac/delivery/graphql/rbac.graphql", Input: `type RBACPermission {
   name:   String!
   object: String!
   access: String!
@@ -4416,49 +4435,168 @@ extend type Mutation {
   deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: ["role.delete.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/schema.graphql", Input: `# https://github.com/prisma/graphql-import
-# Pagination https://graphql.org/learn/pagination/#pagination-and-edges
-
-scalar Time
-scalar TimeDuration
-scalar DateTime
-scalar Map
-scalar JSON
-scalar NullableJSON
-scalar UUID
-scalar ID64
-
-schema {
-  query: Query
-  mutation: Mutation
-}
-
-type Query {
-  serviceVersion: String!
-}
-
-type Mutation {
-  poke: String!
-}
-`, BuiltIn: false},
-	{Name: "../../../../../../protocol/graphql/schemas/status.graphql", Input: `"""
-Simple response type for the API
-"""
-type StatusResponse {
+	{Name: "../../../../../../repository/socialaccount/delivery/graphql/account_social.graphql", Input: `type SocialAccountSession {
   """
-  Unique identifier for the client performing the mutation
+  The unique name of the session to destinguish between different sessions with different scopes
+  """
+  name: String!
+  socialAccountID: ID64!
+
+  tokenType: String!
+  accessToken: String!
+  refreshToken: String!
+  scope: [String!]
+
+  createdAt: Time!
+  updatedAt: Time!
+  expiresAt: Time
+  deletedAt: Time
+}
+
+type SocialAccount {
+  ID: ID64!
+  userID: ID64!
+
+  socialID: String!
+  provider: String!
+  email: String!
+  username: String!
+
+  firstName: String!
+  lastName: String!
+  avatar: String!
+  link: String!
+
+  data: NullableJSON!
+
+  """
+  Social Account session object accessor
+  """
+  sessions: [SocialAccountSession!]
+
+  createdAt: Time!
+  updatedAt: Time!
+  deletedAt: Time
+}
+
+type SocialAccountEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: SocialAccount
+}
+
+"""
+SocialAccountConnection implements collection accessor interface with pagination
+"""
+type SocialAccountConnection {
+  """
+  The total number of records
+  """
+  totalCount: Int!
+
+  """
+  The edges for each of the social account's lists
+  """
+  edges: [SocialAccountEdge!]
+
+  """
+  A list of the social accounts, as a convenience when edges are not needed.
+  """
+  list: [SocialAccount!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+SocialAccountPayload wrapper to access of SocialAccount oprtation results
+"""
+type SocialAccountPayload {
+  """
+  A unique identifier for the client performing the mutation.
   """
   clientMutationID: String!
 
   """
-  The status of the response
+  Social Account ID operation result
   """
-  status: ResponseStatus!
+  socialAccountID: ID64!
 
   """
-  The message of the response
+  Social Account object accessor
   """
-  message: String
+  socialAccount: SocialAccount
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+input SocialAccountListFilter {
+  ID: [ID64!]
+  userID: [ID64!]
+  provider: [String!]
+  username: [String!]
+  email: [String!]
+}
+
+input SocialAccountListOrder {
+  ID: Ordering
+  userID: Ordering
+  provider: Ordering
+  email: Ordering
+  username: Ordering
+  firstName: Ordering
+  lastName: Ordering
+}
+
+extend type Query {
+  """
+  Get a social account by its unique identifier
+  """
+  socialAccount(
+    """
+    The unique identifier of the social account
+    """
+    id: ID64!
+  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.view.*"])
+
+  """
+  Get the current user's social accounts
+  """
+  currentSocialAccounts(
+    filter: SocialAccountListFilter = null,
+    order: SocialAccountListOrder = null
+  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+
+  """
+  List all social accounts
+  """
+  listSocialAccounts(
+    filter: SocialAccountListFilter = null,
+    order: SocialAccountListOrder = null,
+    page: Page = null
+  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+}
+
+extend type Mutation {
+  """
+  Disconnect a social account
+  """
+  disconnectSocialAccount(
+    """
+    The unique identifier of the social account to disconnect
+    """
+    id: ID64!
+  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.disconnect.*"])
 }
 `, BuiltIn: false},
 }
@@ -4508,6 +4646,90 @@ func (ec *executionContext) dir_hasPermissions_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["permissions"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) dir_length_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "min", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["min"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "max", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["max"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "trim", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["trim"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "ornil", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["ornil"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) dir_notempty_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "trim", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["trim"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "ornil", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["ornil"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) dir_range_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "min", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["min"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "max", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["max"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "ornil", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["ornil"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) dir_regex_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "pattern", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["pattern"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "trim", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["trim"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "ornil", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["ornil"] = arg2
 	return args, nil
 }
 
@@ -4573,7 +4795,7 @@ func (ec *executionContext) field_Mutation_approveUser_args(ctx context.Context,
 func (ec *executionContext) field_Mutation_createAuthClient_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAuthClientCreateInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientCreateInput)
 	if err != nil {
 		return nil, err
 	}
@@ -4868,7 +5090,7 @@ func (ec *executionContext) field_Mutation_updateAuthClient_args(ctx context.Con
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAuthClientUpdateInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientUpdateInput)
 	if err != nil {
 		return nil, err
 	}
@@ -5060,7 +5282,7 @@ func (ec *executionContext) field_Query_listAuthClients_args(ctx context.Context
 		return nil, err
 	}
 	args["filter"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "order", ec.unmarshalOAuthClientListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "order", ec.unmarshalOAuthClientListOrder2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder)
 	if err != nil {
 		return nil, err
 	}
@@ -5362,18 +5584,18 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj any, next 
 			}
 			n := next
 			next = func(ctx context.Context) (any, error) {
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					return nil, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, obj, n, args["permissions"].([]string))
+				return ec.Directives.Acl(ctx, obj, n, args["permissions"].([]string))
 			}
 		case "auth":
 			n := next
 			next = func(ctx context.Context) (any, error) {
-				if ec.directives.Auth == nil {
+				if ec.Directives.Auth == nil {
 					return nil, errors.New("directive auth is not implemented")
 				}
-				return ec.directives.Auth(ctx, obj, n)
+				return ec.Directives.Auth(ctx, obj, n)
 			}
 		case "cacheData":
 			rawArgs := d.ArgumentMap(ec.Variables)
@@ -5384,10 +5606,10 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj any, next 
 			}
 			n := next
 			next = func(ctx context.Context) (any, error) {
-				if ec.directives.CacheData == nil {
+				if ec.Directives.CacheData == nil {
 					return nil, errors.New("directive cacheData is not implemented")
 				}
-				return ec.directives.CacheData(ctx, obj, n, args["ttl"].(int), args["key"].(*string), args["fields"].([]string))
+				return ec.Directives.CacheData(ctx, obj, n, args["ttl"].(int), args["key"].(*string), args["fields"].([]string))
 			}
 		case "hasPermissions":
 			rawArgs := d.ArgumentMap(ec.Variables)
@@ -5398,10 +5620,10 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj any, next 
 			}
 			n := next
 			next = func(ctx context.Context) (any, error) {
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					return nil, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, obj, n, args["permissions"].([]string))
+				return ec.Directives.HasPermissions(ctx, obj, n, args["permissions"].([]string))
 			}
 		case "skipNoPermissions":
 			rawArgs := d.ArgumentMap(ec.Variables)
@@ -5412,10 +5634,10 @@ func (ec *executionContext) _fieldMiddleware(ctx context.Context, obj any, next 
 			}
 			n := next
 			next = func(ctx context.Context) (any, error) {
-				if ec.directives.SkipNoPermissions == nil {
+				if ec.Directives.SkipNoPermissions == nil {
 					return nil, errors.New("directive skipNoPermissions is not implemented")
 				}
-				return ec.directives.SkipNoPermissions(ctx, obj, n, args["permissions"].([]string))
+				return ec.Directives.SkipNoPermissions(ctx, obj, n, args["permissions"].([]string))
 			}
 		}
 	}
@@ -7463,14 +7685,14 @@ func (ec *executionContext) fieldContext_DirectAccessToken_expiresAt(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _DirectAccessTokenConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *models1.DirectAccessTokenConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _DirectAccessTokenConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		ec.fieldContext_DirectAccessTokenConnection_totalCount,
 		func(ctx context.Context) (any, error) {
-			return obj.TotalCount, nil
+			return obj.TotalCount(), nil
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, obj, next)
@@ -7485,7 +7707,7 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_totalCount(
 	fc = &graphql.FieldContext{
 		Object:     "DirectAccessTokenConnection",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
@@ -7494,14 +7716,14 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_totalCount(
 	return fc, nil
 }
 
-func (ec *executionContext) _DirectAccessTokenConnection_edges(ctx context.Context, field graphql.CollectedField, obj *models1.DirectAccessTokenConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _DirectAccessTokenConnection_edges(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		ec.fieldContext_DirectAccessTokenConnection_edges,
 		func(ctx context.Context) (any, error) {
-			return obj.Edges, nil
+			return obj.Edges(), nil
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, obj, next)
@@ -7516,7 +7738,7 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_edges(_ con
 	fc = &graphql.FieldContext{
 		Object:     "DirectAccessTokenConnection",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
@@ -7531,14 +7753,14 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_edges(_ con
 	return fc, nil
 }
 
-func (ec *executionContext) _DirectAccessTokenConnection_list(ctx context.Context, field graphql.CollectedField, obj *models1.DirectAccessTokenConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _DirectAccessTokenConnection_list(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		ec.fieldContext_DirectAccessTokenConnection_list,
 		func(ctx context.Context) (any, error) {
-			return obj.List, nil
+			return obj.List(), nil
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, obj, next)
@@ -7553,7 +7775,7 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_list(_ cont
 	fc = &graphql.FieldContext{
 		Object:     "DirectAccessTokenConnection",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
@@ -7578,14 +7800,14 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_list(_ cont
 	return fc, nil
 }
 
-func (ec *executionContext) _DirectAccessTokenConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *models1.DirectAccessTokenConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _DirectAccessTokenConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		ec.fieldContext_DirectAccessTokenConnection_pageInfo,
 		func(ctx context.Context) (any, error) {
-			return obj.PageInfo, nil
+			return obj.PageInfo(), nil
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, obj, next)
@@ -7600,7 +7822,7 @@ func (ec *executionContext) fieldContext_DirectAccessTokenConnection_pageInfo(_ 
 	fc = &graphql.FieldContext{
 		Object:     "DirectAccessTokenConnection",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
@@ -9206,7 +9428,7 @@ func (ec *executionContext) _Mutation_poke(ctx context.Context, field graphql.Co
 		field,
 		ec.fieldContext_Mutation_poke,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Mutation().Poke(ctx)
+			return ec.Resolvers.Mutation().Poke(ctx)
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -9230,6 +9452,408 @@ func (ec *executionContext) fieldContext_Mutation_poke(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createUser,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateUser(ctx, fc.Args["input"].(models.UserInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.create.*"})
+				if err != nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserPayload_userID(ctx, field)
+			case "user":
+				return ec.fieldContext_UserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateUser,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateUser(ctx, fc.Args["id"].(uint64), fc.Args["input"].(models.UserInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.update.*"})
+				if err != nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserPayload_userID(ctx, field)
+			case "user":
+				return ec.fieldContext_UserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_approveUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_approveUser,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ApproveUser(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.approve.*"})
+				if err != nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_approveUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserPayload_userID(ctx, field)
+			case "user":
+				return ec.fieldContext_UserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_approveUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_rejectUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_rejectUser,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RejectUser(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.reject.*"})
+				if err != nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_rejectUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserPayload_userID(ctx, field)
+			case "user":
+				return ec.fieldContext_UserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_rejectUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resetUserPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_resetUserPassword,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ResetUserPassword(ctx, fc.Args["email"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.password.reset.*"})
+				if err != nil {
+					var zeroVal *models.StatusResponse
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.StatusResponse
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resetUserPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
+			case "status":
+				return ec.fieldContext_StatusResponse_status(ctx, field)
+			case "message":
+				return ec.fieldContext_StatusResponse_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatusResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resetUserPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateUserPassword,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateUserPassword(ctx, fc.Args["token"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.password.reset.*"})
+				if err != nil {
+					var zeroVal *models.StatusResponse
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.StatusResponse
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateUserPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
+			case "status":
+				return ec.fieldContext_StatusResponse_status(ctx, field)
+			case "message":
+				return ec.fieldContext_StatusResponse_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatusResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateUserPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9238,7 +9862,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 		ec.fieldContext_Mutation_login,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().Login(ctx, fc.Args["login"].(string), fc.Args["password"].(string))
+			return ec.Resolvers.Mutation().Login(ctx, fc.Args["login"].(string), fc.Args["password"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -9290,7 +9914,7 @@ func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_Mutation_logout,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Mutation().Logout(ctx)
+			return ec.Resolvers.Mutation().Logout(ctx)
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -9322,7 +9946,7 @@ func (ec *executionContext) _Mutation_switchAccount(ctx context.Context, field g
 		ec.fieldContext_Mutation_switchAccount,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SwitchAccount(ctx, fc.Args["id"].(uint64))
+			return ec.Resolvers.Mutation().SwitchAccount(ctx, fc.Args["id"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -9375,7 +9999,7 @@ func (ec *executionContext) _Mutation_registerAccount(ctx context.Context, field
 		ec.fieldContext_Mutation_registerAccount,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RegisterAccount(ctx, fc.Args["input"].(models.AccountCreateInput))
+			return ec.Resolvers.Mutation().RegisterAccount(ctx, fc.Args["input"].(models.AccountCreateInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9386,11 +10010,11 @@ func (ec *executionContext) _Mutation_registerAccount(ctx context.Context, field
 					var zeroVal *models.AccountCreatePayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AccountCreatePayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9442,7 +10066,7 @@ func (ec *executionContext) _Mutation_updateAccount(ctx context.Context, field g
 		ec.fieldContext_Mutation_updateAccount,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateAccount(ctx, fc.Args["id"].(uint64), fc.Args["input"].(models.AccountInput))
+			return ec.Resolvers.Mutation().UpdateAccount(ctx, fc.Args["id"].(uint64), fc.Args["input"].(models.AccountInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9453,11 +10077,11 @@ func (ec *executionContext) _Mutation_updateAccount(ctx context.Context, field g
 					var zeroVal *models.AccountPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AccountPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9509,7 +10133,7 @@ func (ec *executionContext) _Mutation_approveAccount(ctx context.Context, field 
 		ec.fieldContext_Mutation_approveAccount,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().ApproveAccount(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
+			return ec.Resolvers.Mutation().ApproveAccount(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9520,11 +10144,11 @@ func (ec *executionContext) _Mutation_approveAccount(ctx context.Context, field 
 					var zeroVal *models.AccountPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AccountPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9576,7 +10200,7 @@ func (ec *executionContext) _Mutation_rejectAccount(ctx context.Context, field g
 		ec.fieldContext_Mutation_rejectAccount,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RejectAccount(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
+			return ec.Resolvers.Mutation().RejectAccount(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9587,11 +10211,11 @@ func (ec *executionContext) _Mutation_rejectAccount(ctx context.Context, field g
 					var zeroVal *models.AccountPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AccountPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9643,7 +10267,7 @@ func (ec *executionContext) _Mutation_inviteAccountMember(ctx context.Context, f
 		ec.fieldContext_Mutation_inviteAccountMember,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().InviteAccountMember(ctx, fc.Args["accountID"].(uint64), fc.Args["member"].(models.InviteMemberInput))
+			return ec.Resolvers.Mutation().InviteAccountMember(ctx, fc.Args["accountID"].(uint64), fc.Args["member"].(models.InviteMemberInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9654,11 +10278,11 @@ func (ec *executionContext) _Mutation_inviteAccountMember(ctx context.Context, f
 					var zeroVal *models.MemberPayload
 					return zeroVal, err
 				}
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					var zeroVal *models.MemberPayload
 					return zeroVal, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, nil, directive0, permissions)
+				return ec.Directives.Acl(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9710,7 +10334,7 @@ func (ec *executionContext) _Mutation_updateAccountMember(ctx context.Context, f
 		ec.fieldContext_Mutation_updateAccountMember,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateAccountMember(ctx, fc.Args["memberID"].(uint64), fc.Args["member"].(models.MemberInput))
+			return ec.Resolvers.Mutation().UpdateAccountMember(ctx, fc.Args["memberID"].(uint64), fc.Args["member"].(models.MemberInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9721,11 +10345,11 @@ func (ec *executionContext) _Mutation_updateAccountMember(ctx context.Context, f
 					var zeroVal *models.MemberPayload
 					return zeroVal, err
 				}
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					var zeroVal *models.MemberPayload
 					return zeroVal, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, nil, directive0, permissions)
+				return ec.Directives.Acl(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9777,7 +10401,7 @@ func (ec *executionContext) _Mutation_removeAccountMember(ctx context.Context, f
 		ec.fieldContext_Mutation_removeAccountMember,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RemoveAccountMember(ctx, fc.Args["memberID"].(uint64))
+			return ec.Resolvers.Mutation().RemoveAccountMember(ctx, fc.Args["memberID"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9788,11 +10412,11 @@ func (ec *executionContext) _Mutation_removeAccountMember(ctx context.Context, f
 					var zeroVal *models.MemberPayload
 					return zeroVal, err
 				}
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					var zeroVal *models.MemberPayload
 					return zeroVal, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, nil, directive0, permissions)
+				return ec.Directives.Acl(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9844,7 +10468,7 @@ func (ec *executionContext) _Mutation_approveAccountMember(ctx context.Context, 
 		ec.fieldContext_Mutation_approveAccountMember,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().ApproveAccountMember(ctx, fc.Args["memberID"].(uint64), fc.Args["msg"].(string))
+			return ec.Resolvers.Mutation().ApproveAccountMember(ctx, fc.Args["memberID"].(uint64), fc.Args["msg"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9855,11 +10479,11 @@ func (ec *executionContext) _Mutation_approveAccountMember(ctx context.Context, 
 					var zeroVal *models.MemberPayload
 					return zeroVal, err
 				}
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					var zeroVal *models.MemberPayload
 					return zeroVal, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, nil, directive0, permissions)
+				return ec.Directives.Acl(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9911,7 +10535,7 @@ func (ec *executionContext) _Mutation_rejectAccountMember(ctx context.Context, f
 		ec.fieldContext_Mutation_rejectAccountMember,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RejectAccountMember(ctx, fc.Args["memberID"].(uint64), fc.Args["msg"].(string))
+			return ec.Resolvers.Mutation().RejectAccountMember(ctx, fc.Args["memberID"].(uint64), fc.Args["msg"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -9922,11 +10546,11 @@ func (ec *executionContext) _Mutation_rejectAccountMember(ctx context.Context, f
 					var zeroVal *models.MemberPayload
 					return zeroVal, err
 				}
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					var zeroVal *models.MemberPayload
 					return zeroVal, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, nil, directive0, permissions)
+				return ec.Directives.Acl(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -9970,475 +10594,6 @@ func (ec *executionContext) fieldContext_Mutation_rejectAccountMember(ctx contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_disconnectSocialAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_disconnectSocialAccount,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DisconnectSocialAccount(ctx, fc.Args["id"].(uint64))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.disconnect.*"})
-				if err != nil {
-					var zeroVal *models.SocialAccountPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.SocialAccountPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNSocialAccountPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_disconnectSocialAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_SocialAccountPayload_clientMutationID(ctx, field)
-			case "socialAccountID":
-				return ec.fieldContext_SocialAccountPayload_socialAccountID(ctx, field)
-			case "socialAccount":
-				return ec.fieldContext_SocialAccountPayload_socialAccount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SocialAccountPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_disconnectSocialAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_createUser,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateUser(ctx, fc.Args["input"].(models.UserInput))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.create.*"})
-				if err != nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserPayload_userID(ctx, field)
-			case "user":
-				return ec.fieldContext_UserPayload_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_updateUser,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateUser(ctx, fc.Args["id"].(uint64), fc.Args["input"].(models.UserInput))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.update.*"})
-				if err != nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserPayload_userID(ctx, field)
-			case "user":
-				return ec.fieldContext_UserPayload_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_approveUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_approveUser,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().ApproveUser(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.approve.*"})
-				if err != nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_approveUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserPayload_userID(ctx, field)
-			case "user":
-				return ec.fieldContext_UserPayload_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_approveUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_rejectUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_rejectUser,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RejectUser(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.reject.*"})
-				if err != nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_rejectUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserPayload_userID(ctx, field)
-			case "user":
-				return ec.fieldContext_UserPayload_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_rejectUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_resetUserPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_resetUserPassword,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().ResetUserPassword(ctx, fc.Args["email"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.password.reset.*"})
-				if err != nil {
-					var zeroVal *models.StatusResponse
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.StatusResponse
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_resetUserPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
-			case "status":
-				return ec.fieldContext_StatusResponse_status(ctx, field)
-			case "message":
-				return ec.fieldContext_StatusResponse_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StatusResponse", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_resetUserPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateUserPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_updateUserPassword,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateUserPassword(ctx, fc.Args["token"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.password.reset.*"})
-				if err != nil {
-					var zeroVal *models.StatusResponse
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.StatusResponse
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateUserPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_StatusResponse_clientMutationID(ctx, field)
-			case "status":
-				return ec.fieldContext_StatusResponse_status(ctx, field)
-			case "message":
-				return ec.fieldContext_StatusResponse_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StatusResponse", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateUserPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_createAuthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10447,7 +10602,7 @@ func (ec *executionContext) _Mutation_createAuthClient(ctx context.Context, fiel
 		ec.fieldContext_Mutation_createAuthClient,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateAuthClient(ctx, fc.Args["input"].(models.AuthClientInput))
+			return ec.Resolvers.Mutation().CreateAuthClient(ctx, fc.Args["input"].(models.AuthClientCreateInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10458,11 +10613,11 @@ func (ec *executionContext) _Mutation_createAuthClient(ctx context.Context, fiel
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10514,7 +10669,7 @@ func (ec *executionContext) _Mutation_updateAuthClient(ctx context.Context, fiel
 		ec.fieldContext_Mutation_updateAuthClient,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateAuthClient(ctx, fc.Args["id"].(string), fc.Args["input"].(models.AuthClientInput))
+			return ec.Resolvers.Mutation().UpdateAuthClient(ctx, fc.Args["id"].(string), fc.Args["input"].(models.AuthClientUpdateInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10525,11 +10680,11 @@ func (ec *executionContext) _Mutation_updateAuthClient(ctx context.Context, fiel
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10581,7 +10736,7 @@ func (ec *executionContext) _Mutation_deleteAuthClient(ctx context.Context, fiel
 		ec.fieldContext_Mutation_deleteAuthClient,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeleteAuthClient(ctx, fc.Args["id"].(string), fc.Args["msg"].(*string))
+			return ec.Resolvers.Mutation().DeleteAuthClient(ctx, fc.Args["id"].(string), fc.Args["msg"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10592,11 +10747,11 @@ func (ec *executionContext) _Mutation_deleteAuthClient(ctx context.Context, fiel
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10648,7 +10803,7 @@ func (ec *executionContext) _Mutation_generateDirectAccessToken(ctx context.Cont
 		ec.fieldContext_Mutation_generateDirectAccessToken,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().GenerateDirectAccessToken(ctx, fc.Args["userID"].(*uint64), fc.Args["description"].(string), fc.Args["expiresAt"].(*time.Time))
+			return ec.Resolvers.Mutation().GenerateDirectAccessToken(ctx, fc.Args["userID"].(*uint64), fc.Args["description"].(string), fc.Args["expiresAt"].(*time.Time))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10659,11 +10814,11 @@ func (ec *executionContext) _Mutation_generateDirectAccessToken(ctx context.Cont
 					var zeroVal *models.DirectAccessTokenPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.DirectAccessTokenPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10713,7 +10868,7 @@ func (ec *executionContext) _Mutation_revokeDirectAccessToken(ctx context.Contex
 		ec.fieldContext_Mutation_revokeDirectAccessToken,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RevokeDirectAccessToken(ctx, fc.Args["filter"].(models.DirectAccessTokenListFilter))
+			return ec.Resolvers.Mutation().RevokeDirectAccessToken(ctx, fc.Args["filter"].(models.DirectAccessTokenListFilter))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10724,11 +10879,11 @@ func (ec *executionContext) _Mutation_revokeDirectAccessToken(ctx context.Contex
 					var zeroVal *models.StatusResponse
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.StatusResponse
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10780,7 +10935,7 @@ func (ec *executionContext) _Mutation_setOption(ctx context.Context, field graph
 		ec.fieldContext_Mutation_setOption,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().SetOption(ctx, fc.Args["name"].(string), fc.Args["value"].(*types.NullableJSON), fc.Args["type"].(models.OptionType), fc.Args["targetID"].(uint64))
+			return ec.Resolvers.Mutation().SetOption(ctx, fc.Args["name"].(string), fc.Args["value"].(*types.NullableJSON), fc.Args["type"].(models.OptionType), fc.Args["targetID"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10791,11 +10946,11 @@ func (ec *executionContext) _Mutation_setOption(ctx context.Context, field graph
 					var zeroVal *models.OptionPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.OptionPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10847,7 +11002,7 @@ func (ec *executionContext) _Mutation_createRole(ctx context.Context, field grap
 		ec.fieldContext_Mutation_createRole,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().CreateRole(ctx, fc.Args["input"].(models.RBACRoleInput))
+			return ec.Resolvers.Mutation().CreateRole(ctx, fc.Args["input"].(models.RBACRoleInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10858,11 +11013,11 @@ func (ec *executionContext) _Mutation_createRole(ctx context.Context, field grap
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10914,7 +11069,7 @@ func (ec *executionContext) _Mutation_updateRole(ctx context.Context, field grap
 		ec.fieldContext_Mutation_updateRole,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UpdateRole(ctx, fc.Args["id"].(uint64), fc.Args["input"].(models.RBACRoleInput))
+			return ec.Resolvers.Mutation().UpdateRole(ctx, fc.Args["id"].(uint64), fc.Args["input"].(models.RBACRoleInput))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10925,11 +11080,11 @@ func (ec *executionContext) _Mutation_updateRole(ctx context.Context, field grap
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -10981,7 +11136,7 @@ func (ec *executionContext) _Mutation_deleteRole(ctx context.Context, field grap
 		ec.fieldContext_Mutation_deleteRole,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().DeleteRole(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
+			return ec.Resolvers.Mutation().DeleteRole(ctx, fc.Args["id"].(uint64), fc.Args["msg"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10992,11 +11147,11 @@ func (ec *executionContext) _Mutation_deleteRole(ctx context.Context, field grap
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -11034,6 +11189,73 @@ func (ec *executionContext) fieldContext_Mutation_deleteRole(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteRole_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_disconnectSocialAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_disconnectSocialAccount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DisconnectSocialAccount(ctx, fc.Args["id"].(uint64))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.disconnect.*"})
+				if err != nil {
+					var zeroVal *models.SocialAccountPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.SocialAccountPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNSocialAccountPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_disconnectSocialAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_SocialAccountPayload_clientMutationID(ctx, field)
+			case "socialAccountID":
+				return ec.fieldContext_SocialAccountPayload_socialAccountID(ctx, field)
+			case "socialAccount":
+				return ec.fieldContext_SocialAccountPayload_socialAccount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_disconnectSocialAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12111,7 +12333,7 @@ func (ec *executionContext) _Query_serviceVersion(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Query_serviceVersion,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().ServiceVersion(ctx)
+			return ec.Resolvers.Query().ServiceVersion(ctx)
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -12135,6 +12357,197 @@ func (ec *executionContext) fieldContext_Query_serviceVersion(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_currentUser,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().CurrentUser(ctx)
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.view.*"})
+				if err != nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_currentUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserPayload_userID(ctx, field)
+			case "user":
+				return ec.fieldContext_UserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_user,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().User(ctx, fc.Args["id"].(uint64), fc.Args["username"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.view.*"})
+				if err != nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.UserPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserPayload_userID(ctx, field)
+			case "user":
+				return ec.fieldContext_UserPayload_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_user_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_listUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_listUsers,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ListUsers(ctx, fc.Args["filter"].(*models.UserListFilter), fc.Args["order"].(*models.UserListOrder), fc.Args["page"].(*models.Page))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.list.*"})
+				if err != nil {
+					var zeroVal *connectors.CollectionConnection[models.User, models.UserEdge]
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *connectors.CollectionConnection[models.User, models.UserEdge]
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalOUserConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_listUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_UserConnection_totalCount(ctx, field)
+			case "edges":
+				return ec.fieldContext_UserConnection_edges(ctx, field)
+			case "list":
+				return ec.fieldContext_UserConnection_list(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_UserConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_listUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_currentSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12142,7 +12555,7 @@ func (ec *executionContext) _Query_currentSession(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Query_currentSession,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().CurrentSession(ctx)
+			return ec.Resolvers.Query().CurrentSession(ctx)
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12153,11 +12566,11 @@ func (ec *executionContext) _Query_currentSession(ctx context.Context, field gra
 					var zeroVal *models.SessionToken
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.SessionToken
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12199,7 +12612,7 @@ func (ec *executionContext) _Query_currentAccount(ctx context.Context, field gra
 		field,
 		ec.fieldContext_Query_currentAccount,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().CurrentAccount(ctx)
+			return ec.Resolvers.Query().CurrentAccount(ctx)
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12210,11 +12623,11 @@ func (ec *executionContext) _Query_currentAccount(ctx context.Context, field gra
 					var zeroVal *models.AccountPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AccountPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12255,7 +12668,7 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 		ec.fieldContext_Query_account,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Account(ctx, fc.Args["id"].(uint64))
+			return ec.Resolvers.Query().Account(ctx, fc.Args["id"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12266,11 +12679,11 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 					var zeroVal *models.AccountPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AccountPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12322,7 +12735,7 @@ func (ec *executionContext) _Query_listAccounts(ctx context.Context, field graph
 		ec.fieldContext_Query_listAccounts,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListAccounts(ctx, fc.Args["filter"].(*models.AccountListFilter), fc.Args["order"].(*models.AccountListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListAccounts(ctx, fc.Args["filter"].(*models.AccountListFilter), fc.Args["order"].(*models.AccountListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12333,11 +12746,11 @@ func (ec *executionContext) _Query_listAccounts(ctx context.Context, field graph
 					var zeroVal *connectors.CollectionConnection[models.Account, models.AccountEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *connectors.CollectionConnection[models.Account, models.AccountEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12391,7 +12804,7 @@ func (ec *executionContext) _Query_listAccountRolesAndPermissions(ctx context.Co
 		ec.fieldContext_Query_listAccountRolesAndPermissions,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListAccountRolesAndPermissions(ctx, fc.Args["accountID"].(uint64), fc.Args["order"].(*models.RBACRoleListOrder))
+			return ec.Resolvers.Query().ListAccountRolesAndPermissions(ctx, fc.Args["accountID"].(uint64), fc.Args["order"].(*models.RBACRoleListOrder))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12402,11 +12815,11 @@ func (ec *executionContext) _Query_listAccountRolesAndPermissions(ctx context.Co
 					var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12460,7 +12873,7 @@ func (ec *executionContext) _Query_listMembers(ctx context.Context, field graphq
 		ec.fieldContext_Query_listMembers,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListMembers(ctx, fc.Args["filter"].(*models.MemberListFilter), fc.Args["order"].(*models.MemberListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListMembers(ctx, fc.Args["filter"].(*models.MemberListFilter), fc.Args["order"].(*models.MemberListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12471,11 +12884,11 @@ func (ec *executionContext) _Query_listMembers(ctx context.Context, field graphq
 					var zeroVal *connectors.CollectionConnection[models.Member, models.MemberEdge]
 					return zeroVal, err
 				}
-				if ec.directives.Acl == nil {
+				if ec.Directives.Acl == nil {
 					var zeroVal *connectors.CollectionConnection[models.Member, models.MemberEdge]
 					return zeroVal, errors.New("directive acl is not implemented")
 				}
-				return ec.directives.Acl(ctx, nil, directive0, permissions)
+				return ec.Directives.Acl(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12521,402 +12934,6 @@ func (ec *executionContext) fieldContext_Query_listMembers(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_socialAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_socialAccount,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().SocialAccount(ctx, fc.Args["id"].(uint64))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.view.*"})
-				if err != nil {
-					var zeroVal *models.SocialAccountPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.SocialAccountPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNSocialAccountPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_socialAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_SocialAccountPayload_clientMutationID(ctx, field)
-			case "socialAccountID":
-				return ec.fieldContext_SocialAccountPayload_socialAccountID(ctx, field)
-			case "socialAccount":
-				return ec.fieldContext_SocialAccountPayload_socialAccount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SocialAccountPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_socialAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_currentSocialAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_currentSocialAccounts,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().CurrentSocialAccounts(ctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.list.*"})
-				if err != nil {
-					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_currentSocialAccounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "totalCount":
-				return ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
-			case "edges":
-				return ec.fieldContext_SocialAccountConnection_edges(ctx, field)
-			case "list":
-				return ec.fieldContext_SocialAccountConnection_list(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SocialAccountConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_currentSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_listSocialAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_listSocialAccounts,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListSocialAccounts(ctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder), fc.Args["page"].(*models.Page))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.list.*"})
-				if err != nil {
-					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_listSocialAccounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "totalCount":
-				return ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
-			case "edges":
-				return ec.fieldContext_SocialAccountConnection_edges(ctx, field)
-			case "list":
-				return ec.fieldContext_SocialAccountConnection_list(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SocialAccountConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_listSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_currentUser,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().CurrentUser(ctx)
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.view.*"})
-				if err != nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_currentUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserPayload_userID(ctx, field)
-			case "user":
-				return ec.fieldContext_UserPayload_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_user,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().User(ctx, fc.Args["id"].(uint64), fc.Args["username"].(string))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.view.*"})
-				if err != nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models.UserPayload
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalNUserPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "clientMutationID":
-				return ec.fieldContext_UserPayload_clientMutationID(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserPayload_userID(ctx, field)
-			case "user":
-				return ec.fieldContext_UserPayload_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_user_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_listUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_listUsers,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListUsers(ctx, fc.Args["filter"].(*models.UserListFilter), fc.Args["order"].(*models.UserListOrder), fc.Args["page"].(*models.Page))
-		},
-		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
-			directive0 := next
-
-			directive1 := func(ctx context.Context) (any, error) {
-				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.list.*"})
-				if err != nil {
-					var zeroVal *connectors.CollectionConnection[models.User, models.UserEdge]
-					return zeroVal, err
-				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *connectors.CollectionConnection[models.User, models.UserEdge]
-					return zeroVal, errors.New("directive hasPermissions is not implemented")
-				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
-			}
-
-			next = directive1
-			return ec._fieldMiddleware(ctx, nil, next)
-		},
-		ec.marshalOUserConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_listUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "totalCount":
-				return ec.fieldContext_UserConnection_totalCount(ctx, field)
-			case "edges":
-				return ec.fieldContext_UserConnection_edges(ctx, field)
-			case "list":
-				return ec.fieldContext_UserConnection_list(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_UserConnection_pageInfo(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_listUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query_authClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12925,7 +12942,7 @@ func (ec *executionContext) _Query_authClient(ctx context.Context, field graphql
 		ec.fieldContext_Query_authClient,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().AuthClient(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Query().AuthClient(ctx, fc.Args["id"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -12936,11 +12953,11 @@ func (ec *executionContext) _Query_authClient(ctx context.Context, field graphql
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.AuthClientPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -12992,7 +13009,7 @@ func (ec *executionContext) _Query_listAuthClients(ctx context.Context, field gr
 		ec.fieldContext_Query_listAuthClients,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListAuthClients(ctx, fc.Args["filter"].(*models.AuthClientListFilter), fc.Args["order"].(*models.AuthClientListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListAuthClients(ctx, fc.Args["filter"].(*models.AuthClientListFilter), fc.Args["order"].([]*models.AuthClientListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13003,11 +13020,11 @@ func (ec *executionContext) _Query_listAuthClients(ctx context.Context, field gr
 					var zeroVal *connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13061,7 +13078,7 @@ func (ec *executionContext) _Query_getDirectAccessToken(ctx context.Context, fie
 		ec.fieldContext_Query_getDirectAccessToken,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().GetDirectAccessToken(ctx, fc.Args["id"].(uint64))
+			return ec.Resolvers.Query().GetDirectAccessToken(ctx, fc.Args["id"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13072,11 +13089,11 @@ func (ec *executionContext) _Query_getDirectAccessToken(ctx context.Context, fie
 					var zeroVal *models.DirectAccessTokenPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.DirectAccessTokenPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13126,7 +13143,7 @@ func (ec *executionContext) _Query_listDirectAccessTokens(ctx context.Context, f
 		ec.fieldContext_Query_listDirectAccessTokens,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListDirectAccessTokens(ctx, fc.Args["filter"].(*models.DirectAccessTokenListFilter), fc.Args["order"].(*models.DirectAccessTokenListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListDirectAccessTokens(ctx, fc.Args["filter"].(*models.DirectAccessTokenListFilter), fc.Args["order"].(*models.DirectAccessTokenListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13134,20 +13151,20 @@ func (ec *executionContext) _Query_listDirectAccessTokens(ctx context.Context, f
 			directive1 := func(ctx context.Context) (any, error) {
 				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"directaccesstoken.list.*"})
 				if err != nil {
-					var zeroVal *models1.DirectAccessTokenConnection
+					var zeroVal *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
-					var zeroVal *models1.DirectAccessTokenConnection
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
 			return ec._fieldMiddleware(ctx, nil, next)
 		},
-		ec.marshalODirectAccessTokenConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋexampleᚋapiᚋinternalᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenConnection,
+		ec.marshalODirectAccessTokenConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
 		true,
 		false,
 	)
@@ -13195,7 +13212,7 @@ func (ec *executionContext) _Query_listHistory(ctx context.Context, field graphq
 		ec.fieldContext_Query_listHistory,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListHistory(ctx, fc.Args["filter"].(*models.HistoryActionListFilter), fc.Args["order"].(*models.HistoryActionListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListHistory(ctx, fc.Args["filter"].(*models.HistoryActionListFilter), fc.Args["order"].(*models.HistoryActionListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13206,11 +13223,11 @@ func (ec *executionContext) _Query_listHistory(ctx context.Context, field graphq
 					var zeroVal *connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13264,7 +13281,7 @@ func (ec *executionContext) _Query_option(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query_option,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Option(ctx, fc.Args["name"].(string), fc.Args["type"].(models.OptionType), fc.Args["targetID"].(uint64))
+			return ec.Resolvers.Query().Option(ctx, fc.Args["name"].(string), fc.Args["type"].(models.OptionType), fc.Args["targetID"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13275,11 +13292,11 @@ func (ec *executionContext) _Query_option(ctx context.Context, field graphql.Col
 					var zeroVal *models.OptionPayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.OptionPayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13331,7 +13348,7 @@ func (ec *executionContext) _Query_listOptions(ctx context.Context, field graphq
 		ec.fieldContext_Query_listOptions,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListOptions(ctx, fc.Args["filter"].(*models.OptionListFilter), fc.Args["order"].(*models.OptionListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListOptions(ctx, fc.Args["filter"].(*models.OptionListFilter), fc.Args["order"].(*models.OptionListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13342,11 +13359,11 @@ func (ec *executionContext) _Query_listOptions(ctx context.Context, field graphq
 					var zeroVal *connectors.CollectionConnection[models.Option, models.OptionEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *connectors.CollectionConnection[models.Option, models.OptionEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13400,7 +13417,7 @@ func (ec *executionContext) _Query_role(ctx context.Context, field graphql.Colle
 		ec.fieldContext_Query_role,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Role(ctx, fc.Args["id"].(uint64))
+			return ec.Resolvers.Query().Role(ctx, fc.Args["id"].(uint64))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13411,11 +13428,11 @@ func (ec *executionContext) _Query_role(ctx context.Context, field graphql.Colle
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *models.RBACRolePayload
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13467,7 +13484,7 @@ func (ec *executionContext) _Query_checkPermission(ctx context.Context, field gr
 		ec.fieldContext_Query_checkPermission,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().CheckPermission(ctx, fc.Args["name"].(string), fc.Args["key"].(*string), fc.Args["targetID"].(*string), fc.Args["idKey"].(*string))
+			return ec.Resolvers.Query().CheckPermission(ctx, fc.Args["name"].(string), fc.Args["key"].(*string), fc.Args["targetID"].(*string), fc.Args["idKey"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13478,11 +13495,11 @@ func (ec *executionContext) _Query_checkPermission(ctx context.Context, field gr
 					var zeroVal *string
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *string
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13526,7 +13543,7 @@ func (ec *executionContext) _Query_listRoles(ctx context.Context, field graphql.
 		ec.fieldContext_Query_listRoles,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListRoles(ctx, fc.Args["filter"].(*models.RBACRoleListFilter), fc.Args["order"].(*models.RBACRoleListOrder), fc.Args["page"].(*models.Page))
+			return ec.Resolvers.Query().ListRoles(ctx, fc.Args["filter"].(*models.RBACRoleListFilter), fc.Args["order"].(*models.RBACRoleListOrder), fc.Args["page"].(*models.Page))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13537,11 +13554,11 @@ func (ec *executionContext) _Query_listRoles(ctx context.Context, field graphql.
 					var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal *connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge]
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13595,7 +13612,7 @@ func (ec *executionContext) _Query_listPermissions(ctx context.Context, field gr
 		ec.fieldContext_Query_listPermissions,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListPermissions(ctx, fc.Args["patterns"].([]string))
+			return ec.Resolvers.Query().ListPermissions(ctx, fc.Args["patterns"].([]string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13606,11 +13623,11 @@ func (ec *executionContext) _Query_listPermissions(ctx context.Context, field gr
 					var zeroVal []*models.RBACPermission
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal []*models.RBACPermission
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13666,7 +13683,7 @@ func (ec *executionContext) _Query_listMyPermissions(ctx context.Context, field 
 		ec.fieldContext_Query_listMyPermissions,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ListMyPermissions(ctx, fc.Args["patterns"].([]string))
+			return ec.Resolvers.Query().ListMyPermissions(ctx, fc.Args["patterns"].([]string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -13677,11 +13694,11 @@ func (ec *executionContext) _Query_listMyPermissions(ctx context.Context, field 
 					var zeroVal []*models.RBACPermission
 					return zeroVal, err
 				}
-				if ec.directives.HasPermissions == nil {
+				if ec.Directives.HasPermissions == nil {
 					var zeroVal []*models.RBACPermission
 					return zeroVal, errors.New("directive hasPermissions is not implemented")
 				}
-				return ec.directives.HasPermissions(ctx, nil, directive0, permissions)
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
 			}
 
 			next = directive1
@@ -13729,6 +13746,211 @@ func (ec *executionContext) fieldContext_Query_listMyPermissions(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_socialAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_socialAccount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SocialAccount(ctx, fc.Args["id"].(uint64))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.view.*"})
+				if err != nil {
+					var zeroVal *models.SocialAccountPayload
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.SocialAccountPayload
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNSocialAccountPayload2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_socialAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientMutationID":
+				return ec.fieldContext_SocialAccountPayload_clientMutationID(ctx, field)
+			case "socialAccountID":
+				return ec.fieldContext_SocialAccountPayload_socialAccountID(ctx, field)
+			case "socialAccount":
+				return ec.fieldContext_SocialAccountPayload_socialAccount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_socialAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_currentSocialAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_currentSocialAccounts,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CurrentSocialAccounts(ctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.list.*"})
+				if err != nil {
+					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_currentSocialAccounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
+			case "edges":
+				return ec.fieldContext_SocialAccountConnection_edges(ctx, field)
+			case "list":
+				return ec.fieldContext_SocialAccountConnection_list(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_currentSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_listSocialAccounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_listSocialAccounts,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ListSocialAccounts(ctx, fc.Args["filter"].(*models.SocialAccountListFilter), fc.Args["order"].(*models.SocialAccountListOrder), fc.Args["page"].(*models.Page))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"account_social.list.*"})
+				if err != nil {
+					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge]
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		ec.marshalNSocialAccountConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_listSocialAccounts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_SocialAccountConnection_totalCount(ctx, field)
+			case "edges":
+				return ec.fieldContext_SocialAccountConnection_edges(ctx, field)
+			case "list":
+				return ec.fieldContext_SocialAccountConnection_list(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_SocialAccountConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialAccountConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_listSocialAccounts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13737,7 +13959,7 @@ func (ec *executionContext) _Query___type(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query___type,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.introspectType(fc.Args["name"].(string))
+			return ec.IntrospectType(fc.Args["name"].(string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -13803,7 +14025,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Query___schema,
 		func(ctx context.Context) (any, error) {
-			return ec.introspectSchema()
+			return ec.IntrospectSchema()
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			return ec._fieldMiddleware(ctx, nil, next)
@@ -18210,6 +18432,10 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 func (ec *executionContext) unmarshalInputAccountCreateInput(ctx context.Context, obj any) (models.AccountCreateInput, error) {
 	var it models.AccountCreateInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18252,12 +18478,15 @@ func (ec *executionContext) unmarshalInputAccountCreateInput(ctx context.Context
 			it.Password = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputAccountInput(ctx context.Context, obj any) (models.AccountInput, error) {
 	var it models.AccountInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18328,12 +18557,15 @@ func (ec *executionContext) unmarshalInputAccountInput(ctx context.Context, obj 
 			it.Contacts = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputAccountListFilter(ctx context.Context, obj any) (models.AccountListFilter, error) {
 	var it models.AccountListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18376,12 +18608,15 @@ func (ec *executionContext) unmarshalInputAccountListFilter(ctx context.Context,
 			it.Status = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputAccountListOrder(ctx context.Context, obj any) (models.AccountListOrder, error) {
 	var it models.AccountListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18417,12 +18652,15 @@ func (ec *executionContext) unmarshalInputAccountListOrder(ctx context.Context, 
 			it.Status = data
 		}
 	}
-
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputAuthClientInput(ctx context.Context, obj any) (models.AuthClientInput, error) {
-	var it models.AuthClientInput
+func (ec *executionContext) unmarshalInputAuthClientCreateInput(ctx context.Context, obj any) (models.AuthClientCreateInput, error) {
+	var it models.AuthClientCreateInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18437,32 +18675,140 @@ func (ec *executionContext) unmarshalInputAuthClientInput(ctx context.Context, o
 		switch k {
 		case "accountID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
-			data, err := ec.unmarshalOID642ᚖuint64(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOID642ᚖuint64(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *uint64
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
 			}
-			it.AccountID = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*uint64); ok {
+				it.AccountID = data
+			} else if tmp == nil {
+				it.AccountID = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *uint64`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		case "userID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
-			data, err := ec.unmarshalOID642ᚖuint64(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOID642ᚖuint64(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *uint64
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
 			}
-			it.UserID = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*uint64); ok {
+				it.UserID = data
+			} else if tmp == nil {
+				it.UserID = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *uint64`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		case "title":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
 			}
-			it.Title = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				it.Title = data
+			} else if tmp == nil {
+				it.Title = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		case "secret":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secret"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
 			}
-			it.Secret = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				it.Secret = data
+			} else if tmp == nil {
+				it.Secret = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		case "redirectURIs":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectURIs"))
 			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
@@ -18528,12 +18874,15 @@ func (ec *executionContext) unmarshalInputAuthClientInput(ctx context.Context, o
 			it.ExpiresAt = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputAuthClientListFilter(ctx context.Context, obj any) (models.AuthClientListFilter, error) {
 	var it models.AuthClientListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18576,12 +18925,15 @@ func (ec *executionContext) unmarshalInputAuthClientListFilter(ctx context.Conte
 			it.Public = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputAuthClientListOrder(ctx context.Context, obj any) (models.AuthClientListOrder, error) {
 	var it models.AuthClientListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18638,12 +18990,453 @@ func (ec *executionContext) unmarshalInputAuthClientListOrder(ctx context.Contex
 			it.LastUpdate = data
 		}
 	}
+	return it, nil
+}
 
+func (ec *executionContext) unmarshalInputAuthClientUpdateInput(ctx context.Context, obj any) (models.AuthClientUpdateInput, error) {
+	var it models.AuthClientUpdateInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"accountID", "userID", "title", "secret", "redirectURIs", "grantTypes", "responseTypes", "scope", "audience", "subjectType", "allowedCORSOrigins", "public", "expiresAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "accountID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountID"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOID642ᚖuint64(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *uint64
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*uint64); ok {
+				it.AccountID = data
+			} else if tmp == nil {
+				it.AccountID = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *uint64`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOID642ᚖuint64(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *uint64
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *uint64
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*uint64); ok {
+				it.UserID = data
+			} else if tmp == nil {
+				it.UserID = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *uint64`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				it.Title = data
+			} else if tmp == nil {
+				it.Title = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "secret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secret"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				it.Secret = data
+			} else if tmp == nil {
+				it.Secret = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "redirectURIs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectURIs"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚕstringᚄ(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.([]string); ok {
+				it.RedirectURIs = data
+			} else if tmp == nil {
+				it.RedirectURIs = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be []string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "grantTypes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("grantTypes"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚕstringᚄ(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.([]string); ok {
+				it.GrantTypes = data
+			} else if tmp == nil {
+				it.GrantTypes = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be []string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "responseTypes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("responseTypes"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚕstringᚄ(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.([]string); ok {
+				it.ResponseTypes = data
+			} else if tmp == nil {
+				it.ResponseTypes = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be []string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "scope":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scope"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				it.Scope = data
+			} else if tmp == nil {
+				it.Scope = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "audience":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("audience"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚕstringᚄ(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.([]string); ok {
+				it.Audience = data
+			} else if tmp == nil {
+				it.Audience = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be []string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "subjectType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subjectType"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				it.SubjectType = data
+			} else if tmp == nil {
+				it.SubjectType = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "allowedCORSOrigins":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedCORSOrigins"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOString2ᚕstringᚄ(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal []string
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal []string
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.([]string); ok {
+				it.AllowedCORSOrigins = data
+			} else if tmp == nil {
+				it.AllowedCORSOrigins = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be []string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "public":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("public"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Public = data
+		case "expiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				trim, err := ec.unmarshalNBoolean2bool(ctx, false)
+				if err != nil {
+					var zeroVal *time.Time
+					return zeroVal, err
+				}
+				ornil, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *time.Time
+					return zeroVal, err
+				}
+				if ec.Directives.Notempty == nil {
+					var zeroVal *time.Time
+					return zeroVal, errors.New("directive notempty is not implemented")
+				}
+				return ec.Directives.Notempty(ctx, obj, directive0, trim, ornil)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*time.Time); ok {
+				it.ExpiresAt = data
+			} else if tmp == nil {
+				it.ExpiresAt = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *time.Time`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		}
+	}
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputDirectAccessTokenListFilter(ctx context.Context, obj any) (models.DirectAccessTokenListFilter, error) {
 	var it models.DirectAccessTokenListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18700,12 +19493,15 @@ func (ec *executionContext) unmarshalInputDirectAccessTokenListFilter(ctx contex
 			it.MaxExpiresAt = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputDirectAccessTokenListOrder(ctx context.Context, obj any) (models.DirectAccessTokenListOrder, error) {
 	var it models.DirectAccessTokenListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18762,12 +19558,15 @@ func (ec *executionContext) unmarshalInputDirectAccessTokenListOrder(ctx context
 			it.ExpiresAt = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputHistoryActionListFilter(ctx context.Context, obj any) (models.HistoryActionListFilter, error) {
 	var it models.HistoryActionListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18838,12 +19637,15 @@ func (ec *executionContext) unmarshalInputHistoryActionListFilter(ctx context.Co
 			it.ObjectIDs = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputHistoryActionListOrder(ctx context.Context, obj any) (models.HistoryActionListOrder, error) {
 	var it models.HistoryActionListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18921,12 +19723,15 @@ func (ec *executionContext) unmarshalInputHistoryActionListOrder(ctx context.Con
 			it.ActionAt = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputInviteMemberInput(ctx context.Context, obj any) (models.InviteMemberInput, error) {
 	var it models.InviteMemberInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -18966,12 +19771,15 @@ func (ec *executionContext) unmarshalInputInviteMemberInput(ctx context.Context,
 			it.IsAdmin = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj any) (models.MemberInput, error) {
 	var it models.MemberInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19004,12 +19812,15 @@ func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj a
 			it.IsAdmin = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputMemberListFilter(ctx context.Context, obj any) (models.MemberListFilter, error) {
 	var it models.MemberListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19059,12 +19870,15 @@ func (ec *executionContext) unmarshalInputMemberListFilter(ctx context.Context, 
 			it.IsAdmin = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputMemberListOrder(ctx context.Context, obj any) (models.MemberListOrder, error) {
 	var it models.MemberListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19128,12 +19942,15 @@ func (ec *executionContext) unmarshalInputMemberListOrder(ctx context.Context, o
 			it.UpdatedAt = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputOptionListFilter(ctx context.Context, obj any) (models.OptionListFilter, error) {
 	var it models.OptionListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19176,12 +19993,15 @@ func (ec *executionContext) unmarshalInputOptionListFilter(ctx context.Context, 
 			it.NamePattern = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputOptionListOrder(ctx context.Context, obj any) (models.OptionListOrder, error) {
 	var it models.OptionListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19224,12 +20044,15 @@ func (ec *executionContext) unmarshalInputOptionListOrder(ctx context.Context, o
 			it.Value = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputPage(ctx context.Context, obj any) (models.Page, error) {
 	var it models.Page
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19272,12 +20095,15 @@ func (ec *executionContext) unmarshalInputPage(ctx context.Context, obj any) (mo
 			it.Size = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputRBACRoleInput(ctx context.Context, obj any) (models.RBACRoleInput, error) {
 	var it models.RBACRoleInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19320,12 +20146,15 @@ func (ec *executionContext) unmarshalInputRBACRoleInput(ctx context.Context, obj
 			it.Permissions = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputRBACRoleListFilter(ctx context.Context, obj any) (models.RBACRoleListFilter, error) {
 	var it models.RBACRoleListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19354,12 +20183,15 @@ func (ec *executionContext) unmarshalInputRBACRoleListFilter(ctx context.Context
 			it.Name = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputRBACRoleListOrder(ctx context.Context, obj any) (models.RBACRoleListOrder, error) {
 	var it models.RBACRoleListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19395,12 +20227,15 @@ func (ec *executionContext) unmarshalInputRBACRoleListOrder(ctx context.Context,
 			it.Title = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputSocialAccountListFilter(ctx context.Context, obj any) (models.SocialAccountListFilter, error) {
 	var it models.SocialAccountListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19450,12 +20285,15 @@ func (ec *executionContext) unmarshalInputSocialAccountListFilter(ctx context.Co
 			it.Email = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputSocialAccountListOrder(ctx context.Context, obj any) (models.SocialAccountListOrder, error) {
 	var it models.SocialAccountListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19519,12 +20357,15 @@ func (ec *executionContext) unmarshalInputSocialAccountListOrder(ctx context.Con
 			it.LastName = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj any) (models.UserInput, error) {
 	var it models.UserInput
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19553,12 +20394,15 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj any
 			it.Status = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputUserListFilter(ctx context.Context, obj any) (models.UserListFilter, error) {
 	var it models.UserListFilter
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19601,12 +20445,15 @@ func (ec *executionContext) unmarshalInputUserListFilter(ctx context.Context, ob
 			it.Roles = data
 		}
 	}
-
 	return it, nil
 }
 
 func (ec *executionContext) unmarshalInputUserListOrder(ctx context.Context, obj any) (models.UserListOrder, error) {
 	var it models.UserListOrder
+	if obj == nil {
+		return it, nil
+	}
+
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -19684,7 +20531,6 @@ func (ec *executionContext) unmarshalInputUserListOrder(ctx context.Context, obj
 			it.UpdatedAt = data
 		}
 	}
-
 	return it, nil
 }
 
@@ -19770,10 +20616,10 @@ func (ec *executionContext) _Account(ctx context.Context, sel ast.SelectionSet, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -19818,10 +20664,10 @@ func (ec *executionContext) _AccountConnection(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -19867,10 +20713,10 @@ func (ec *executionContext) _AccountCreatePayload(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -19908,10 +20754,10 @@ func (ec *executionContext) _AccountEdge(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -19954,10 +20800,10 @@ func (ec *executionContext) _AccountPayload(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20055,10 +20901,10 @@ func (ec *executionContext) _AuthClient(ctx context.Context, sel ast.SelectionSe
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20103,10 +20949,10 @@ func (ec *executionContext) _AuthClientConnection(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20144,10 +20990,10 @@ func (ec *executionContext) _AuthClientEdge(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20190,10 +21036,10 @@ func (ec *executionContext) _AuthClientPayload(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20256,10 +21102,10 @@ func (ec *executionContext) _DirectAccessToken(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20272,7 +21118,7 @@ func (ec *executionContext) _DirectAccessToken(ctx context.Context, sel ast.Sele
 
 var directAccessTokenConnectionImplementors = []string{"DirectAccessTokenConnection"}
 
-func (ec *executionContext) _DirectAccessTokenConnection(ctx context.Context, sel ast.SelectionSet, obj *models1.DirectAccessTokenConnection) graphql.Marshaler {
+func (ec *executionContext) _DirectAccessTokenConnection(ctx context.Context, sel ast.SelectionSet, obj *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, directAccessTokenConnectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -20304,10 +21150,10 @@ func (ec *executionContext) _DirectAccessTokenConnection(ctx context.Context, se
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20345,10 +21191,10 @@ func (ec *executionContext) _DirectAccessTokenEdge(ctx context.Context, sel ast.
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20386,10 +21232,10 @@ func (ec *executionContext) _DirectAccessTokenPayload(ctx context.Context, sel a
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20475,10 +21321,10 @@ func (ec *executionContext) _HistoryAction(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20523,10 +21369,10 @@ func (ec *executionContext) _HistoryActionConnection(ctx context.Context, sel as
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20567,10 +21413,10 @@ func (ec *executionContext) _HistoryActionEdge(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20613,10 +21459,10 @@ func (ec *executionContext) _HistoryActionPayload(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20686,10 +21532,10 @@ func (ec *executionContext) _Member(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20734,10 +21580,10 @@ func (ec *executionContext) _MemberConnection(ctx context.Context, sel ast.Selec
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20775,10 +21621,10 @@ func (ec *executionContext) _MemberEdge(ctx context.Context, sel ast.SelectionSe
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20821,10 +21667,10 @@ func (ec *executionContext) _MemberPayload(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -20857,6 +21703,48 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "poke":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_poke(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approveUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rejectUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_rejectUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resetUserPassword":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resetUserPassword(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateUserPassword":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateUserPassword(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -20945,55 +21833,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "disconnectSocialAccount":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_disconnectSocialAccount(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "createUser":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createUser(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateUser":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateUser(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "approveUser":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_approveUser(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "rejectUser":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_rejectUser(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "resetUserPassword":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_resetUserPassword(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateUserPassword":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateUserPassword(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "createAuthClient":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createAuthClient(ctx, field)
@@ -21051,6 +21890,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "disconnectSocialAccount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_disconnectSocialAccount(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -21060,10 +21906,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21111,10 +21957,10 @@ func (ec *executionContext) _Option(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21165,10 +22011,10 @@ func (ec *executionContext) _OptionConnection(ctx context.Context, sel ast.Selec
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21209,10 +22055,10 @@ func (ec *executionContext) _OptionEdge(ctx context.Context, sel ast.SelectionSe
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21255,10 +22101,10 @@ func (ec *executionContext) _OptionPayload(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21324,10 +22170,10 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21405,10 +22251,10 @@ func (ec *executionContext) _Profile(ctx context.Context, sel ast.SelectionSet, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21449,10 +22295,10 @@ func (ec *executionContext) _ProfileMessanger(ctx context.Context, sel ast.Selec
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -21495,6 +22341,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "currentUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_currentUser(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_user(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "listUsers":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_listUsers(ctx, field)
 				return res
 			}
 
@@ -21618,135 +22527,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_listMembers(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "socialAccount":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_socialAccount(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "currentSocialAccounts":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_currentSocialAccounts(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "listSocialAccounts":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_listSocialAccounts(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "currentUser":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_currentUser(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "user":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_user(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "listUsers":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_listUsers(ctx, field)
 				return res
 			}
 
@@ -21993,6 +22773,72 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "socialAccount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_socialAccount(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "currentSocialAccounts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_currentSocialAccounts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "listSocialAccounts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_listSocialAccounts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -22010,10 +22856,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22066,10 +22912,10 @@ func (ec *executionContext) _RBACPermission(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22137,10 +22983,10 @@ func (ec *executionContext) _RBACRole(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22185,10 +23031,10 @@ func (ec *executionContext) _RBACRoleConnection(ctx context.Context, sel ast.Sel
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22226,10 +23072,10 @@ func (ec *executionContext) _RBACRoleEdge(ctx context.Context, sel ast.Selection
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22272,10 +23118,10 @@ func (ec *executionContext) _RBACRolePayload(ctx context.Context, sel ast.Select
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22323,10 +23169,10 @@ func (ec *executionContext) _SessionToken(ctx context.Context, sel ast.Selection
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22426,10 +23272,10 @@ func (ec *executionContext) _SocialAccount(ctx context.Context, sel ast.Selectio
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22474,10 +23320,10 @@ func (ec *executionContext) _SocialAccountConnection(ctx context.Context, sel as
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22515,10 +23361,10 @@ func (ec *executionContext) _SocialAccountEdge(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22561,10 +23407,10 @@ func (ec *executionContext) _SocialAccountPayload(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22636,10 +23482,10 @@ func (ec *executionContext) _SocialAccountSession(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22682,10 +23528,10 @@ func (ec *executionContext) _StatusResponse(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22743,10 +23589,10 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22791,10 +23637,10 @@ func (ec *executionContext) _UserConnection(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22832,10 +23678,10 @@ func (ec *executionContext) _UserEdge(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22878,10 +23724,10 @@ func (ec *executionContext) _UserPayload(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22934,10 +23780,10 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -22982,10 +23828,10 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -23040,10 +23886,10 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -23095,10 +23941,10 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -23150,10 +23996,10 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -23209,10 +24055,10 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
 
 	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
 			Label:    label,
 			Path:     graphql.GetPath(ctx),
 			FieldSet: dfs,
@@ -23310,6 +24156,11 @@ func (ec *executionContext) marshalNAuthClient2ᚖgithubᚗcomᚋgeniusrabbitᚋ
 	return ec._AuthClient(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNAuthClientCreateInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientCreateInput(ctx context.Context, v any) (models.AuthClientCreateInput, error) {
+	res, err := ec.unmarshalInputAuthClientCreateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNAuthClientEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientEdge(ctx context.Context, sel ast.SelectionSet, v *models.AuthClientEdge) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -23318,11 +24169,6 @@ func (ec *executionContext) marshalNAuthClientEdge2ᚖgithubᚗcomᚋgeniusrabbi
 		return graphql.Null
 	}
 	return ec._AuthClientEdge(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNAuthClientInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientInput(ctx context.Context, v any) (models.AuthClientInput, error) {
-	res, err := ec.unmarshalInputAuthClientInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNAuthClientPayload2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientPayload(ctx context.Context, sel ast.SelectionSet, v models.AuthClientPayload) graphql.Marshaler {
@@ -23337,6 +24183,11 @@ func (ec *executionContext) marshalNAuthClientPayload2ᚖgithubᚗcomᚋgeniusra
 		return graphql.Null
 	}
 	return ec._AuthClientPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAuthClientUpdateInput2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientUpdateInput(ctx context.Context, v any) (models.AuthClientUpdateInput, error) {
+	res, err := ec.unmarshalInputAuthClientUpdateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
@@ -23378,6 +24229,22 @@ func (ec *executionContext) marshalNDirectAccessTokenEdge2ᚖgithubᚗcomᚋgeni
 func (ec *executionContext) unmarshalNDirectAccessTokenListFilter2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenListFilter(ctx context.Context, v any) (models.DirectAccessTokenListFilter, error) {
 	res, err := ec.unmarshalInputDirectAccessTokenListFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalNHistoryAction2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryAction(ctx context.Context, sel ast.SelectionSet, v *models.HistoryAction) graphql.Marshaler {
@@ -23513,39 +24380,11 @@ func (ec *executionContext) marshalNNullableJSON2githubᚗcomᚋgeniusrabbitᚋb
 }
 
 func (ec *executionContext) marshalNOption2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Option) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNOption2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOption(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNOption2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOption(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -23567,39 +24406,11 @@ func (ec *executionContext) marshalNOption2ᚖgithubᚗcomᚋgeniusrabbitᚋblaz
 }
 
 func (ec *executionContext) marshalNOptionEdge2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.OptionEdge) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNOptionEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNOptionEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -23931,39 +24742,11 @@ func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlge
 }
 
 func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Directive) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24006,39 +24789,11 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx conte
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__DirectiveLocation2string(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__DirectiveLocation2string(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24062,39 +24817,11 @@ func (ec *executionContext) marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlg
 }
 
 func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24110,39 +24837,11 @@ func (ec *executionContext) marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋg
 }
 
 func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24183,39 +24882,11 @@ func (ec *executionContext) marshalOAccount2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋ
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccount(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccount(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24244,39 +24915,11 @@ func (ec *executionContext) marshalOAccountEdge2ᚕᚖgithubᚗcomᚋgeniusrabbi
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNAccountEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAccountEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAccountEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24325,39 +24968,11 @@ func (ec *executionContext) marshalOApproveStatus2ᚕgithubᚗcomᚋgeniusrabbit
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNApproveStatus2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐApproveStatus(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApproveStatus2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐApproveStatus(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24388,39 +25003,11 @@ func (ec *executionContext) marshalOAuthClient2ᚕᚖgithubᚗcomᚋgeniusrabbit
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNAuthClient2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClient(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAuthClient2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClient(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24449,39 +25036,11 @@ func (ec *executionContext) marshalOAuthClientEdge2ᚕᚖgithubᚗcomᚋgeniusra
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNAuthClientEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAuthClientEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24498,6 +25057,24 @@ func (ec *executionContext) unmarshalOAuthClientListFilter2ᚖgithubᚗcomᚋgen
 	}
 	res, err := ec.unmarshalInputAuthClientListFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOAuthClientListOrder2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder(ctx context.Context, v any) ([]*models.AuthClientListOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*models.AuthClientListOrder, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOAuthClientListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalOAuthClientListOrder2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐAuthClientListOrder(ctx context.Context, v any) (*models.AuthClientListOrder, error) {
@@ -24542,39 +25119,11 @@ func (ec *executionContext) marshalODirectAccessToken2ᚕᚖgithubᚗcomᚋgeniu
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNDirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNDirectAccessToken2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessToken(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24592,7 +25141,7 @@ func (ec *executionContext) marshalODirectAccessToken2ᚖgithubᚗcomᚋgeniusra
 	return ec._DirectAccessToken(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalODirectAccessTokenConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋexampleᚋapiᚋinternalᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenConnection(ctx context.Context, sel ast.SelectionSet, v *models1.DirectAccessTokenConnection) graphql.Marshaler {
+func (ec *executionContext) marshalODirectAccessTokenConnection2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋconnectorsᚐCollectionConnection(ctx context.Context, sel ast.SelectionSet, v *connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge]) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -24603,39 +25152,11 @@ func (ec *executionContext) marshalODirectAccessTokenEdge2ᚕᚖgithubᚗcomᚋg
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNDirectAccessTokenEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNDirectAccessTokenEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐDirectAccessTokenEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24673,39 +25194,11 @@ func (ec *executionContext) marshalOHistoryAction2ᚕᚖgithubᚗcomᚋgeniusrab
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNHistoryAction2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryAction(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNHistoryAction2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryAction(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24727,39 +25220,11 @@ func (ec *executionContext) marshalOHistoryActionEdge2ᚕᚖgithubᚗcomᚋgeniu
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNHistoryActionEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNHistoryActionEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐHistoryActionEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24862,39 +25327,11 @@ func (ec *executionContext) marshalOMember2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋb
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNMember2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMember(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMember2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMember(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -24923,39 +25360,11 @@ func (ec *executionContext) marshalOMemberEdge2ᚕᚖgithubᚗcomᚋgeniusrabbit
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNMemberEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMemberEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐMemberEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25050,39 +25459,11 @@ func (ec *executionContext) marshalOOptionType2ᚕgithubᚗcomᚋgeniusrabbitᚋ
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNOptionType2githubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐOptionType(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25121,39 +25502,11 @@ func (ec *executionContext) marshalOProfileMessanger2ᚕᚖgithubᚗcomᚋgenius
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNProfileMessanger2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐProfileMessanger(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNProfileMessanger2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐProfileMessanger(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25168,39 +25521,11 @@ func (ec *executionContext) marshalORBACPermission2ᚕᚖgithubᚗcomᚋgeniusra
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNRBACPermission2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermission(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRBACPermission2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACPermission(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25215,39 +25540,11 @@ func (ec *executionContext) marshalORBACRole2ᚕᚖgithubᚗcomᚋgeniusrabbit�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNRBACRole2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRole(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRBACRole2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRole(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25276,39 +25573,11 @@ func (ec *executionContext) marshalORBACRoleEdge2ᚕᚖgithubᚗcomᚋgeniusrabb
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNRBACRoleEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRBACRoleEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐRBACRoleEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25339,39 +25608,11 @@ func (ec *executionContext) marshalOSocialAccount2ᚕᚖgithubᚗcomᚋgeniusrab
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSocialAccount2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccount(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25393,39 +25634,11 @@ func (ec *executionContext) marshalOSocialAccountEdge2ᚕᚖgithubᚗcomᚋgeniu
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNSocialAccountEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSocialAccountEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25456,39 +25669,11 @@ func (ec *executionContext) marshalOSocialAccountSession2ᚕᚖgithubᚗcomᚋge
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNSocialAccountSession2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountSession(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSocialAccountSession2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐSocialAccountSession(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25618,39 +25803,11 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋgeniusrabbitᚋbla
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNUser2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUser(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25679,39 +25836,11 @@ func (ec *executionContext) marshalOUserEdge2ᚕᚖgithubᚗcomᚋgeniusrabbit�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNUserEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNUserEdge2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐUserEdge(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25750,39 +25879,11 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgq
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__EnumValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25797,39 +25898,11 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgen
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Field2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25844,39 +25917,11 @@ func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {
@@ -25898,39 +25943,11 @@ func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, sel, v[i])
+	})
 
 	for _, e := range ret {
 		if e == graphql.Null {

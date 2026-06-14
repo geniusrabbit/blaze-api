@@ -7,16 +7,19 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"go.uber.org/zap"
 
-	"github.com/geniusrabbit/blaze-api/model"
-	"github.com/geniusrabbit/blaze-api/pkg/auth/authutils"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
+	"github.com/geniusrabbit/blaze-api/repository/account/auth"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
+// Authorizer handles JWT-based authorization for API requests.
 type Authorizer struct {
 	provider *Provider
 	jmid     *jwtmiddleware.JWTMiddleware
 }
 
+// NewAuthorizer creates a new JWT authorizer instance.
 func NewAuthorizer(jwtProvider *Provider) *Authorizer {
 	return &Authorizer{
 		provider: jwtProvider,
@@ -24,18 +27,25 @@ func NewAuthorizer(jwtProvider *Provider) *Authorizer {
 	}
 }
 
+// AuthorizerCode returns the identifier for this authorizer.
 func (au *Authorizer) AuthorizerCode() string {
 	return "jwt"
 }
 
-func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (token string, usr *model.User, acc *model.Account, err error) {
+// Authorize validates the JWT token from the request and retrieves associated user and account data.
+func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (token string, usr *userModels.User, acc *accountModels.Account, err error) {
+	ctx := r.Context()
+
+	// Validate JWT token
 	if err = au.jmid.CheckJWT(w, r); err != nil {
-		ctxlogger.Get(r.Context()).Debug("JWT authorization", zap.Error(err))
+		ctxlogger.Get(ctx).Debug("JWT authorization", zap.Error(err))
 		return "", nil, nil, nil
 	}
 
-	ctx := r.Context()
+	// Extract token from context
 	jwtToken := ctx.Value(au.jmid.Options.UserProperty)
+
+	// Parse token and fetch user/account data
 	switch t := jwtToken.(type) {
 	case nil:
 	case *Token:
@@ -46,10 +56,11 @@ func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (token s
 	return token, usr, acc, err
 }
 
-func (au *Authorizer) authContextJWT(ctx context.Context, token *Token) (*model.User, *model.Account, error) {
+// authContextJWT extracts user and account information from the JWT token.
+func (au *Authorizer) authContextJWT(ctx context.Context, token *Token) (*userModels.User, *accountModels.Account, error) {
 	jwtData, err := au.provider.ExtractTokenData(token)
 	if err != nil {
 		return nil, nil, err
 	}
-	return authutils.UserAccountByID(ctx, jwtData.UserID, jwtData.AccountID, nil, nil)
+	return auth.UserAccountByID(ctx, jwtData.UserID, jwtData.AccountID, nil, nil)
 }

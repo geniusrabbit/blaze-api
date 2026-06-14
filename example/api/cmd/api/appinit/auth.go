@@ -31,7 +31,7 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 		SendDebugMessagesToClients:    conf.OAuth2.SendDebugMessagesToClients,
 	}
 	sessionCache := newCache(ctx, conf.OAuth2.CacheConnect, conf.OAuth2.CacheLifetime)
-	userRepository := user_repository.New()
+	userRepository := user_repository.NewUserRepository()
 	oauth2storage := serverprovider.NewDatabaseStorage(
 		masterDatabase,
 		userRepository,

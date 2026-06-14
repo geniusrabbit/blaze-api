@@ -6,12 +6,13 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
+	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 	"github.com/geniusrabbit/blaze-api/repository/user"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 var ErrLinkToExistsUser = errors.New("to connect social account to exists user, need to be authorized")
@@ -29,23 +30,23 @@ func New(userRepo user.Repository, socAccountRepo socialauth.Repository) *Usecas
 }
 
 // Get social account by id
-func (u *Usecase) Get(ctx context.Context, id uint64) (*model.AccountSocial, error) {
-	if !acl.HaveAccessView(ctx, &model.AccountSocial{}) {
+func (u *Usecase) Get(ctx context.Context, id uint64) (*socialAccountModels.AccountSocial, error) {
+	if !acl.HaveAccessView(ctx, &socialAccountModels.AccountSocial{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "get social account")
 	}
 	return u.socAccountRepo.Get(ctx, id)
 }
 
 // List social accounts by filter
-func (u *Usecase) List(ctx context.Context, filter *socialauth.Filter) ([]*model.AccountSocial, error) {
-	if !acl.HaveAccessList(ctx, &model.AccountSocial{}) {
+func (u *Usecase) List(ctx context.Context, filter *socialauth.Filter) ([]*socialAccountModels.AccountSocial, error) {
+	if !acl.HaveAccessList(ctx, &socialAccountModels.AccountSocial{}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list social accounts")
 	}
 	return u.socAccountRepo.List(ctx, filter)
 }
 
 // Register new social account and link it to the user
-func (u *Usecase) Register(ctx context.Context, ownerObj *model.User, accountObj *model.AccountSocial) (uint64, error) {
+func (u *Usecase) Register(ctx context.Context, ownerObj *userModels.User, accountObj *socialAccountModels.AccountSocial) (uint64, error) {
 	if !acl.HavePermissions(ctx, "account.register") {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "register/link social account")
 	}
@@ -81,7 +82,7 @@ func (u *Usecase) Register(ctx context.Context, ownerObj *model.User, accountObj
 }
 
 // Update social account by id
-func (u *Usecase) Update(ctx context.Context, id uint64, account *model.AccountSocial) error {
+func (u *Usecase) Update(ctx context.Context, id uint64, account *socialAccountModels.AccountSocial) error {
 	if !acl.HaveAccessUpdate(ctx, account) {
 		return errors.Wrap(acl.ErrNoPermissions, "update social account")
 	}

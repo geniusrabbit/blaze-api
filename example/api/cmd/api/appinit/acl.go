@@ -5,11 +5,18 @@ import (
 
 	"github.com/demdxx/rbac"
 
-	"github.com/geniusrabbit/blaze-api/model"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
+	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/repository"
+	"github.com/geniusrabbit/blaze-api/repository/authclient"
+	daModels "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	"github.com/geniusrabbit/blaze-api/repository/option"
+	rbacModels "github.com/geniusrabbit/blaze-api/repository/rbac/models"
+	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 var (
@@ -30,46 +37,46 @@ const (
 func InitModelPermissions(pm *permissions.Manager) {
 	// Register permission objects
 	acl.InitModelPermissions(pm,
-		&model.User{},
-		&model.Role{},
-		&model.AuthClient{},
-		&model.Account{},
-		&model.AccountMember{},
-		&model.AccountSocialSession{},
-		&model.AccountSocial{},
-		&model.HistoryAction{},
-		&model.Option{},
-		&model.DirectAccessToken{},
+		&user.User{},
+		&rbacModels.Role{},
+		&authclient.AuthClient{},
+		&account.Account{},
+		&account.AccountMember{},
+		&socialaccount.AccountSocialSession{},
+		&socialaccount.AccountSocial{},
+		&historylog.HistoryAction{},
+		&option.Option{},
+		&daModels.DirectAccessToken{},
 	)
 
 	// Register user permissions
-	_ = pm.RegisterNewOwningPermissions(&model.User{}, append(crudPermissions, PermUserPassReset, PermUserPassSet))
+	_ = pm.RegisterNewOwningPermissions(&user.User{}, append(crudPermissions, PermUserPassReset, PermUserPassSet))
 
 	// Register basic models CRUD permissions for Account with member checks
-	_ = pm.RegisterNewOwningPermissions(&model.Account{}, crudPermissionsWithApprove, rbac.WithCustomCheck(accountCustomCheck))
+	_ = pm.RegisterNewOwningPermissions(&account.Account{}, crudPermissionsWithApprove, rbac.WithCustomCheck(accountCustomCheck))
 	_ = pm.RegisterNewPermission(nil, PermAccountRegister, rbac.WithoutCustomCheck)
 
 	// Register basic roles permissions
-	_ = pm.RegisterNewOwningPermissions(&model.Role{}, crudPermissions)
-	_ = pm.RegisterNewPermission(&model.Role{}, `check`,
+	_ = pm.RegisterNewOwningPermissions(&rbacModels.Role{}, crudPermissions)
+	_ = pm.RegisterNewPermission(&rbacModels.Role{}, `check`,
 		rbac.WithDescription("Check role permissions is assigned to the user"))
 	_ = pm.RegisterNewPermission(nil, PermPermissionList, rbac.WithDescription("List all permissions"))
 
 	// Register basic permissions for the AuthClient model
-	_ = pm.RegisterNewOwningPermissions(&model.AuthClient{}, crudPermissions)
+	_ = pm.RegisterNewOwningPermissions(&authclient.AuthClient{}, crudPermissions)
 
 	// Register basic permissions for the AccountMember model
-	_ = pm.RegisterNewOwningPermissions(&model.AccountMember{}, crudPermissionsWithApprove)
-	_ = pm.RegisterNewPermissions(&model.AccountMember{}, []string{`roles.set.account`, `roles.set.all`, `invite`})
+	_ = pm.RegisterNewOwningPermissions(&account.AccountMember{}, crudPermissionsWithApprove)
+	_ = pm.RegisterNewPermissions(&account.AccountMember{}, []string{`roles.set.account`, `roles.set.all`, `invite`})
 
 	// Register basic permissions for the HistoryAction model
-	_ = pm.RegisterNewOwningPermissions(&model.HistoryAction{}, []string{acl.PermView, acl.PermList, acl.PermCount})
+	_ = pm.RegisterNewOwningPermissions(&historylog.HistoryAction{}, []string{acl.PermView, acl.PermList, acl.PermCount})
 
 	// Register basic permissions for the Option model
-	_ = pm.RegisterNewOwningPermissions(&model.Option{}, []string{acl.PermGet, acl.PermSet, acl.PermList, acl.PermCount})
+	_ = pm.RegisterNewOwningPermissions(&option.Option{}, []string{acl.PermGet, acl.PermSet, acl.PermList, acl.PermCount})
 
 	// Register basic permissions for the DirectAccessToken model
-	_ = pm.RegisterNewOwningPermissions(&model.DirectAccessToken{}, []string{acl.PermGet, acl.PermList, acl.PermCount, acl.PermCreate, acl.PermDelete})
+	_ = pm.RegisterNewOwningPermissions(&daModels.DirectAccessToken{}, []string{acl.PermGet, acl.PermList, acl.PermCount, acl.PermCreate, acl.PermDelete})
 
 	// Register anonymous role and fill permissions for it
 	pm.RegisterRole(context.Background(),
@@ -97,14 +104,14 @@ func InitModelPermissions(pm *permissions.Manager) {
 }
 
 func accountCustomCheck(ctx context.Context, resource any, perm rbac.Permission) bool {
-	account, _ := resource.(*model.Account)
+	acc, _ := resource.(*account.Account)
 	user := session.User(ctx)
-	if account.IsOwnerUser(user.ID) {
+	if acc.IsOwnerUser(user.ID) {
 		return true
 	}
-	repo := repository.New()
+	members := repository.NewMemberRepository()
 	if perm.MatchPermissionPattern(`*.{view|list|count}.*`) {
-		return repo.IsMember(ctx, user.ID, account.ID)
+		return members.IsMember(ctx, user.ID, acc.ID)
 	}
-	return repo.IsAdmin(ctx, user.ID, account.ID)
+	return members.IsAdmin(ctx, user.ID, acc.ID)
 }
