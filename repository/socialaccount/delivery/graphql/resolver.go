@@ -37,7 +37,7 @@ func (r *QueryResolver) Get(ctx context.Context, id uint64) (*gqlmodels.SocialAc
 func (r *QueryResolver) ListCurrent(
 	ctx context.Context,
 	filter *gqlmodels.SocialAccountListFilter,
-	order *gqlmodels.SocialAccountListOrder,
+	order []*gqlmodels.SocialAccountListOrder,
 ) (*SocialAccountConnection, error) {
 	if filter == nil {
 		filter = &gqlmodels.SocialAccountListFilter{}
@@ -53,7 +53,7 @@ func (r *QueryResolver) ListCurrent(
 func (r *QueryResolver) List(
 	ctx context.Context,
 	filter *gqlmodels.SocialAccountListFilter,
-	order *gqlmodels.SocialAccountListOrder,
+	order []*gqlmodels.SocialAccountListOrder,
 	page *gqlmodels.Page,
 ) (*SocialAccountConnection, error) {
 	return NewSocialAccountConnection(ctx, r.accounts, filter, order, page), nil

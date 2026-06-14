@@ -2,21 +2,21 @@
 HistoryAction is the model for history actions.
 """
 type HistoryAction {
-  ID:         UUID!
-  RequestID:  String!
+  ID: UUID!
+  RequestID: String!
 
-  name:       String!
-  message:    String!
+  name: String!
+  message: String!
 
-  userID:     ID64!
-  accountID:  ID64!
+  userID: ID64!
+  accountID: ID64!
 
   objectType: String!
-  objectID:   ID64!
-  objectIDs:  String!
-  data:       NullableJSON!
+  objectID: ID64!
+  objectIDs: String!
+  data: NullableJSON!
 
-  actionAt:   Time!
+  actionAt: Time!
 }
 
 """
@@ -146,8 +146,9 @@ extend type Query {
   List of the history actions which can be filtered and ordered by some fields
   """
   listHistory(
-    filter: HistoryActionListFilter = null,
-    order: HistoryActionListOrder = null,
+    filter: HistoryActionListFilter = null
+    order: [HistoryActionListOrder!] = null
     page: Page = null
-  ): HistoryActionConnection @hasPermissions(permissions: ["history_log.list.*"])
+  ): HistoryActionConnection
+    @hasPermissions(permissions: ["history_log.list.*"])
 }

@@ -104,7 +104,7 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID, i
 }
 
 // ListRoles is the resolver for the listRoles field.
-func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRoleListFilter, order *gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) (*RBACRoleConnection, error) {
+func (r *QueryResolver) ListRoles(ctx context.Context, filter *gqlmodels.RBACRoleListFilter, order []*gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) (*RBACRoleConnection, error) {
 	return NewRBACRoleConnection(ctx, r.roles, filter, order, page), nil
 }
 

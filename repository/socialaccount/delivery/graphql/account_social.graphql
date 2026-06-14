@@ -130,24 +130,27 @@ extend type Query {
     The unique identifier of the social account
     """
     id: ID64!
-  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.view.*"])
+  ): SocialAccountPayload!
+    @hasPermissions(permissions: ["account_social.view.*"])
 
   """
   Get the current user's social accounts
   """
   currentSocialAccounts(
-    filter: SocialAccountListFilter = null,
-    order: SocialAccountListOrder = null
-  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+    filter: SocialAccountListFilter = null
+    order: [SocialAccountListOrder!] = null
+  ): SocialAccountConnection!
+    @hasPermissions(permissions: ["account_social.list.*"])
 
   """
   List all social accounts
   """
   listSocialAccounts(
-    filter: SocialAccountListFilter = null,
-    order: SocialAccountListOrder = null,
+    filter: SocialAccountListFilter = null
+    order: [SocialAccountListOrder!] = null
     page: Page = null
-  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+  ): SocialAccountConnection!
+    @hasPermissions(permissions: ["account_social.list.*"])
 }
 
 extend type Mutation {
@@ -159,5 +162,6 @@ extend type Mutation {
     The unique identifier of the social account to disconnect
     """
     id: ID64!
-  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.disconnect.*"])
+  ): SocialAccountPayload!
+    @hasPermissions(permissions: ["account_social.disconnect.*"])
 }

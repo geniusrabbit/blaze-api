@@ -19,13 +19,19 @@ func NewSocialAccountConnection(
 	ctx context.Context,
 	accountsAccessor socialaccount.Usecase,
 	filter *gqlmodels.SocialAccountListFilter,
-	order *gqlmodels.SocialAccountListOrder,
+	order []*gqlmodels.SocialAccountListOrder,
 	page *gqlmodels.Page,
 ) *SocialAccountConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]{
 		// FetchDataListFunc retrieves the paginated list of social accounts.
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.SocialAccount, error) {
-			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
+			opts := []socialaccount.QOption{filter.Filter(), page.Pagination()}
+			for _, o := range order {
+				if ord := o.Order(); ord != nil {
+					opts = append(opts, ord)
+				}
+			}
+			accounts, err := accountsAccessor.FetchList(ctx, opts...)
 			return FromSocialAccountModelList(accounts), err
 		},
 		// CountDataFunc returns the total count of social accounts matching the filter.

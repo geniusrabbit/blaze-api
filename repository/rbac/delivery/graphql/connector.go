@@ -14,11 +14,16 @@ import (
 type RBACRoleConnection = connectors.CollectionConnection[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]
 
 // NewRBACRoleConnection based on query object
-func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filter *gqlmodels.RBACRoleListFilter, order *gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) *RBACRoleConnection {
+func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filter *gqlmodels.RBACRoleListFilter, order []*gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) *RBACRoleConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
-			roles, err := rolesAccessor.FetchList(ctx,
-				filter.Filter(), order.Order(), page.Pagination())
+			opts := []rbac.QOption{filter.Filter(), page.Pagination()}
+			for _, o := range order {
+				if ord := o.Order(); ord != nil {
+					opts = append(opts, ord)
+				}
+			}
+			roles, err := rolesAccessor.FetchList(ctx, opts...)
 			return FromRBACRoleModelList(ctx, roles), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
@@ -34,7 +39,7 @@ func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filt
 }
 
 // NewRBACRoleConnectionByIDs based on query object
-func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, ids []uint64, order *gqlmodels.RBACRoleListOrder) *RBACRoleConnection {
+func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, ids []uint64, order []*gqlmodels.RBACRoleListOrder) *RBACRoleConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
 			var (
@@ -42,7 +47,13 @@ func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, 
 				err   error
 			)
 			if len(ids) > 0 {
-				roles, err = rolesPepo.FetchList(ctx, &rbac.Filter{ID: ids}, order.Order())
+				opts := []rbac.QOption{&rbac.Filter{ID: ids}}
+				for _, o := range order {
+					if ord := o.Order(); ord != nil {
+						opts = append(opts, ord)
+					}
+				}
+				roles, err = rolesPepo.FetchList(ctx, opts...)
 			}
 			return FromRBACRoleModelList(ctx, roles), err
 		},

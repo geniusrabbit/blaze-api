@@ -223,6 +223,6 @@ func (r *QueryResolver) User(ctx context.Context, id uint64, username string) (*
 }
 
 // ListUsers list by filter
-func (r *QueryResolver) ListUsers(ctx context.Context, filter *gqlmodels.UserListFilter, order *gqlmodels.UserListOrder, page *gqlmodels.Page) (*UserConnection, error) {
+func (r *QueryResolver) ListUsers(ctx context.Context, filter *gqlmodels.UserListFilter, order []*gqlmodels.UserListOrder, page *gqlmodels.Page) (*UserConnection, error) {
 	return NewUserConnection(ctx, r.users, filter, order, page), nil
 }

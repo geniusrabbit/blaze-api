@@ -57,6 +57,6 @@ func (r *QueryResolver) Get(ctx context.Context, name string, otype gqlmodels.Op
 }
 
 // List Options is the resolver for the listOptions field.
-func (r *QueryResolver) List(ctx context.Context, filter *gqlmodels.OptionListFilter, order *gqlmodels.OptionListOrder, page *gqlmodels.Page) (*OptionConnection, error) {
+func (r *QueryResolver) List(ctx context.Context, filter *gqlmodels.OptionListFilter, order []*gqlmodels.OptionListOrder, page *gqlmodels.Page) (*OptionConnection, error) {
 	return NewOptionConnection(ctx, r.uc, filter, order, page), nil
 }

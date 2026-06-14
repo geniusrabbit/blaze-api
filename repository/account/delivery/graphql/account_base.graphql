@@ -207,7 +207,7 @@ extend type Query {
   """
   listAccounts(
     filter: AccountListFilter = null
-    order: AccountListOrder = null
+    order: [AccountListOrder!] = null
     page: Page = null
   ): AccountConnection @hasPermissions(permissions: ["account.list.*"])
 
@@ -216,7 +216,7 @@ extend type Query {
   """
   listAccountRolesAndPermissions(
     accountID: ID64!
-    order: RBACRoleListOrder = null
+    order: [RBACRoleListOrder!] = null
   ): RBACRoleConnection @hasPermissions(permissions: ["account.view.*"])
 }
 

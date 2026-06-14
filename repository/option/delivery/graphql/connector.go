@@ -14,10 +14,16 @@ import (
 type OptionConnection = connectors.CollectionConnection[gqlmodels.Option, gqlmodels.OptionEdge]
 
 // NewOptionConnection based on query object
-func NewOptionConnection(ctx context.Context, optionsAccessor option.Usecase, filter *gqlmodels.OptionListFilter, order *gqlmodels.OptionListOrder, page *gqlmodels.Page) *OptionConnection {
+func NewOptionConnection(ctx context.Context, optionsAccessor option.Usecase, filter *gqlmodels.OptionListFilter, order []*gqlmodels.OptionListOrder, page *gqlmodels.Page) *OptionConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.Option, gqlmodels.OptionEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Option, error) {
-			options, err := optionsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
+			opts := []option.QOption{filter.Filter(), page.Pagination()}
+			for _, o := range order {
+				if ord := o.Order(); ord != nil {
+					opts = append(opts, ord)
+				}
+			}
+			options, err := optionsAccessor.FetchList(ctx, opts...)
 			return FromOptionModelList(options), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {

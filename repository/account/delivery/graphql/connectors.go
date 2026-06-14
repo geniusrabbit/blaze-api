@@ -14,10 +14,16 @@ import (
 type AccountConnection = connectors.CollectionConnection[gqlmodels.Account, gqlmodels.AccountEdge]
 
 // NewAccountConnection based on query object
-func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase, filter *gqlmodels.AccountListFilter, order *gqlmodels.AccountListOrder, page *gqlmodels.Page) *AccountConnection {
+func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase, filter *gqlmodels.AccountListFilter, order []*gqlmodels.AccountListOrder, page *gqlmodels.Page) *AccountConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.Account, gqlmodels.AccountEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Account, error) {
-			accounts, err := accountsAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
+			opts := []account.QOption{filter.Filter(), page.Pagination()}
+			for _, o := range order {
+				if ord := o.Order(); ord != nil {
+					opts = append(opts, ord)
+				}
+			}
+			accounts, err := accountsAccessor.FetchList(ctx, opts...)
 			return FromAccountModelList(accounts), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
@@ -36,11 +42,16 @@ func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase,
 type MemberConnection = connectors.CollectionConnection[gqlmodels.Member, gqlmodels.MemberEdge]
 
 // NewMemberConnection based on query object
-func NewMemberConnection(ctx context.Context, membersAccessor account.MemberUsecase, filter *gqlmodels.MemberListFilter, order *gqlmodels.MemberListOrder, page *gqlmodels.Page) *MemberConnection {
+func NewMemberConnection(ctx context.Context, membersAccessor account.MemberUsecase, filter *gqlmodels.MemberListFilter, order []*gqlmodels.MemberListOrder, page *gqlmodels.Page) *MemberConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.Member, gqlmodels.MemberEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Member, error) {
-			members, err := membersAccessor.FetchListMembers(ctx,
-				filter.Filter(), order.Order(), page.Pagination())
+			opts := []account.QOption{filter.Filter(), page.Pagination()}
+			for _, o := range order {
+				if ord := o.Order(); ord != nil {
+					opts = append(opts, ord)
+				}
+			}
+			members, err := membersAccessor.FetchListMembers(ctx, opts...)
 			return FromMemberModelList(ctx, members), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {

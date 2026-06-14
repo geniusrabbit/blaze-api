@@ -27,7 +27,7 @@ func NewDirectAccessTokenConnection(
 	ctx context.Context,
 	directAccessTokenAccessor directaccesstoken.Usecase,
 	filter *gqlmodels.DirectAccessTokenListFilter,
-	order *gqlmodels.DirectAccessTokenListOrder,
+	order []*gqlmodels.DirectAccessTokenListOrder,
 	page *gqlmodels.Page,
 	fnPrep func(*models.DirectAccessToken) *models.DirectAccessToken,
 ) *DirectAccessTokenConnection {
@@ -36,12 +36,13 @@ func NewDirectAccessTokenConnection(
 		&connectors.DataAccessorFunc[gqlmodels.DirectAccessToken, gqlmodels.DirectAccessTokenEdge]{
 			// FetchDataListFunc retrieves the list of direct access tokens with applied filters, ordering, and pagination.
 			FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.DirectAccessToken, error) {
-				directAccessTokens, err := directAccessTokenAccessor.FetchList(
-					ctx,
-					filter.Filter(),
-					order.Order(),
-					page.Pagination(),
-				)
+				opts := []directaccesstoken.QOption{filter.Filter(), page.Pagination()}
+				for _, o := range order {
+					if ord := o.Order(); ord != nil {
+						opts = append(opts, ord)
+					}
+				}
+				directAccessTokens, err := directAccessTokenAccessor.FetchList(ctx, opts...)
 				if fnPrep != nil {
 					for i, token := range directAccessTokens {
 						directAccessTokens[i] = fnPrep(token)

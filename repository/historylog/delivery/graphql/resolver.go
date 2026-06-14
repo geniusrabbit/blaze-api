@@ -18,6 +18,6 @@ func NewQueryResolver(uc historylog.Usecase) *QueryResolver {
 }
 
 // List changelogs is the resolver for the listChangelogs field.
-func (r *QueryResolver) List(ctx context.Context, filter *gqlmodels.HistoryActionListFilter, order *gqlmodels.HistoryActionListOrder, page *gqlmodels.Page) (*HistoryActionConnection, error) {
+func (r *QueryResolver) List(ctx context.Context, filter *gqlmodels.HistoryActionListFilter, order []*gqlmodels.HistoryActionListOrder, page *gqlmodels.Page) (*HistoryActionConnection, error) {
 	return NewHistoryActionConnection(ctx, r.uc, filter, order, page), nil
 }

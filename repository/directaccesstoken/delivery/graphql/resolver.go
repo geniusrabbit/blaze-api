@@ -88,7 +88,7 @@ func (r *QueryResolver) Get(ctx context.Context, id uint64) (*models.DirectAcces
 
 // List retrieves a paginated collection of direct access tokens with optional filtering and ordering.
 // Tokens created within the last 5 minutes are returned as-is; older tokens have their values masked.
-func (r *QueryResolver) List(ctx context.Context, filter *models.DirectAccessTokenListFilter, order *models.DirectAccessTokenListOrder, page *models.Page) (*DirectAccessTokenConnection, error) {
+func (r *QueryResolver) List(ctx context.Context, filter *models.DirectAccessTokenListFilter, order []*models.DirectAccessTokenListOrder, page *models.Page) (*DirectAccessTokenConnection, error) {
 	return NewDirectAccessTokenConnection(ctx, r.uc, filter, order, page,
 		func(dat *datModels.DirectAccessToken) *datModels.DirectAccessToken {
 			// Return token unmasked if recently created

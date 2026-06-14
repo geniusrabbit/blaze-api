@@ -1,7 +1,7 @@
 enum OptionType {
-  UNDEFINED,
-  USER,
-  ACCOUNT,
+  UNDEFINED
+  USER
+  ACCOUNT
   SYSTEM
 }
 
@@ -9,10 +9,10 @@ enum OptionType {
 Option type definition represents a single option of the user or the system.
 """
 type Option {
-  type:       OptionType!
-  targetID:   ID64!
-  name:       String!
-  value:      NullableJSON
+  type: OptionType!
+  targetID: ID64!
+  name: String!
+  value: NullableJSON
 }
 
 """
@@ -70,17 +70,17 @@ type OptionPayload {
 ###############################################################################
 
 input OptionListFilter {
-  type:         [OptionType!]
-  targetID:     [ID64!]
-  name:         [String!]
-  namePattern:  [String!]
+  type: [OptionType!]
+  targetID: [ID64!]
+  name: [String!]
+  namePattern: [String!]
 }
 
 input OptionListOrder {
-  type:         Ordering
-  targetID:     Ordering
-  name:         Ordering
-  value:        Ordering
+  type: Ordering
+  targetID: Ordering
+  name: Ordering
+  value: Ordering
 }
 
 ###############################################################################
@@ -91,14 +91,18 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
+  option(
+    name: String!
+    type: OptionType! = USER
+    targetID: ID64! = 0
+  ): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
 
   """
   List of the option values which can be filtered and ordered by some fields
   """
   listOptions(
-    filter: OptionListFilter = null,
-    order: OptionListOrder = null,
+    filter: OptionListFilter = null
+    order: [OptionListOrder!] = null
     page: Page = null
   ): OptionConnection @hasPermissions(permissions: ["option.list.*"])
 }
@@ -107,5 +111,10 @@ extend type Mutation {
   """
   Set the option value
   """
-  setOption(name: String!, value: NullableJSON, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
+  setOption(
+    name: String!
+    value: NullableJSON
+    type: OptionType! = USER
+    targetID: ID64! = 0
+  ): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
 }

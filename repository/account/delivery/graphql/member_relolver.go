@@ -70,6 +70,6 @@ func (r *MemberQueryResolver) Reject(ctx context.Context, memberID uint64, msg s
 }
 
 // List is the resolver for the listMembers field.
-func (r *MemberQueryResolver) List(ctx context.Context, filter *models.MemberListFilter, order *models.MemberListOrder, page *models.Page) (*MemberConnection, error) {
+func (r *MemberQueryResolver) List(ctx context.Context, filter *models.MemberListFilter, order []*models.MemberListOrder, page *models.Page) (*MemberConnection, error) {
 	return NewMemberConnection(ctx, r.members, filter, order, page), nil
 }

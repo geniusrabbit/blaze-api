@@ -148,12 +148,12 @@ extend type Query {
     """
     The filter to apply to the list
     """
-    filter: MemberListFilter = null,
+    filter: MemberListFilter = null
 
     """
     The order to apply to the list
     """
-    order: MemberListOrder = null,
+    order: [MemberListOrder!] = null
 
     """
     The pagination to apply to the list
@@ -170,7 +170,7 @@ extend type Mutation {
     """
     The account ID to invite the member to
     """
-    accountID: ID64!,
+    accountID: ID64!
 
     """
     The new member to invite to the account
@@ -185,7 +185,7 @@ extend type Mutation {
     """
     The member ID to update
     """
-    memberID: ID64!,
+    memberID: ID64!
 
     """
     The new member data to update

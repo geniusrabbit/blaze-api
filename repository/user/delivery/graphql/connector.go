@@ -13,10 +13,16 @@ import (
 type UserConnection = connectors.CollectionConnection[gqlmodels.User, gqlmodels.UserEdge]
 
 // NewUserConnection based on query object
-func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *gqlmodels.UserListFilter, order *gqlmodels.UserListOrder, page *gqlmodels.Page) *UserConnection {
+func NewUserConnection(ctx context.Context, usersAccessor user.Usecase, filter *gqlmodels.UserListFilter, order []*gqlmodels.UserListOrder, page *gqlmodels.Page) *UserConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.User, gqlmodels.UserEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.User, error) {
-			users, err := usersAccessor.FetchList(ctx, filter.Filter(), order.Order(), page.Pagination())
+			opts := []user.QOption{filter.Filter(), page.Pagination()}
+			for _, o := range order {
+				if ord := o.Order(); ord != nil {
+					opts = append(opts, ord)
+				}
+			}
+			users, err := usersAccessor.FetchList(ctx, opts...)
 			return FromUserModelList(users), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {

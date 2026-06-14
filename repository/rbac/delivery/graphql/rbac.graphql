@@ -1,5 +1,5 @@
 type RBACPermission {
-  name:   String!
+  name: String!
   object: String!
   access: String!
   fullname: String!
@@ -10,32 +10,32 @@ type RBACPermission {
 A role is a collection of permissions. A role can be a child of another role.
 """
 type RBACRole {
-	ID:       ID64!
-	name:     String!
-	title:    String!
+  ID: ID64!
+  name: String!
+  title: String!
 
   description: String
 
   """
-  Context is a JSON object that defines the context of the role.
-  The context is used to determine whether the role is applicable to the object.
-  The context is a JSON object with the following structure:
+   Context is a JSON object that defines the context of the role.
+   The context is used to determine whether the role is applicable to the object.
+   The context is a JSON object with the following structure:
 
-	{"cover": "system", "object": "role"}
+  {"cover": "system", "object": "role"}
 
-  where:
-	"cover" - is a name of the cover area of the object type
-	"object" - is a name of the object type <module>:<object-name>
+   where:
+  "cover" - is a name of the cover area of the object type
+  "object" - is a name of the object type <module>:<object-name>
   """
-	context:  NullableJSON
+  context: NullableJSON
 
-	childRoles: [RBACRole!]
+  childRoles: [RBACRole!]
   permissions: [RBACPermission!]
   permissionPatterns: [String!]
 
   createdAt: Time!
   updatedAt: Time!
-	deletedAt: Time
+  deletedAt: Time
 }
 
 """
@@ -103,13 +103,13 @@ type RBACRolePayload {
 ###############################################################################
 
 input RBACRoleListFilter {
-  ID:   [ID64!]
+  ID: [ID64!]
   name: [String!]
 }
 
 input RBACRoleListOrder {
-  ID:    Ordering
-  name:  Ordering
+  ID: Ordering
+  name: Ordering
   title: Ordering
 }
 
@@ -118,9 +118,9 @@ input RBACRoleListOrder {
 ###############################################################################
 
 input RBACRoleInput {
-  name:        String
-  title:       String
-  context:     NullableJSON
+  name: String
+  title: String
+  context: NullableJSON
   permissions: [String!]
 }
 
@@ -132,47 +132,58 @@ extend type Query {
   """
   Get RBAC role object by ID
   """
-  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: ["role.view.*"])
+  role(id: ID64!): RBACRolePayload!
+    @hasPermissions(permissions: ["role.view.*"])
 
   """
   Check if the user has access to the particular role or permission.
   Returns the area of the access or null if access is denied.
   """
-  checkPermission(name: String!, key: String = null, targetID: String = null, idKey: String = null): String @hasPermissions(permissions: ["role.check"])
+  checkPermission(
+    name: String!
+    key: String = null
+    targetID: String = null
+    idKey: String = null
+  ): String @hasPermissions(permissions: ["role.check"])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
   """
   listRoles(
-    filter: RBACRoleListFilter = null,
-    order: RBACRoleListOrder = null,
+    filter: RBACRoleListFilter = null
+    order: [RBACRoleListOrder!] = null
     page: Page = null
   ): RBACRoleConnection @hasPermissions(permissions: ["role.list.*"])
 
   """
   List of the RBAC permissions
   """
-  listPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
+  listPermissions(patterns: [String!] = null): [RBACPermission!]
+    @hasPermissions(permissions: ["permission.list"])
 
   """
   List of the RBAC permissions for the current user
   """
-  listMyPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
+  listMyPermissions(patterns: [String!] = null): [RBACPermission!]
+    @hasPermissions(permissions: ["permission.list"])
 }
 
 extend type Mutation {
   """
   Create the new RBAC role
   """
-  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.create.*"])
+  createRole(input: RBACRoleInput!): RBACRolePayload!
+    @hasPermissions(permissions: ["role.create.*"])
 
   """
   Update RBAC role info
   """
-  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.update.*"])
+  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload!
+    @hasPermissions(permissions: ["role.update.*"])
 
   """
   Delete RBAC role
   """
-  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: ["role.delete.*"])
+  deleteRole(id: ID64!, msg: String = null): RBACRolePayload!
+    @hasPermissions(permissions: ["role.delete.*"])
 }

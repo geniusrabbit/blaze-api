@@ -201,7 +201,7 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 // ListAccounts list by filter
 func (r *QueryResolver) ListAccounts(ctx context.Context,
 	filter *gqlmodels.AccountListFilter,
-	order *gqlmodels.AccountListOrder,
+	order []*gqlmodels.AccountListOrder,
 	page *gqlmodels.Page,
 ) (*AccountConnection, error) {
 	return NewAccountConnection(ctx, r.accounts, filter, order, page), nil

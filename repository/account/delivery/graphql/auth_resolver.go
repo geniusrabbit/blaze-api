@@ -130,7 +130,7 @@ func (r *AuthResolver) CurrentSession(ctx context.Context) (*gqlmodels.SessionTo
 }
 
 // ListRolesAndPermissions is the resolver for the listRolesAndPermissions field
-func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID uint64, order *gqlmodels.RBACRoleListOrder) (*rbacgql.RBACRoleConnection, error) {
+func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID uint64, order []*gqlmodels.RBACRoleListOrder) (*rbacgql.RBACRoleConnection, error) {
 	var (
 		err     error
 		account *accountModels.Account
