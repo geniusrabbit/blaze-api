@@ -5,18 +5,17 @@ import (
 	"errors"
 	"time"
 
-	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"gorm.io/gorm"
 )
 
-type Repository[T any, TID any] struct {
+type Repository[T Model[TID], TID comparable] struct {
 	repository.Repository
 	idField string
 }
 
 // NewRepository creates a new repository instance
-func NewRepository[T any, TID any]() *Repository[T, TID] {
+func NewRepository[T Model[TID], TID comparable]() *Repository[T, TID] {
 	return &Repository[T, TID]{idField: getModelIDField(new(T))}
 }
 
@@ -54,7 +53,6 @@ func (r *Repository[T, TID]) Count(ctx context.Context, qops ...Option) (count i
 // Create creates a new campaign
 func (r *Repository[T, TID]) Create(ctx context.Context, obj *T, opts ...Option) (TID, error) {
 	setModelCreatedAt(obj, time.Now())
-	setModelApproveStatus(obj, pkgModels.ApproveStatus(pkgModels.PendingApproveStatus))
 	db := Options(opts).PrepareQuery(r.Master(ctx))
 	err := db.Create(obj).Error
 	return getModelID[TID](obj), err

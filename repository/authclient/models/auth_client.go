@@ -87,7 +87,7 @@ func (m *AuthClient) RBACResourceName() string {
 }
 
 // GetID returns the client ID
-func (m *AuthClient) GetID() string {
+func (m AuthClient) GetID() string {
 	return m.ID
 }
 

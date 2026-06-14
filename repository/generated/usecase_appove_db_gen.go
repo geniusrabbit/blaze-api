@@ -7,7 +7,7 @@ import (
 )
 
 // UsecaseApprover provides approve/reject usecase methods
-type UsecaseApprover[T any, TID any] struct {
+type UsecaseApprover[T Model[TID], TID comparable] struct {
 	Repo RepositoryIfaceWithApprove[T, TID]
 }
 
@@ -35,7 +35,7 @@ func (u *UsecaseApprover[T, TID]) Reject(ctx context.Context, id TID, opts ...Op
 	}
 
 	// Check if user has reject permissions for the existing entity
-	if !acl.HaveAccessApprove(ctx, existingObj) {
+	if !acl.HaveAccessReject(ctx, existingObj) {
 		return acl.ErrNoPermissions.WithMessage("reject")
 	}
 	return u.Repo.Reject(ctx, id, opts...)

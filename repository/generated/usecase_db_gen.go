@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/go-faster/errors"
 )
 
 // Usecase provides a generic business logic layer with ACL (Access Control List) support
 // for CRUD operations on entities of type T with ID type TID.
-type Usecase[T any, TID any] struct {
+type Usecase[T Model[TID], TID comparable] struct {
 	Repo RepositoryIface[T, TID] // Repository interface for data access operations
 }
 
@@ -60,12 +61,15 @@ func (u *Usecase[T, TID]) Count(ctx context.Context, qops ...Option) (int64, err
 }
 
 // Create creates a new entity with ACL permission check.
+// Sets the initial approval status to Pending before delegating to the repository.
 // Returns the ID of the created entity if successful.
 func (u *Usecase[T, TID]) Create(ctx context.Context, obj *T, opts ...Option) (id TID, err error) {
 	// Check if user has create permissions for this entity
 	if !acl.HaveAccessCreate(ctx, obj) {
 		return id, acl.ErrNoPermissions.WithMessage("create")
 	}
+	// New entities start in Pending status (no-op for models without approval workflow).
+	setModelApproveStatus(obj, pkgModels.PendingApproveStatus)
 	return u.Repo.Create(ctx, obj, opts...)
 }
 

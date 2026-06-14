@@ -12,7 +12,7 @@ type (
 	Options = repository.ListOptions
 )
 
-type RepositoryIface[T any, TID any] interface {
+type RepositoryIface[T Model[TID], TID comparable] interface {
 	Get(ctx context.Context, id TID, qops ...Option) (*T, error)
 	FetchList(ctx context.Context, qops ...Option) ([]*T, error)
 	Count(ctx context.Context, qops ...Option) (int64, error)
@@ -21,12 +21,12 @@ type RepositoryIface[T any, TID any] interface {
 	Delete(ctx context.Context, id TID, opts ...Option) error
 }
 
-type RepositoryApproveIface[TID any] interface {
+type RepositoryApproveIface[TID comparable] interface {
 	Approve(ctx context.Context, id TID, opts ...Option) error
 	Reject(ctx context.Context, id TID, opts ...Option) error
 }
 
-type RepositoryIfaceWithApprove[T any, TID any] interface {
+type RepositoryIfaceWithApprove[T Model[TID], TID comparable] interface {
 	RepositoryIface[T, TID]
 	RepositoryApproveIface[TID]
 }

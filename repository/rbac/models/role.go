@@ -76,7 +76,7 @@ func (role *Role) SetUpdatedAt(t time.Time) {
 }
 
 // GetID returns the role ID
-func (role *Role) GetID() uint64 {
+func (role Role) GetID() uint64 {
 	return role.ID
 }
 
