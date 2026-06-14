@@ -9,6 +9,7 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
 )
 
@@ -71,7 +72,7 @@ func (s *testSuite) TestCreate() {
 		AccountID: 1,
 		UserID:    1,
 	}
-	id, err := s.authclientRepo.Create(s.Ctx, obj, "create authclient")
+	id, err := s.authclientRepo.Create(s.Ctx, obj, historylog.Message("create authclient"))
 	s.NoError(err)
 	s.Equal("101", id)
 }
@@ -80,7 +81,7 @@ func (s *testSuite) TestUpdate() {
 	s.Mock.ExpectExec("UPDATE").
 		WithArgs("test", sqlmock.AnyArg(), "101").
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	err := s.authclientRepo.Update(s.Ctx, "101", &models.AuthClient{Title: "test"}, "update authclient")
+	err := s.authclientRepo.Update(s.Ctx, "101", &models.AuthClient{Title: "test"}, historylog.Message("update authclient"))
 	s.NoError(err)
 }
 
@@ -88,7 +89,7 @@ func (s *testSuite) TestDelete() {
 	s.Mock.ExpectExec("UPDATE").
 		WithArgs(sqlmock.AnyArg(), "101").
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	err := s.authclientRepo.Delete(s.Ctx, "101", "delete authclient")
+	err := s.authclientRepo.Delete(s.Ctx, "101", historylog.Message("delete authclient"))
 	s.NoError(err)
 }
 

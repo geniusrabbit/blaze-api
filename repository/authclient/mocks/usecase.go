@@ -62,32 +62,42 @@ func (mr *MockUsecaseMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 }
 
 // Create mocks base method.
-func (m *MockUsecase) Create(ctx context.Context, authClient *authclient.AuthClient, message string) (string, error) {
+func (m *MockUsecase) Create(ctx context.Context, authClient *authclient.AuthClient, opts ...authclient.QOption) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, authClient, message)
+	varargs := []any{ctx, authClient}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Create", varargs...)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockUsecaseMockRecorder) Create(ctx, authClient, message any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder) Create(ctx, authClient any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUsecase)(nil).Create), ctx, authClient, message)
+	varargs := append([]any{ctx, authClient}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUsecase)(nil).Create), varargs...)
 }
 
 // Delete mocks base method.
-func (m *MockUsecase) Delete(ctx context.Context, id, message string) error {
+func (m *MockUsecase) Delete(ctx context.Context, id string, opts ...authclient.QOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, id, message)
+	varargs := []any{ctx, id}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockUsecaseMockRecorder) Delete(ctx, id, message any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder) Delete(ctx, id any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase)(nil).Delete), ctx, id, message)
+	varargs := append([]any{ctx, id}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase)(nil).Delete), varargs...)
 }
 
 // FetchList mocks base method.
@@ -126,15 +136,20 @@ func (mr *MockUsecaseMockRecorder) Get(ctx, id any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockUsecase) Update(ctx context.Context, id string, authClient *authclient.AuthClient, message string) error {
+func (m *MockUsecase) Update(ctx context.Context, id string, authClient *authclient.AuthClient, opts ...authclient.QOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, authClient, message)
+	varargs := []any{ctx, id, authClient}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Update", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUsecaseMockRecorder) Update(ctx, id, authClient, message any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder) Update(ctx, id, authClient any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsecase)(nil).Update), ctx, id, authClient, message)
+	varargs := append([]any{ctx, id, authClient}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsecase)(nil).Update), varargs...)
 }

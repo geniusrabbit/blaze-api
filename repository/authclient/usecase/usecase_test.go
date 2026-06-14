@@ -13,6 +13,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/mocks"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 )
 
 type testSuite struct {
@@ -73,11 +74,11 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.authclientRepo.EXPECT().
-		Create(s.ctx, gomock.AssignableToTypeOf(&models.AuthClient{}), "create authclient").
+		Create(s.ctx, gomock.AssignableToTypeOf(&models.AuthClient{}), historylog.Message("create authclient")).
 		Return("101", nil)
 
 	id, err := s.authclientUsecase.Create(s.ctx,
-		&models.AuthClient{ID: "", Title: "test1"}, "create authclient")
+		&models.AuthClient{ID: "", Title: "test1"}, historylog.Message("create authclient"))
 	s.NoError(err)
 	s.Equal(id, "101")
 }
@@ -85,11 +86,11 @@ func (s *testSuite) TestCreate() {
 func (s *testSuite) TestUpdate() {
 	s.authclientRepo.EXPECT().
 		Update(gomock.AssignableToTypeOf(s.ctx),
-			"101", gomock.AssignableToTypeOf(&models.AuthClient{}), "update authclient").
+			"101", gomock.AssignableToTypeOf(&models.AuthClient{}), historylog.Message("update authclient")).
 		Return(nil)
 
 	err := s.authclientUsecase.Update(s.ctx, "101",
-		&models.AuthClient{Title: "test-test"}, "update authclient")
+		&models.AuthClient{Title: "test-test"}, historylog.Message("update authclient"))
 	s.NoError(err)
 }
 
@@ -99,10 +100,10 @@ func (s *testSuite) TestDelete() {
 		Get(gomock.AssignableToTypeOf(s.ctx), "1").
 		Return(&models.AuthClient{ID: "1"}, nil)
 	s.authclientRepo.EXPECT().
-		Delete(gomock.AssignableToTypeOf(s.ctx), stype, stype).
+		Delete(gomock.AssignableToTypeOf(s.ctx), stype, gomock.AssignableToTypeOf(historylog.Message(""))).
 		Return(nil)
 
-	err := s.authclientUsecase.Delete(s.ctx, "1", "delete authclient")
+	err := s.authclientUsecase.Delete(s.ctx, "1", historylog.Message("delete authclient"))
 	s.NoError(err)
 }
 
@@ -110,7 +111,7 @@ func (s *testSuite) TestDeleteNotFound() {
 	s.authclientRepo.EXPECT().
 		Get(s.ctx, "9999").
 		Return(nil, sql.ErrNoRows)
-	err := s.authclientUsecase.Delete(s.ctx, "9999", "delete authclient")
+	err := s.authclientUsecase.Delete(s.ctx, "9999", historylog.Message("delete authclient"))
 	s.EqualError(err, sql.ErrNoRows.Error())
 }
 

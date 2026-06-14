@@ -58,25 +58,25 @@ func (a *AuthclientUsecase) Count(ctx context.Context, opts ...authclient.QOptio
 }
 
 // Create new object in database
-func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *models.AuthClient, message string) (string, error) {
+func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *models.AuthClient, opts ...authclient.QOption) (string, error) {
 	var err error
 	if !acl.HaveAccessCreate(ctx, authclientObj) {
 		return "", errors.Wrap(acl.ErrNoPermissions, "create authclient")
 	}
-	authclientObj.ID, err = a.authclientRepo.Create(ctx, authclientObj, message)
+	authclientObj.ID, err = a.authclientRepo.Create(ctx, authclientObj, opts...)
 	return authclientObj.ID, err
 }
 
 // Update object in database
-func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj *models.AuthClient, message string) error {
+func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj *models.AuthClient, opts ...authclient.QOption) error {
 	if !acl.HaveAccessUpdate(ctx, authclientObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "update authclient")
 	}
-	return a.authclientRepo.Update(historylog.WithPK(ctx, id), id, authclientObj, message)
+	return a.authclientRepo.Update(historylog.WithPK(ctx, id), id, authclientObj, opts...)
 }
 
 // Delete delites record by ID
-func (a *AuthclientUsecase) Delete(ctx context.Context, id, message string) error {
+func (a *AuthclientUsecase) Delete(ctx context.Context, id string, opts ...authclient.QOption) error {
 	authclientObj, err := a.Get(ctx, id)
 	if err != nil {
 		return err
@@ -84,5 +84,5 @@ func (a *AuthclientUsecase) Delete(ctx context.Context, id, message string) erro
 	if !acl.HaveAccessDelete(ctx, authclientObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "delete authclient")
 	}
-	return a.authclientRepo.Delete(historylog.WithPK(ctx, id), id, message)
+	return a.authclientRepo.Delete(historylog.WithPK(ctx, id), id, opts...)
 }

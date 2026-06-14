@@ -14,7 +14,6 @@ import (
 	reflect "reflect"
 
 	option "github.com/geniusrabbit/blaze-api/repository/option"
-	models "github.com/geniusrabbit/blaze-api/repository/option/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -63,7 +62,7 @@ func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockRepository) Delete(ctx context.Context, name string, otype models.OptionType, targetID uint64) error {
+func (m *MockRepository) Delete(ctx context.Context, name string, otype option.OptionType, targetID uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, name, otype, targetID)
 	ret0, _ := ret[0].(error)
@@ -77,14 +76,14 @@ func (mr *MockRepositoryMockRecorder) Delete(ctx, name, otype, targetID any) *go
 }
 
 // FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, opts ...option.QOption) ([]*models.Option, error) {
+func (m *MockRepository) FetchList(ctx context.Context, opts ...option.QOption) ([]*option.Option, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchList", varargs...)
-	ret0, _ := ret[0].([]*models.Option)
+	ret0, _ := ret[0].([]*option.Option)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +96,10 @@ func (mr *MockRepositoryMockRecorder) FetchList(ctx any, opts ...any) *gomock.Ca
 }
 
 // Get mocks base method.
-func (m *MockRepository) Get(ctx context.Context, name string, otype models.OptionType, targetID uint64) (*models.Option, error) {
+func (m *MockRepository) Get(ctx context.Context, name string, otype option.OptionType, targetID uint64) (*option.Option, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, name, otype, targetID)
-	ret0, _ := ret[0].(*models.Option)
+	ret0, _ := ret[0].(*option.Option)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,7 +111,7 @@ func (mr *MockRepositoryMockRecorder) Get(ctx, name, otype, targetID any) *gomoc
 }
 
 // Set mocks base method.
-func (m *MockRepository) Set(ctx context.Context, opt *models.Option) error {
+func (m *MockRepository) Set(ctx context.Context, opt *option.Option) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", ctx, opt)
 	ret0, _ := ret[0].(error)

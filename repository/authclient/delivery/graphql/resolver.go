@@ -6,8 +6,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
-	"github.com/geniusrabbit/blaze-api/repository/authclient/repository"
-	"github.com/geniusrabbit/blaze-api/repository/authclient/usecase"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -17,12 +16,8 @@ type QueryResolver struct {
 }
 
 // NewQueryResolver returns new API resolver
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{
-		authClients: usecase.NewAuthclientUsecase(
-			repository.NewAuthclientRepository(),
-		),
-	}
+func NewQueryResolver(uc authclient.Usecase) *QueryResolver {
+	return &QueryResolver{authClients: uc}
 }
 
 // AuthClient is the resolver for the authClient field.
@@ -52,7 +47,7 @@ func (r *QueryResolver) CreateAuthClient(ctx context.Context, input *gqlmodels.A
 	// Create and fill model from input
 	clientObj := CreateFillModel(input, &models.AuthClient{})
 
-	id, err := r.authClients.Create(ctx, clientObj, "GQL create authclient")
+	id, err := r.authClients.Create(ctx, clientObj, historylog.Message("GQL create authclient"))
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +71,7 @@ func (r *QueryResolver) UpdateAuthClient(ctx context.Context, id string, input *
 	// Update client fields
 	UpdateFillModel(input, clientObj)
 
-	if err = r.authClients.Update(ctx, id, clientObj, "GQL update authclient"); err != nil {
+	if err = r.authClients.Update(ctx, id, clientObj, historylog.Message("GQL update authclient")); err != nil {
 		return nil, err
 	}
 	return &gqlmodels.AuthClientPayload{
@@ -88,7 +83,7 @@ func (r *QueryResolver) UpdateAuthClient(ctx context.Context, id string, input *
 
 // DeleteAuthClient is the resolver for the deleteAuthClient field.
 func (r *QueryResolver) DeleteAuthClient(ctx context.Context, id string, msg *string) (*gqlmodels.AuthClientPayload, error) {
-	if err := r.authClients.Delete(ctx, id, "GQL delete authclient"); err != nil {
+	if err := r.authClients.Delete(ctx, id, historylog.Message("GQL delete authclient")); err != nil {
 		return nil, err
 	}
 	return &gqlmodels.AuthClientPayload{

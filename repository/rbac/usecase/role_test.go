@@ -82,21 +82,24 @@ func (s *testSuite) TestCount() {
 
 func (s *testSuite) TestCreate() {
 	s.roleRepo.EXPECT().
-		Create(s.ctx, gomock.AssignableToTypeOf(&rbacModels.Role{}), "").
+		Create(s.ctx, gomock.AssignableToTypeOf(&rbacModels.Role{})).
 		Return(uint64(101), nil)
 
-	id, err := s.roleUsecase.Create(s.ctx, &rbacModels.Role{ID: 0, Title: "test1"}, "")
+	id, err := s.roleUsecase.Create(s.ctx, &rbacModels.Role{ID: 0, Title: "test1"})
 	s.NoError(err)
 	s.Equal(id, uint64(101))
 }
 
 func (s *testSuite) TestUpdate() {
 	s.roleRepo.EXPECT().
+		Get(gomock.AssignableToTypeOf(s.ctx), uint64(101)).
+		Return(&rbacModels.Role{ID: 101}, nil)
+	s.roleRepo.EXPECT().
 		Update(gomock.AssignableToTypeOf(s.ctx),
-			uint64(101), gomock.AssignableToTypeOf(&rbacModels.Role{}), "").
+			uint64(101), gomock.AssignableToTypeOf(&rbacModels.Role{})).
 		Return(nil)
 
-	err := s.roleUsecase.Update(s.ctx, 101, &rbacModels.Role{Title: "test-test"}, "")
+	err := s.roleUsecase.Update(s.ctx, 101, &rbacModels.Role{Title: "test-test"})
 	s.NoError(err)
 }
 
@@ -105,18 +108,18 @@ func (s *testSuite) TestDelete() {
 		Get(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
 		Return(&rbacModels.Role{ID: 1}, nil)
 	s.roleRepo.EXPECT().
-		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101)), "").
+		Delete(gomock.AssignableToTypeOf(s.ctx), gomock.AssignableToTypeOf(uint64(101))).
 		Return(nil)
 
-	err := s.roleUsecase.Delete(s.ctx, 1, "")
+	err := s.roleUsecase.Delete(s.ctx, 1)
 	s.NoError(err)
 }
 
 func (s *testSuite) TestDeleteNotFound() {
 	s.roleRepo.EXPECT().
-		Get(s.ctx, gomock.AssignableToTypeOf(uint64(101)), "").
+		Get(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
 		Return(nil, sql.ErrNoRows)
-	err := s.roleUsecase.Delete(s.ctx, 9999, "")
+	err := s.roleUsecase.Delete(s.ctx, 9999)
 	s.EqualError(err, sql.ErrNoRows.Error())
 }
 

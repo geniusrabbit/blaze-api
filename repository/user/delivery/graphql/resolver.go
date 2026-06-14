@@ -15,8 +15,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	"github.com/geniusrabbit/blaze-api/repository/user/repository"
-	"github.com/geniusrabbit/blaze-api/repository/user/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -30,10 +28,8 @@ type QueryResolver struct {
 }
 
 // NewQueryResolver returns new API resolver
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{
-		users: usecase.NewUserUsecase(repository.NewUserRepository()),
-	}
+func NewQueryResolver(uc user.Usecase) *QueryResolver {
+	return &QueryResolver{users: uc}
 }
 
 // CurrentUser returns the current user info

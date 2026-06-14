@@ -7,8 +7,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
-	"github.com/geniusrabbit/blaze-api/repository/socialaccount/repository"
-	"github.com/geniusrabbit/blaze-api/repository/socialaccount/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -18,12 +16,8 @@ type QueryResolver struct {
 }
 
 // NewQueryResolver creates a new QueryResolver instance.
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{
-		accounts: usecase.NewSocaccUsecase(
-			repository.NewSocaccRepository(),
-		),
-	}
+func NewQueryResolver(uc socialaccount.Usecase) *QueryResolver {
+	return &QueryResolver{accounts: uc}
 }
 
 // Get retrieves a social account by ID.

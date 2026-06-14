@@ -1,10 +1,12 @@
 package directaccesstoken
 
 import (
+	"context"
 	"time"
 
 	"gorm.io/gorm"
 
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 )
@@ -70,6 +72,13 @@ func (ord *ListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 	query = ord.CreatedAt.PrepareQuery(query, "created_at")
 	query = ord.ExpiresAt.PrepareQuery(query, "expires_at")
 	return query
+}
+
+// AdjustPermissions scopes the filter to the current session account.
+// It always overwrites AccountID to ensure results are restricted to the caller's account.
+func (fl *Filter) AdjustPermissions(ctx context.Context) error {
+	fl.AccountID = []uint64{session.Account(ctx).ID}
+	return nil
 }
 
 // Pagination is an alias for repository.Pagination

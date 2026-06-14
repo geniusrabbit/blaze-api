@@ -42,7 +42,7 @@ func (u *Usecase) FetchList(ctx context.Context, opts ...directaccesstoken.QOpti
 		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list access tokens")
 		}
-		opts = injectAccountFilter(opts, acc.ID)
+		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
 	}
 	return u.repo.FetchList(ctx, opts...)
 }
@@ -54,7 +54,7 @@ func (u *Usecase) Count(ctx context.Context, opts ...directaccesstoken.QOption) 
 		if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
 			return 0, errors.Wrap(acl.ErrNoPermissions, "count access tokens")
 		}
-		opts = injectAccountFilter(opts, acc.ID)
+		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
 	}
 	return u.repo.Count(ctx, opts...)
 }
@@ -77,18 +77,7 @@ func (u *Usecase) Revoke(ctx context.Context, opts ...directaccesstoken.QOption)
 		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
 			return errors.Wrap(acl.ErrNoPermissions, "revoke access tokens")
 		}
-		opts = injectAccountFilter(opts, acc.ID)
+		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
 	}
 	return u.repo.Revoke(ctx, opts...)
-}
-
-// injectAccountFilter finds or creates a *Filter in opts and sets its AccountID.
-func injectAccountFilter(opts []directaccesstoken.QOption, accountID uint64) []directaccesstoken.QOption {
-	for _, opt := range opts {
-		if f, ok := opt.(*directaccesstoken.Filter); ok {
-			f.AccountID = []uint64{accountID}
-			return opts
-		}
-	}
-	return append(opts, &directaccesstoken.Filter{AccountID: []uint64{accountID}})
 }

@@ -7,6 +7,7 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/models"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
@@ -25,7 +26,7 @@ func (s *testSuite) SetupSuite() {
 
 func (s *testSuite) TestGet() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(1).
+		WithArgs(uint64(1), 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "title", "description", "created_at"}).
 				AddRow(1, 1, "title1", "description1", time.Now()),
@@ -57,7 +58,7 @@ func (s *testSuite) TestFetchList() {
 				AddRow(2, "role", "title2", "test2", time.Now()),
 		)
 	roles, err := s.roleRepo.FetchList(s.Ctx, &rbac.Filter{
-		ID: []uint64{1, 2}}, nil, nil)
+		ID: []uint64{1, 2}})
 	s.NoError(err)
 	s.Equal(2, len(roles))
 }
@@ -79,7 +80,7 @@ func (s *testSuite) TestCreate() {
 		Name:  "test",
 		Title: "test",
 	}
-	id, err := s.roleRepo.Create(s.Ctx, testRole, "create role")
+	id, err := s.roleRepo.Create(s.Ctx, testRole, historylog.Message("create role"))
 	s.NoError(err)
 	s.Equal(uint64(101), id)
 }
@@ -88,7 +89,7 @@ func (s *testSuite) TestUpdate() {
 	s.Mock.ExpectExec("UPDATE").
 		WithArgs("test", sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
-	err := s.roleRepo.Update(s.Ctx, 101, &models.Role{Title: "test"}, "update role")
+	err := s.roleRepo.Update(s.Ctx, 101, &models.Role{Title: "test"}, historylog.Message("update role"))
 	s.NoError(err)
 }
 
@@ -96,7 +97,7 @@ func (s *testSuite) TestDelete() {
 	s.Mock.ExpectExec("UPDATE").
 		WithArgs(sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
-	err := s.roleRepo.Delete(s.Ctx, 101, "delete role")
+	err := s.roleRepo.Delete(s.Ctx, 101, historylog.Message("delete role"))
 	s.NoError(err)
 }
 

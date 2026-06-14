@@ -18,11 +18,11 @@ type Usecase interface {
 	Count(ctx context.Context, opts ...QOption) (int64, error)
 
 	// Create adds a new AuthClient and records the change message.
-	Create(ctx context.Context, authClient *AuthClient, message string) (string, error)
+	Create(ctx context.Context, authClient *AuthClient, opts ...QOption) (string, error)
 
 	// Update modifies an existing AuthClient by ID with a change message.
-	Update(ctx context.Context, id string, authClient *AuthClient, message string) error
+	Update(ctx context.Context, id string, authClient *AuthClient, opts ...QOption) error
 
 	// Delete removes an AuthClient by ID with a change message.
-	Delete(ctx context.Context, id, message string) error
+	Delete(ctx context.Context, id string, opts ...QOption) error
 }

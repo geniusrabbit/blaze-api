@@ -1,12 +1,24 @@
 package account
 
 import (
+	"context"
+	"errors"
+
 	"github.com/guregu/null"
 	"gorm.io/gorm"
 
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
+	accountCtx "github.com/geniusrabbit/blaze-api/repository/account/context"
 	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
+	userCtx "github.com/geniusrabbit/blaze-api/repository/user/context"
+)
+
+// Sentinel errors returned by AdjustPermissions.
+// Callers in the usecase layer wrap these with acl.ErrNoPermissions.
+var (
+	errListFilterTooWide   = errors.New("list account (too wide filter)")
+	errMemberFilterTooWide = errors.New("member account for that account")
 )
 
 // Filter of the objects list
@@ -35,6 +47,20 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 		query = query.Where(`approve_status IN (?)`, fl.Status)
 	}
 	return query
+}
+
+// AdjustPermissions narrows the filter to the current user's accounts.
+// Cannot import pkg/acl or pkg/context/session due to an import cycle;
+// uses the lower-level context sub-packages instead.
+func (fl *Filter) AdjustPermissions(ctx context.Context) error {
+	usr := userCtx.SessionUser(ctx)
+	if len(fl.UserID) == 0 {
+		fl.UserID = []uint64{usr.ID}
+	}
+	if len(fl.UserID) != 1 || fl.UserID[0] != usr.ID {
+		return errListFilterTooWide
+	}
+	return nil
 }
 
 // ListOrder of the objects list
@@ -91,6 +117,18 @@ func (fl *MemberFilter) PrepareQuery(query *gorm.DB) *gorm.DB {
 		query = query.Where(`is_admin = ?`, fl.IsAdmin.Bool)
 	}
 	return query
+}
+
+// AdjustPermissions narrows the member filter to the current session account.
+// Cannot import pkg/acl or pkg/context/session due to an import cycle;
+// uses the lower-level context sub-packages instead.
+func (fl *MemberFilter) AdjustPermissions(ctx context.Context) error {
+	accID := accountCtx.SessionAccount(ctx).ID
+	if l := len(fl.AccountID); l > 1 || (l == 1 && fl.AccountID[0] != accID) {
+		return errMemberFilterTooWide
+	}
+	fl.AccountID = []uint64{accID}
+	return nil
 }
 
 // MemberListOrder of the objects list

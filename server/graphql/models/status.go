@@ -2,28 +2,6 @@ package models
 
 import pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 
-// // StatusFrom model value
-// func StatusFrom(status model.ActiveStatus) ActiveStatus {
-// 	switch status {
-// 	case model.ActiveStatus:
-// 		return ActiveStatusActive
-// 	case model.PausedStatus:
-// 		return ActiveStatusPaused
-// 	}
-// 	return ActiveStatusPaused
-// }
-
-// // Value model status
-// func (status ActiveStatus) Value() model.Status {
-// 	switch status {
-// 	case ActiveStatusActive:
-// 		return model.ActiveStatus
-// 	case ActiveStatusPaused:
-// 		return model.PausedStatus
-// 	}
-// 	return model.PausedStatus
-// }
-
 // ModelStatus returns status type from models
 func (status *ApproveStatus) ModelStatus() pkgModels.ApproveStatus {
 	if status == nil {

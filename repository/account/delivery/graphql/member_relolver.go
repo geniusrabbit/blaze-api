@@ -6,9 +6,6 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/account"
-	"github.com/geniusrabbit/blaze-api/repository/account/repository"
-	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
-	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -17,21 +14,10 @@ type MemberQueryResolver struct {
 	members  account.MemberUsecase
 }
 
-func NewMemberQueryResolver() *MemberQueryResolver {
-	userRepo := userrepo.NewUserRepository()
-	accountRepo := repository.NewAccountRepository()
-	memberRepo := repository.NewMemberRepository()
+func NewMemberQueryResolver(accounts account.Usecase, members account.MemberUsecase) *MemberQueryResolver {
 	return &MemberQueryResolver{
-		accounts: usecase.NewAccountUsecase(
-			userRepo,
-			accountRepo,
-			memberRepo,
-		),
-		members: usecase.NewMemberUsecase(
-			userRepo,
-			accountRepo,
-			memberRepo,
-		),
+		accounts: accounts,
+		members:  members,
 	}
 }
 

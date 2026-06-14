@@ -10,15 +10,13 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/messanger"
-	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
+	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/account"
-	"github.com/geniusrabbit/blaze-api/repository/account/repository"
-	"github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 	usergql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
 	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
-	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -28,28 +26,17 @@ var (
 
 // QueryResolver implements GQL API methods
 type QueryResolver struct {
-	userRepo *userrepo.Repository
+	userRepo user.Repository
 	accounts account.Usecase
 	members  account.MemberUsecase
 }
 
 // NewQueryResolver returns new API resolver
-func NewQueryResolver() *QueryResolver {
-	userRepo := userrepo.NewUserRepository()
-	accountRepo := repository.NewAccountRepository()
-	memberRepo := repository.NewMemberRepository()
+func NewQueryResolver(accounts account.Usecase, members account.MemberUsecase, userRepo user.Repository) *QueryResolver {
 	return &QueryResolver{
 		userRepo: userRepo,
-		accounts: usecase.NewAccountUsecase(
-			userRepo,
-			accountRepo,
-			memberRepo,
-		),
-		members: usecase.NewMemberUsecase(
-			userRepo,
-			accountRepo,
-			memberRepo,
-		),
+		accounts: accounts,
+		members:  members,
 	}
 }
 
@@ -95,7 +82,7 @@ func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.Ac
 		if userObj != nil {
 			userObj.ID = *input.OwnerID
 		} else {
-				userObj = &userModels.User{ID: *input.OwnerID}
+			userObj = &userModels.User{ID: *input.OwnerID}
 		}
 	}
 

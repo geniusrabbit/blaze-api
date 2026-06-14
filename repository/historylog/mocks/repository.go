@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	historylog "github.com/geniusrabbit/blaze-api/repository/historylog"
-	historylogModels "github.com/geniusrabbit/blaze-api/repository/historylog/models"
+	models "github.com/geniusrabbit/blaze-api/repository/historylog/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -63,14 +63,14 @@ func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
 }
 
 // FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, opts ...historylog.QOption) ([]*historylogModels.HistoryAction, error) {
+func (m *MockRepository) FetchList(ctx context.Context, opts ...historylog.QOption) ([]*models.HistoryAction, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchList", varargs...)
-	ret0, _ := ret[0].([]*historylogModels.HistoryAction)
+	ret0, _ := ret[0].([]*models.HistoryAction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

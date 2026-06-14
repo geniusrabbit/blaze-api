@@ -63,32 +63,42 @@ func (mr *MockRepositoryMockRecorder) Count(ctx any, qops ...any) *gomock.Call {
 }
 
 // Create mocks base method.
-func (m *MockRepository) Create(ctx context.Context, obj *rbac.Role, message string) (uint64, error) {
+func (m *MockRepository) Create(ctx context.Context, obj *rbac.Role, opts ...generated.Option) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, obj, message)
+	varargs := []any{ctx, obj}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Create", varargs...)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockRepositoryMockRecorder) Create(ctx, obj, message any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Create(ctx, obj any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), ctx, obj, message)
+	varargs := append([]any{ctx, obj}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), varargs...)
 }
 
 // Delete mocks base method.
-func (m *MockRepository) Delete(ctx context.Context, id uint64, message string) error {
+func (m *MockRepository) Delete(ctx context.Context, id uint64, opts ...generated.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, id, message)
+	varargs := []any{ctx, id}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockRepositoryMockRecorder) Delete(ctx, id, message any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Delete(ctx, id any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), ctx, id, message)
+	varargs := append([]any{ctx, id}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), varargs...)
 }
 
 // FetchList mocks base method.
@@ -147,15 +157,20 @@ func (mr *MockRepositoryMockRecorder) GetByName(ctx, name any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockRepository) Update(ctx context.Context, id uint64, obj *rbac.Role, message string) error {
+func (m *MockRepository) Update(ctx context.Context, id uint64, obj *rbac.Role, opts ...generated.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, obj, message)
+	varargs := []any{ctx, id, obj}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Update", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockRepositoryMockRecorder) Update(ctx, id, obj, message any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Update(ctx, id, obj any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), ctx, id, obj, message)
+	varargs := append([]any{ctx, id, obj}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), varargs...)
 }

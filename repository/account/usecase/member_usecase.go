@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
-	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/user"
@@ -31,8 +30,8 @@ func NewMemberUsecase(userRepo user.Repository, accountRepo account.Repository, 
 // FetchListMembers returns the list of members from account
 func (a *MemberUsecase) FetchListMembers(ctx context.Context, opts ...account.QOption) (_ []*account.AccountMember, err error) {
 	if !acl.HaveAccessList(ctx, &accountModels.AccountMember{}) {
-		if opts, err = adjustMemberListFilterOpts(ctx, "list", opts); err != nil {
-			return nil, err
+		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.MemberFilter{}); err != nil {
+			return nil, errors.Wrap(acl.ErrNoPermissions, err.Error())
 		}
 	}
 	return a.memberRepo.FetchListMembers(ctx, opts...)
@@ -41,8 +40,8 @@ func (a *MemberUsecase) FetchListMembers(ctx context.Context, opts ...account.QO
 // CountMembers returns the count of members from account
 func (a *MemberUsecase) CountMembers(ctx context.Context, opts ...account.QOption) (_ int64, err error) {
 	if !acl.HaveAccessCount(ctx, &accountModels.AccountMember{}) {
-		if opts, err = adjustMemberListFilterOpts(ctx, "count", opts); err != nil {
-			return 0, err
+		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.MemberFilter{}); err != nil {
+			return 0, errors.Wrap(acl.ErrNoPermissions, err.Error())
 		}
 	}
 	return a.memberRepo.CountMembers(ctx, opts...)
@@ -139,18 +138,4 @@ func (a *MemberUsecase) SetMemberRoles(ctx context.Context, memberID uint64, rol
 		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
 	}
 	return memeber, a.memberRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
-}
-
-func adjustMemberListFilterOpts(ctx context.Context, action string, opts []account.QOption) ([]account.QOption, error) {
-	accID := session.Account(ctx).ID
-	for _, opt := range opts {
-		if f, ok := opt.(*account.MemberFilter); ok {
-			if l := len(f.AccountID); l > 1 || (l == 1 && f.AccountID[0] != accID) {
-				return nil, errors.Wrap(acl.ErrNoPermissions, action+" member account for that account")
-			}
-			f.AccountID = []uint64{accID}
-			return opts, nil
-		}
-	}
-	return append(opts, &account.MemberFilter{AccountID: []uint64{accID}}), nil
 }

@@ -10,7 +10,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/mocks"
 	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
@@ -90,9 +89,7 @@ func (s *userTestSuite) TestGetByPassword() {
 
 func (s *userTestSuite) TestFetchList() {
 	s.userRepo.EXPECT().
-		FetchList(s.ctx, &user.ListFilter{},
-			gomock.AssignableToTypeOf(&user.ListOrder{}),
-			gomock.AssignableToTypeOf(&repository.Pagination{})).
+		FetchList(s.ctx, &user.ListFilter{}, nil, nil).
 		Return([]*userModels.User{{ID: 1}, {ID: 2}}, nil)
 
 	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{}, nil, nil)
@@ -112,9 +109,7 @@ func (s *userTestSuite) TestCount() {
 
 func (s *userTestSuite) TestFetchList_CurrentUser() {
 	s.userRepo.EXPECT().
-		FetchList(s.ctx, &user.ListFilter{},
-			gomock.AssignableToTypeOf(&user.ListOrder{}),
-			gomock.AssignableToTypeOf(&repository.Pagination{})).
+		FetchList(s.ctx, &user.ListFilter{}, nil, nil).
 		Return([]*userModels.User{{ID: 1}, {ID: 2}}, nil)
 
 	users, err := s.userUsecase.FetchList(s.ctx, &user.ListFilter{}, nil, nil)

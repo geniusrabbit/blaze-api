@@ -45,10 +45,6 @@ cover:
 	@echo Open the coverage report:
 	@echo open $(TMP_ETC)/coverage.html
 
-.PHONY: __eval_srcs
-__eval_srcs:
-	$(eval SRCS := $(shell find . -not -path 'bazel-*' -not -path '.tmp*' -name '*.go'))
-
 .PHONY: generate-code
 generate-code: ## Run codegeneration procedure
 	@echo "Generate code"

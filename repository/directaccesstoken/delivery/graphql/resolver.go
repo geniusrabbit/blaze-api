@@ -10,20 +10,19 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
+	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken"
 	datModels "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
-	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/repository"
-	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/usecase"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // QueryResolver handles GraphQL queries for direct access tokens.
 type QueryResolver struct {
-	uc *usecase.Usecase
+	uc directaccesstoken.Usecase
 }
 
 // NewQueryResolver creates a new QueryResolver instance.
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{uc: usecase.New(repository.NewDirectAccessTokenRepository())}
+func NewQueryResolver(uc directaccesstoken.Usecase) *QueryResolver {
+	return &QueryResolver{uc: uc}
 }
 
 // Generate creates a new direct access token with the specified parameters.

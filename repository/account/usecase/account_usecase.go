@@ -48,14 +48,14 @@ func (a *AccountUsecase) Get(ctx context.Context, id uint64) (*account.Account, 
 
 // FetchList of accounts by filter
 func (a *AccountUsecase) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
-	var err error
 	if !acl.HaveAccessList(ctx, session.Account(ctx)) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
 	// If not `system` access then filter by current user
 	if !acl.HaveAccessList(ctx, &account.Account{}) {
-		if opts, err = adjustListFilterOpts(ctx, opts); err != nil {
-			return nil, err
+		var err error
+		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.Filter{}); err != nil {
+			return nil, errors.Wrap(acl.ErrNoPermissions, err.Error())
 		}
 	}
 	return a.accountRepo.FetchList(ctx, opts...)
@@ -63,14 +63,14 @@ func (a *AccountUsecase) FetchList(ctx context.Context, opts ...account.QOption)
 
 // Count of accounts by filter
 func (a *AccountUsecase) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
-	var err error
 	if !acl.HaveAccessCount(ctx, session.Account(ctx)) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
 	// If not `system` access then filter by current user
 	if !acl.HaveAccessCount(ctx, &account.Account{}) {
-		if opts, err = adjustListFilterOpts(ctx, opts); err != nil {
-			return 0, err
+		var err error
+		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.Filter{}); err != nil {
+			return 0, errors.Wrap(acl.ErrNoPermissions, err.Error())
 		}
 	}
 	return a.accountRepo.Count(ctx, opts...)
@@ -144,20 +144,4 @@ func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
 		return errors.Wrap(acl.ErrNoPermissions, "delete account")
 	}
 	return a.accountRepo.Delete(historylog.WithPK(ctx, id), id)
-}
-
-func adjustListFilterOpts(ctx context.Context, opts []account.QOption) ([]account.QOption, error) {
-	usr := session.User(ctx)
-	for _, opt := range opts {
-		if f, ok := opt.(*account.Filter); ok {
-			if len(f.UserID) == 0 {
-				f.UserID = []uint64{usr.ID}
-			}
-			if len(f.UserID) != 1 || f.UserID[0] != usr.ID {
-				return nil, errors.Wrap(acl.ErrNoPermissions, "list account (too wide filter)")
-			}
-			return opts, nil
-		}
-	}
-	return append(opts, &account.Filter{UserID: []uint64{usr.ID}}), nil
 }

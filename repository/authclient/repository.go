@@ -19,11 +19,11 @@ type Repository interface {
 	Count(ctx context.Context, opts ...QOption) (int64, error)
 
 	// Create adds a new AuthClient and returns its ID.
-	Create(ctx context.Context, authClient *AuthClient, message string) (string, error)
+	Create(ctx context.Context, authClient *AuthClient, opts ...QOption) (string, error)
 
 	// Update modifies an existing AuthClient by ID.
-	Update(ctx context.Context, id string, authClient *AuthClient, message string) error
+	Update(ctx context.Context, id string, authClient *AuthClient, opts ...QOption) error
 
 	// Delete removes an AuthClient by ID.
-	Delete(ctx context.Context, id, message string) error
+	Delete(ctx context.Context, id string, opts ...QOption) error
 }

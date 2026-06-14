@@ -13,10 +13,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
-	rbacGen "github.com/geniusrabbit/blaze-api/repository/rbac"
-	"github.com/geniusrabbit/blaze-api/repository/rbac/repository"
-	"github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -27,14 +25,12 @@ var (
 
 // QueryResolver implements GQL API methods
 type QueryResolver struct {
-	roles rbacGen.Usecase
+	roles rbac.Usecase
 }
 
 // NewQueryResolver returns new API resolver
-func NewQueryResolver() *QueryResolver {
-	return &QueryResolver{
-		roles: usecase.New(repository.New()),
-	}
+func NewQueryResolver(uc rbac.Usecase) *QueryResolver {
+	return &QueryResolver{roles: uc}
 }
 
 // Role is the resolver for the Role field.
@@ -123,7 +119,7 @@ func (r *QueryResolver) CreateRole(ctx context.Context, input *gqlmodels.RBACRol
 			return nil, err
 		}
 	}
-	id, err := r.roles.Create(ctx, roleObj, "")
+	id, err := r.roles.Create(ctx, roleObj)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +148,7 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 			return nil, err
 		}
 	}
-	if err := r.roles.Update(ctx, id, role, ""); err != nil {
+	if err := r.roles.Update(ctx, id, role); err != nil {
 		return nil, err
 	}
 	return &gqlmodels.RBACRolePayload{
@@ -164,7 +160,7 @@ func (r *QueryResolver) UpdateRole(ctx context.Context, id uint64, input *gqlmod
 
 // DeleteRole is the resolver for the deleteRole field.
 func (r *QueryResolver) DeleteRole(ctx context.Context, id uint64, msg *string) (*gqlmodels.RBACRolePayload, error) {
-	err := r.roles.Delete(ctx, id, gocast.PtrAsValue(msg, ""))
+	err := r.roles.Delete(ctx, id, historylog.Message(gocast.PtrAsValue(msg, "")))
 	if err != nil {
 		return nil, err
 	}

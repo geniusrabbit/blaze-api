@@ -15,12 +15,10 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
-	accountrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
-	accountusecase "github.com/geniusrabbit/blaze-api/repository/account/usecase"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
-	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -33,26 +31,20 @@ var (
 // AuthResolver is the resolver for the Auth type
 type AuthResolver struct {
 	provider       *jwt.Provider
-	userRepo       *userrepo.Repository
-	accountRepo    *accountrepo.Repository
+	userRepo       user.Repository
+	accountRepo    account.Repository
 	accountUsecase account.Usecase
 	roleRepo       rbac.Repository
 }
 
 // NewAuthResolver creates new resolver for the Auth type
-func NewAuthResolver(provider *jwt.Provider, roleRepo rbac.Repository) *AuthResolver {
-	userRepo := userrepo.NewUserRepository()
-	accountRepo := accountrepo.NewAccountRepository()
+func NewAuthResolver(provider *jwt.Provider, userRepo user.Repository, accountRepo account.Repository, accountUsecase account.Usecase, roleRepo rbac.Repository) *AuthResolver {
 	return &AuthResolver{
-		provider:    provider,
-		userRepo:    userRepo,
-		accountRepo: accountRepo,
-		roleRepo:    roleRepo,
-		accountUsecase: accountusecase.NewAccountUsecase(
-			userRepo,
-			accountRepo,
-			accountrepo.NewMemberRepository(),
-		),
+		provider:       provider,
+		userRepo:       userRepo,
+		accountRepo:    accountRepo,
+		accountUsecase: accountUsecase,
+		roleRepo:       roleRepo,
 	}
 }
 

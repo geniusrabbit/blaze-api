@@ -61,17 +61,17 @@ func (u *Usecase[T, TID]) Count(ctx context.Context, qops ...Option) (int64, err
 
 // Create creates a new entity with ACL permission check.
 // Returns the ID of the created entity if successful.
-func (u *Usecase[T, TID]) Create(ctx context.Context, obj *T, message string) (id TID, err error) {
+func (u *Usecase[T, TID]) Create(ctx context.Context, obj *T, opts ...Option) (id TID, err error) {
 	// Check if user has create permissions for this entity
 	if !acl.HaveAccessCreate(ctx, obj) {
 		return id, acl.ErrNoPermissions.WithMessage("create")
 	}
-	return u.Repo.Create(ctx, obj, message)
+	return u.Repo.Create(ctx, obj, opts...)
 }
 
 // Update modifies an existing entity with ACL permission check.
 // Fetches the existing entity first to verify update permissions.
-func (u *Usecase[T, TID]) Update(ctx context.Context, id TID, obj *T, message string) error {
+func (u *Usecase[T, TID]) Update(ctx context.Context, id TID, obj *T, opts ...Option) error {
 	// Fetch existing entity to check permissions
 	existingObj, err := u.Repo.Get(ctx, id)
 	if err != nil {
@@ -82,12 +82,12 @@ func (u *Usecase[T, TID]) Update(ctx context.Context, id TID, obj *T, message st
 	if !acl.HaveAccessUpdate(ctx, existingObj) {
 		return acl.ErrNoPermissions.WithMessage("update")
 	}
-	return u.Repo.Update(ctx, id, obj, message)
+	return u.Repo.Update(ctx, id, obj, opts...)
 }
 
 // Delete removes an entity with ACL permission check.
 // Fetches the existing entity first to verify delete permissions.
-func (u *Usecase[T, TID]) Delete(ctx context.Context, id TID, message string) error {
+func (u *Usecase[T, TID]) Delete(ctx context.Context, id TID, opts ...Option) error {
 	// Fetch existing entity to check permissions
 	existingObj, err := u.Repo.Get(ctx, id)
 	if err != nil {
@@ -98,5 +98,5 @@ func (u *Usecase[T, TID]) Delete(ctx context.Context, id TID, message string) er
 	if !acl.HaveAccessDelete(ctx, existingObj) {
 		return acl.ErrNoPermissions.WithMessage("delete")
 	}
-	return u.Repo.Delete(ctx, id, message)
+	return u.Repo.Delete(ctx, id, opts...)
 }
