@@ -85,3 +85,23 @@ func (m *AuthClient) OwnerAccountID() uint64 {
 func (m *AuthClient) RBACResourceName() string {
 	return `auth_client`
 }
+
+// GetID returns the client ID
+func (m *AuthClient) GetID() string {
+	return m.ID
+}
+
+// SetID sets the client ID
+func (m *AuthClient) SetID(id string) {
+	m.ID = id
+}
+
+// SetCreatedAt sets the created_at field
+func (m *AuthClient) SetCreatedAt(t time.Time) {
+	m.CreatedAt = t
+}
+
+// SetUpdatedAt sets the updated_at field
+func (m *AuthClient) SetUpdatedAt(t time.Time) {
+	m.UpdatedAt = t
+}

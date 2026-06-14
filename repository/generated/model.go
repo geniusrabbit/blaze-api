@@ -72,7 +72,7 @@ func setModelID[TID any](obj any, id TID) {
 	}
 	// Reflection fallback: set the "ID" field directly.
 	rv := reflect.ValueOf(obj)
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		rv = rv.Elem()
 	}
 	if rv.Kind() == reflect.Struct {

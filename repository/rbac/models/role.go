@@ -74,3 +74,18 @@ func (role *Role) ContextItemString(name string) string {
 func (role *Role) SetUpdatedAt(t time.Time) {
 	role.UpdatedAt = t
 }
+
+// GetID returns the role ID
+func (role *Role) GetID() uint64 {
+	return role.ID
+}
+
+// SetID sets the role ID
+func (role *Role) SetID(id uint64) {
+	role.ID = id
+}
+
+// SetCreatedAt sets the created_at field
+func (role *Role) SetCreatedAt(t time.Time) {
+	role.CreatedAt = t
+}
