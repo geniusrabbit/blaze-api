@@ -54,9 +54,10 @@ func (c *Cache) TrySet(ctx context.Context, key string, value any, lifetime time
 // Get cached item
 func (c *Cache) Get(ctx context.Context, key string, target any) error {
 	data, err := c.big.Get(key)
-	if err == nil {
+	switch err {
+	case nil:
 		return json.Unmarshal(data, target)
-	} else if err == bigcache.ErrEntryNotFound {
+	case bigcache.ErrEntryNotFound:
 		err = cache.ErrEntryNotFound
 	}
 	return err

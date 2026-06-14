@@ -19,7 +19,6 @@ import (
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -73,7 +72,7 @@ func (r *AuthResolver) Login(ctx context.Context, login string, password string)
 	if r, ok := account.Permissions.(lrbac.Role); ok {
 		roles = append(roles, r)
 	}
-	return &models.SessionToken{
+	return &gqlmodels.SessionToken{
 		Token:     token,
 		ExpiresAt: expiresAt.UTC(),
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
@@ -107,7 +106,7 @@ func (r *AuthResolver) SwitchAccount(ctx context.Context, id uint64) (*gqlmodels
 	if r, ok := account.Permissions.(lrbac.Role); ok {
 		roles = append(roles, r)
 	}
-	return &models.SessionToken{
+	return &gqlmodels.SessionToken{
 		Token:     token,
 		ExpiresAt: expiresAt,
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
@@ -122,7 +121,7 @@ func (r *AuthResolver) CurrentSession(ctx context.Context) (*gqlmodels.SessionTo
 	if r, ok := account.Permissions.(lrbac.Role); ok {
 		roles = append(roles, r)
 	}
-	return &models.SessionToken{
+	return &gqlmodels.SessionToken{
 		Token:     token,
 		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
 		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin

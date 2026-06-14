@@ -15,7 +15,7 @@ func urlSetQueryParams(sUrl string, params map[string]string) string {
 	// Replace pattern params in URL by patter `{paramName}`
 	for k, v := range params {
 		if strings.Contains(sUrl, `{`+k+`}`) {
-			sUrl = strings.Replace(sUrl, `{`+k+`}`, v, -1)
+			sUrl = strings.ReplaceAll(sUrl, `{`+k+`}`, v)
 			setted[k] = true
 		}
 	}

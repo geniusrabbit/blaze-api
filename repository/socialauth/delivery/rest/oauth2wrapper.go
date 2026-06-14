@@ -23,10 +23,10 @@ import (
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
+	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/usecase"
-	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
@@ -164,7 +164,7 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 		Provider:        []string{wr.Provider()},
 		RetrieveDeleted: true,
 	})
-	if err != nil && !(errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows)) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && !errors.Is(err, sql.ErrNoRows) {
 		wr.Error(w, r, err)
 		return
 	}
