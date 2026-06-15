@@ -71,11 +71,11 @@ func collectConfigFields(t reflect.Type, envPrefix string) []fieldDesc {
 // printCommandUsage prints command name, description, and an aligned options table
 // derived by reflecting over the zero value of T.
 func printCommandUsage[T any](w io.Writer, name, helpDesc string) {
-	fmt.Fprintf(w, "Command: %s\n", name)
+	_, _ = fmt.Fprintf(w, "Command: %s\n", name)
 	if helpDesc != "" {
-		fmt.Fprintf(w, "  %s\n", helpDesc)
+		_, _ = fmt.Fprintf(w, "  %s\n", helpDesc)
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 
 	var zero T
 	fields := collectConfigFields(reflect.TypeOf(zero), "")
@@ -100,9 +100,9 @@ func printCommandUsage[T any](w io.Writer, name, helpDesc string) {
 	}
 
 	sep := strings.Repeat("─", nameW+flagW+envW+14)
-	fmt.Fprintf(w, "Options:\n")
-	fmt.Fprintf(w, "  %-*s  %-*s  %-*s  %s\n", nameW, "Name", flagW, "Flag", envW, "Env", "Default")
-	fmt.Fprintf(w, "  %s\n", sep)
+	_, _ = fmt.Fprintf(w, "Options:\n")
+	_, _ = fmt.Fprintf(w, "  %-*s  %-*s  %-*s  %s\n", nameW, "Name", flagW, "Flag", envW, "Env", "Default")
+	_, _ = fmt.Fprintf(w, "  %s\n", sep)
 
 	for _, f := range fields {
 		flag := ""
@@ -113,12 +113,12 @@ func printCommandUsage[T any](w io.Writer, name, helpDesc string) {
 		if f.Default != "" {
 			def = `"` + f.Default + `"`
 		}
-		fmt.Fprintf(w, "  %-*s  %-*s  %-*s  %s\n",
+		_, _ = fmt.Fprintf(w, "  %-*s  %-*s  %-*s  %s\n",
 			nameW, f.Name,
 			flagW, flag,
 			envW, f.EnvVar,
 			def,
 		)
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 }

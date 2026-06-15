@@ -36,7 +36,7 @@ func (app *App) Run(ctx context.Context, args []string) error {
 
 	switch cmdName {
 	case "--version", "-v":
-		fmt.Fprintf(os.Stdout, "%s version %s (commit: %s, built: %s)\n",
+		_, _ = fmt.Fprintf(os.Stdout, "%s version %s (commit: %s, built: %s)\n",
 			app.Name, app.Version, app.BuildCommit, app.BuildDate)
 		return nil
 
@@ -53,10 +53,10 @@ func (app *App) Run(ctx context.Context, args []string) error {
 					return nil
 				}
 				// Command found but doesn't implement HelpProvider — show generic line.
-				fmt.Fprintf(os.Stdout, "Command: %s\n  %s\n\n", target.Cmd(), target.Help())
+				_, _ = fmt.Fprintf(os.Stdout, "Command: %s\n  %s\n\n", target.Cmd(), target.Help())
 				return nil
 			}
-			fmt.Fprintf(os.Stderr, "unknown command: %q\n\n", args[2])
+			_, _ = fmt.Fprintf(os.Stderr, "unknown command: %q\n\n", args[2])
 		}
 		app.PrintUsage(os.Stdout)
 		return nil
@@ -64,7 +64,7 @@ func (app *App) Run(ctx context.Context, args []string) error {
 
 	icmd := app.CmdList.Get(cmdName)
 	if icmd == nil {
-		fmt.Fprintf(os.Stderr, "unknown command: %q\n\n", cmdName)
+		_, _ = fmt.Fprintf(os.Stderr, "unknown command: %q\n\n", cmdName)
 		app.PrintUsage(os.Stdout)
 		return nil
 	}
@@ -82,24 +82,24 @@ func (app *App) Run(ctx context.Context, args []string) error {
 
 // PrintUsage writes the full application usage to w.
 func (app *App) PrintUsage(w io.Writer) {
-	fmt.Fprintf(w, "Usage: %s <command> [options]\n", app.Name)
-	fmt.Fprintf(w, "Version:      %s\n", app.Version)
-	fmt.Fprintf(w, "Build date:   %s\n", app.BuildDate)
-	fmt.Fprintf(w, "Build commit: %s\n", app.BuildCommit)
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintf(w, "Usage: %s <command> [options]\n", app.Name)
+	_, _ = fmt.Fprintf(w, "Version:      %s\n", app.Version)
+	_, _ = fmt.Fprintf(w, "Build date:   %s\n", app.BuildDate)
+	_, _ = fmt.Fprintf(w, "Build commit: %s\n", app.BuildCommit)
+	_, _ = fmt.Fprintln(w)
 	if app.Description != "" {
-		fmt.Fprintf(w, "%s\n\n", app.Description)
+		_, _ = fmt.Fprintf(w, "%s\n\n", app.Description)
 	}
 
-	fmt.Fprintf(w, "Commands:\n")
+	_, _ = fmt.Fprintf(w, "Commands:\n")
 	for _, cmd := range app.CmdList {
-		fmt.Fprintf(w, "  %-14s  %s\n", cmd.Cmd(), cmd.Help())
+		_, _ = fmt.Fprintf(w, "  %-14s  %s\n", cmd.Cmd(), cmd.Help())
 	}
-	fmt.Fprintf(w, "  %-14s  %s\n", "help", "print this help, or 'help <command>' for full option listing")
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintf(w, "  %-14s  %s\n", "help", "print this help, or 'help <command>' for full option listing")
+	_, _ = fmt.Fprintln(w)
 
-	fmt.Fprintf(w, "Flags:\n")
-	fmt.Fprintf(w, "  --version, -v   print version information\n")
-	fmt.Fprintf(w, "  --help, -h      print help\n")
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintf(w, "Flags:\n")
+	_, _ = fmt.Fprintf(w, "  --version, -v   print version information\n")
+	_, _ = fmt.Fprintf(w, "  --help, -h      print help\n")
+	_, _ = fmt.Fprintln(w)
 }
