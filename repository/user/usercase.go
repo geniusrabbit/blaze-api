@@ -19,6 +19,7 @@ type Usecase interface {
 	Delete(ctx context.Context, id uint64) error
 
 	SetPassword(ctx context.Context, user *User, password string) error
+	ChangePassword(ctx context.Context, currentPassword, newPassword string) error
 	ResetPassword(ctx context.Context, email string) (*UserPasswordReset, *User, error)
 	UpdatePassword(ctx context.Context, token, email, password string) error
 }

@@ -215,4 +215,12 @@ extend type Mutation {
     email: String!
     password: String!
   ): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
+
+  """
+  Change password for the current session user (requires current password)
+  """
+  changeUserPassword(
+    currentPassword: String!
+    newPassword: String!
+  ): StatusResponse! @hasPermissions(permissions: ["user.password.set.*"])
 }

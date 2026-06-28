@@ -42,6 +42,11 @@ func (r *mutationResolver) UpdateUserPassword(ctx context.Context, token string,
 	return r.users.UpdateResetedUserPassword(ctx, token, email, password)
 }
 
+// ChangeUserPassword is the resolver for the changeUserPassword field.
+func (r *mutationResolver) ChangeUserPassword(ctx context.Context, currentPassword string, newPassword string) (*models.StatusResponse, error) {
+	return r.users.ChangeUserPassword(ctx, currentPassword, newPassword)
+}
+
 // CurrentUser is the resolver for the currentUser field.
 func (r *queryResolver) CurrentUser(ctx context.Context) (*models.UserPayload, error) {
 	return r.users.CurrentUser(ctx)

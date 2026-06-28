@@ -13,6 +13,6 @@ ENV SERVER_PROFILE_MODE=net
 ENV SERVER_PROFILE_LISTEN=8082
 
 COPY example/api/.build/${TARGETPLATFORM}/api /api
-COPY ./migrations /data/migrations
+COPY ./deploy/migrations /data/migrations
 
 ENTRYPOINT [ "/api" ]

@@ -15,6 +15,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
+	userusecase "github.com/geniusrabbit/blaze-api/repository/user/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -189,6 +190,26 @@ func (r *QueryResolver) UpdateResetedUserPassword(ctx context.Context, token, em
 		ClientMutationID: requestid.Get(ctx),
 		Status:           gqlmodels.ResponseStatusSuccess,
 		Message:          &[]string{"Password updated"}[0],
+	}, nil
+}
+
+// ChangeUserPassword is the resolver for the changeUserPassword field.
+func (r *QueryResolver) ChangeUserPassword(ctx context.Context, currentPassword, newPassword string) (*gqlmodels.StatusResponse, error) {
+	err := r.users.ChangePassword(ctx, currentPassword, newPassword)
+	if err != nil {
+		switch {
+		case errors.Is(err, userusecase.ErrInvalidCurrentPassword):
+			return nil, userusecase.ErrInvalidCurrentPassword
+		case errors.Is(err, userusecase.ErrPasswordTooShort):
+			return nil, userusecase.ErrPasswordTooShort
+		default:
+			return nil, err
+		}
+	}
+	return &gqlmodels.StatusResponse{
+		ClientMutationID: requestid.Get(ctx),
+		Status:           gqlmodels.ResponseStatusSuccess,
+		Message:          &[]string{"Password changed successfully"}[0],
 	}, nil
 }
 

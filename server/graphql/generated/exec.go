@@ -219,6 +219,7 @@ type ComplexityRoot struct {
 		ApproveAccount            func(childComplexity int, id uint64, msg string) int
 		ApproveAccountMember      func(childComplexity int, memberID uint64, msg string) int
 		ApproveUser               func(childComplexity int, id uint64, msg *string) int
+		ChangeUserPassword        func(childComplexity int, currentPassword string, newPassword string) int
 		CreateAuthClient          func(childComplexity int, input models.AuthClientCreateInput) int
 		CreateRole                func(childComplexity int, input models.RBACRoleInput) int
 		CreateUser                func(childComplexity int, input models.UserInput) int
@@ -492,6 +493,7 @@ type MutationResolver interface {
 	RejectUser(ctx context.Context, id uint64, msg *string) (*models.UserPayload, error)
 	ResetUserPassword(ctx context.Context, email string) (*models.StatusResponse, error)
 	UpdateUserPassword(ctx context.Context, token string, email string, password string) (*models.StatusResponse, error)
+	ChangeUserPassword(ctx context.Context, currentPassword string, newPassword string) (*models.StatusResponse, error)
 }
 type QueryResolver interface {
 	ServiceVersion(ctx context.Context) (string, error)
@@ -1211,6 +1213,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ApproveUser(childComplexity, args["id"].(uint64), args["msg"].(*string)), true
+	case "Mutation.changeUserPassword":
+		if e.ComplexityRoot.Mutation.ChangeUserPassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_changeUserPassword_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ChangeUserPassword(childComplexity, args["currentPassword"].(string), args["newPassword"].(string)), true
 	case "Mutation.createAuthClient":
 		if e.ComplexityRoot.Mutation.CreateAuthClient == nil {
 			break
@@ -3217,12 +3230,12 @@ extend type Query {
     """
     The filter to apply to the list
     """
-    filter: MemberListFilter = null,
+    filter: MemberListFilter = null
 
     """
     The order to apply to the list
     """
-    order: [MemberListOrder!] = null,
+    order: [MemberListOrder!] = null
 
     """
     The pagination to apply to the list
@@ -3239,7 +3252,7 @@ extend type Mutation {
     """
     The account ID to invite the member to
     """
-    accountID: ID64!,
+    accountID: ID64!
 
     """
     The new member to invite to the account
@@ -3254,7 +3267,7 @@ extend type Mutation {
     """
     The member ID to update
     """
-    memberID: ID64!,
+    memberID: ID64!
 
     """
     The new member data to update
@@ -3720,18 +3733,18 @@ type DirectAccessTokenPayload {
 ###############################################################################
 
 input DirectAccessTokenListFilter {
-  ID:           [ID64!]
-  token:        [String!]
-  userID:       [ID64!]
-  accountID:    [ID64!]
+  ID: [ID64!]
+  token: [String!]
+  userID: [ID64!]
+  accountID: [ID64!]
   minExpiresAt: Time
   maxExpiresAt: Time
 }
 
 input DirectAccessTokenListOrder {
-  ID:        Ordering
-  token:     Ordering
-  userID:    Ordering
+  ID: Ordering
+  token: Ordering
+  userID: Ordering
   accountID: Ordering
   createdAt: Ordering
   expiresAt: Ordering
@@ -3745,7 +3758,8 @@ extend type Query {
   """
   Get a DirectAccessToken by its ID
   """
-  getDirectAccessToken(id: ID64!): DirectAccessTokenPayload @hasPermissions(permissions: ["directaccesstoken.view.*"])
+  getDirectAccessToken(id: ID64!): DirectAccessTokenPayload
+    @hasPermissions(permissions: ["directaccesstoken.view.*"])
 
   """
   List DirectAccessTokens
@@ -3765,7 +3779,8 @@ extend type Query {
     Pagination options
     """
     page: Page
-  ): DirectAccessTokenConnection @hasPermissions(permissions: ["directaccesstoken.list.*"])
+  ): DirectAccessTokenConnection
+    @hasPermissions(permissions: ["directaccesstoken.list.*"])
 }
 
 extend type Mutation {
@@ -3773,38 +3788,38 @@ extend type Mutation {
   Generate a new DirectAccessToken
   """
   generateDirectAccessToken(
-    userID:       ID64    = null,
-    description:  String! = "",
-    expiresAt:    Time    = null
-  ): DirectAccessTokenPayload @hasPermissions(permissions: ["directaccesstoken.create.*"])
+    userID: ID64 = null
+    description: String! = ""
+    expiresAt: Time = null
+  ): DirectAccessTokenPayload
+    @hasPermissions(permissions: ["directaccesstoken.create.*"])
 
   """
   Revoke a DirectAccessToken
   """
-  revokeDirectAccessToken(
-    filter: DirectAccessTokenListFilter!
-  ): StatusResponse @hasPermissions(permissions: ["directaccesstoken.delete.*"])
+  revokeDirectAccessToken(filter: DirectAccessTokenListFilter!): StatusResponse
+    @hasPermissions(permissions: ["directaccesstoken.delete.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../repository/historylog/delivery/graphql/history.graphql", Input: `"""
 HistoryAction is the model for history actions.
 """
 type HistoryAction {
-  ID:         UUID!
-  RequestID:  String!
+  ID: UUID!
+  RequestID: String!
 
-  name:       String!
-  message:    String!
+  name: String!
+  message: String!
 
-  userID:     ID64!
-  accountID:  ID64!
+  userID: ID64!
+  accountID: ID64!
 
   objectType: String!
-  objectID:   ID64!
-  objectIDs:  String!
-  data:       NullableJSON!
+  objectID: ID64!
+  objectIDs: String!
+  data: NullableJSON!
 
-  actionAt:   Time!
+  actionAt: Time!
 }
 
 """
@@ -3934,16 +3949,17 @@ extend type Query {
   List of the history actions which can be filtered and ordered by some fields
   """
   listHistory(
-    filter: HistoryActionListFilter = null,
-    order: [HistoryActionListOrder!] = null,
+    filter: HistoryActionListFilter = null
+    order: [HistoryActionListOrder!] = null
     page: Page = null
-  ): HistoryActionConnection @hasPermissions(permissions: ["history_log.list.*"])
+  ): HistoryActionConnection
+    @hasPermissions(permissions: ["history_log.list.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../repository/option/delivery/graphql/options.graphql", Input: `enum OptionType {
-  UNDEFINED,
-  USER,
-  ACCOUNT,
+  UNDEFINED
+  USER
+  ACCOUNT
   SYSTEM
 }
 
@@ -3951,10 +3967,10 @@ extend type Query {
 Option type definition represents a single option of the user or the system.
 """
 type Option {
-  type:       OptionType!
-  targetID:   ID64!
-  name:       String!
-  value:      NullableJSON
+  type: OptionType!
+  targetID: ID64!
+  name: String!
+  value: NullableJSON
 }
 
 """
@@ -4012,17 +4028,17 @@ type OptionPayload {
 ###############################################################################
 
 input OptionListFilter {
-  type:         [OptionType!]
-  targetID:     [ID64!]
-  name:         [String!]
-  namePattern:  [String!]
+  type: [OptionType!]
+  targetID: [ID64!]
+  name: [String!]
+  namePattern: [String!]
 }
 
 input OptionListOrder {
-  type:         Ordering
-  targetID:     Ordering
-  name:         Ordering
-  value:        Ordering
+  type: Ordering
+  targetID: Ordering
+  name: Ordering
+  value: Ordering
 }
 
 ###############################################################################
@@ -4033,14 +4049,18 @@ extend type Query {
   """
   Get the option value by name
   """
-  option(name: String!, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
+  option(
+    name: String!
+    type: OptionType! = USER
+    targetID: ID64! = 0
+  ): OptionPayload! @hasPermissions(permissions: ["option.get.*"])
 
   """
   List of the option values which can be filtered and ordered by some fields
   """
   listOptions(
-    filter: OptionListFilter = null,
-    order: [OptionListOrder!] = null,
+    filter: OptionListFilter = null
+    order: [OptionListOrder!] = null
     page: Page = null
   ): OptionConnection @hasPermissions(permissions: ["option.list.*"])
 }
@@ -4049,11 +4069,16 @@ extend type Mutation {
   """
   Set the option value
   """
-  setOption(name: String!, value: NullableJSON, type: OptionType! = USER, targetID: ID64! = 0): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
+  setOption(
+    name: String!
+    value: NullableJSON
+    type: OptionType! = USER
+    targetID: ID64! = 0
+  ): OptionPayload! @hasPermissions(permissions: ["option.set.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../repository/rbac/delivery/graphql/rbac.graphql", Input: `type RBACPermission {
-  name:   String!
+  name: String!
   object: String!
   access: String!
   fullname: String!
@@ -4064,32 +4089,32 @@ extend type Mutation {
 A role is a collection of permissions. A role can be a child of another role.
 """
 type RBACRole {
-	ID:       ID64!
-	name:     String!
-	title:    String!
+  ID: ID64!
+  name: String!
+  title: String!
 
   description: String
 
   """
-  Context is a JSON object that defines the context of the role.
-  The context is used to determine whether the role is applicable to the object.
-  The context is a JSON object with the following structure:
+   Context is a JSON object that defines the context of the role.
+   The context is used to determine whether the role is applicable to the object.
+   The context is a JSON object with the following structure:
 
-	{"cover": "system", "object": "role"}
+  {"cover": "system", "object": "role"}
 
-  where:
-	"cover" - is a name of the cover area of the object type
-	"object" - is a name of the object type <module>:<object-name>
+   where:
+  "cover" - is a name of the cover area of the object type
+  "object" - is a name of the object type <module>:<object-name>
   """
-	context:  NullableJSON
+  context: NullableJSON
 
-	childRoles: [RBACRole!]
+  childRoles: [RBACRole!]
   permissions: [RBACPermission!]
   permissionPatterns: [String!]
 
   createdAt: Time!
   updatedAt: Time!
-	deletedAt: Time
+  deletedAt: Time
 }
 
 """
@@ -4157,13 +4182,13 @@ type RBACRolePayload {
 ###############################################################################
 
 input RBACRoleListFilter {
-  ID:   [ID64!]
+  ID: [ID64!]
   name: [String!]
 }
 
 input RBACRoleListOrder {
-  ID:    Ordering
-  name:  Ordering
+  ID: Ordering
+  name: Ordering
   title: Ordering
 }
 
@@ -4172,9 +4197,9 @@ input RBACRoleListOrder {
 ###############################################################################
 
 input RBACRoleInput {
-  name:        String
-  title:       String
-  context:     NullableJSON
+  name: String
+  title: String
+  context: NullableJSON
   permissions: [String!]
 }
 
@@ -4186,49 +4211,60 @@ extend type Query {
   """
   Get RBAC role object by ID
   """
-  role(id: ID64!): RBACRolePayload! @hasPermissions(permissions: ["role.view.*"])
+  role(id: ID64!): RBACRolePayload!
+    @hasPermissions(permissions: ["role.view.*"])
 
   """
   Check if the user has access to the particular role or permission.
   Returns the area of the access or null if access is denied.
   """
-  checkPermission(name: String!, key: String = null, targetID: String = null, idKey: String = null): String @hasPermissions(permissions: ["role.check"])
+  checkPermission(
+    name: String!
+    key: String = null
+    targetID: String = null
+    idKey: String = null
+  ): String @hasPermissions(permissions: ["role.check"])
 
   """
   List of the RBAC role objects which can be filtered and ordered by some fields
   """
   listRoles(
-    filter: RBACRoleListFilter = null,
-    order: [RBACRoleListOrder!] = null,
+    filter: RBACRoleListFilter = null
+    order: [RBACRoleListOrder!] = null
     page: Page = null
   ): RBACRoleConnection @hasPermissions(permissions: ["role.list.*"])
 
   """
   List of the RBAC permissions
   """
-  listPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
+  listPermissions(patterns: [String!] = null): [RBACPermission!]
+    @hasPermissions(permissions: ["permission.list"])
 
   """
   List of the RBAC permissions for the current user
   """
-  listMyPermissions(patterns: [String!] = null): [RBACPermission!] @hasPermissions(permissions: ["permission.list"])
+  listMyPermissions(patterns: [String!] = null): [RBACPermission!]
+    @hasPermissions(permissions: ["permission.list"])
 }
 
 extend type Mutation {
   """
   Create the new RBAC role
   """
-  createRole(input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.create.*"])
+  createRole(input: RBACRoleInput!): RBACRolePayload!
+    @hasPermissions(permissions: ["role.create.*"])
 
   """
   Update RBAC role info
   """
-  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload! @hasPermissions(permissions: ["role.update.*"])
+  updateRole(id: ID64!, input: RBACRoleInput!): RBACRolePayload!
+    @hasPermissions(permissions: ["role.update.*"])
 
   """
   Delete RBAC role
   """
-  deleteRole(id: ID64!, msg: String = null): RBACRolePayload! @hasPermissions(permissions: ["role.delete.*"])
+  deleteRole(id: ID64!, msg: String = null): RBACRolePayload!
+    @hasPermissions(permissions: ["role.delete.*"])
 }
 `, BuiltIn: false},
 	{Name: "../../../repository/socialaccount/delivery/graphql/account_social.graphql", Input: `type SocialAccountSession {
@@ -4363,24 +4399,27 @@ extend type Query {
     The unique identifier of the social account
     """
     id: ID64!
-  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.view.*"])
+  ): SocialAccountPayload!
+    @hasPermissions(permissions: ["account_social.view.*"])
 
   """
   Get the current user's social accounts
   """
   currentSocialAccounts(
-    filter: SocialAccountListFilter = null,
+    filter: SocialAccountListFilter = null
     order: [SocialAccountListOrder!] = null
-  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+  ): SocialAccountConnection!
+    @hasPermissions(permissions: ["account_social.list.*"])
 
   """
   List all social accounts
   """
   listSocialAccounts(
-    filter: SocialAccountListFilter = null,
-    order: [SocialAccountListOrder!] = null,
+    filter: SocialAccountListFilter = null
+    order: [SocialAccountListOrder!] = null
     page: Page = null
-  ): SocialAccountConnection! @hasPermissions(permissions: ["account_social.list.*"])
+  ): SocialAccountConnection!
+    @hasPermissions(permissions: ["account_social.list.*"])
 }
 
 extend type Mutation {
@@ -4392,18 +4431,18 @@ extend type Mutation {
     The unique identifier of the social account to disconnect
     """
     id: ID64!
-  ): SocialAccountPayload! @hasPermissions(permissions: ["account_social.disconnect.*"])
+  ): SocialAccountPayload!
+    @hasPermissions(permissions: ["account_social.disconnect.*"])
 }
 `, BuiltIn: false},
-	{Name: "../../../repository/user/delivery/graphql/user.graphql", Input: `
-"""
+	{Name: "../../../repository/user/delivery/graphql/user.graphql", Input: `"""
 User represents a user object of the system
 """
 type User {
   """
   The primary key of the user
   """
-  ID:       ID64!
+  ID: ID64!
 
   """
   Unical user name
@@ -4499,15 +4538,15 @@ input UserListFilter {
 UserListOrder implements order for user list query
 """
 input UserListOrder {
-  ID:                 Ordering
-  email:              Ordering
-  username:           Ordering
-  status:             Ordering
-  registrationDate:   Ordering
-  country:            Ordering
-  manager:            Ordering
-  createdAt:          Ordering
-  updatedAt:          Ordering
+  ID: Ordering
+  email: Ordering
+  username: Ordering
+  status: Ordering
+  registrationDate: Ordering
+  country: Ordering
+  manager: Ordering
+  createdAt: Ordering
+  updatedAt: Ordering
 }
 
 ###############################################################################
@@ -4520,13 +4559,13 @@ input UserInput {
 }
 
 type Profile {
-  ID:           ID64!
-  user:         User!
-  firstName:    String!
-  lastName:     String!
-  companyName:  String!
-  about:        String!
-  email:        String!
+  ID: ID64!
+  user: User!
+  firstName: String!
+  lastName: String!
+  companyName: String!
+  about: String!
+  email: String!
   messgangers: [ProfileMessanger!]
 
   createdAt: Time!
@@ -4561,17 +4600,15 @@ extend type Query {
   """
   Get user object by ID or username
   """
-  user(
-    id: ID64! = 0,
-    username: String! = ""
-  ): UserPayload! @hasPermissions(permissions: ["user.view.*"])
+  user(id: ID64! = 0, username: String! = ""): UserPayload!
+    @hasPermissions(permissions: ["user.view.*"])
 
   """
   List of the user objects which can be filtered and ordered by some fields
   """
   listUsers(
-    filter: UserListFilter = null,
-    order: [UserListOrder!] = null,
+    filter: UserListFilter = null
+    order: [UserListOrder!] = null
     page: Page = null
   ): UserConnection @hasPermissions(permissions: ["user.list.*"])
 }
@@ -4580,32 +4617,49 @@ extend type Mutation {
   """
   Create the new user
   """
-  createUser(input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.create.*"])
+  createUser(input: UserInput!): UserPayload!
+    @hasPermissions(permissions: ["user.create.*"])
 
   """
   Update user info
   """
-  updateUser(id: ID64!, input: UserInput!): UserPayload! @hasPermissions(permissions: ["user.update.*"])
+  updateUser(id: ID64!, input: UserInput!): UserPayload!
+    @hasPermissions(permissions: ["user.update.*"])
 
   """
   Approve user and leave the comment
   """
-  approveUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.approve.*"])
+  approveUser(id: ID64!, msg: String): UserPayload!
+    @hasPermissions(permissions: ["user.approve.*"])
 
   """
   Reject user and leave the comment
   """
-  rejectUser(id: ID64!, msg: String): UserPayload! @hasPermissions(permissions: ["user.reject.*"])
+  rejectUser(id: ID64!, msg: String): UserPayload!
+    @hasPermissions(permissions: ["user.reject.*"])
 
   """
   Reset password of the particular user in case if user forgot it
   """
-  resetUserPassword(email: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
+  resetUserPassword(email: String!): StatusResponse!
+    @hasPermissions(permissions: ["user.password.reset.*"])
 
   """
   Update password of the particular user
   """
-  updateUserPassword(token: String!, email: String!, password: String!): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
+  updateUserPassword(
+    token: String!
+    email: String!
+    password: String!
+  ): StatusResponse! @hasPermissions(permissions: ["user.password.reset.*"])
+
+  """
+  Change password for the current session user (requires current password)
+  """
+  changeUserPassword(
+    currentPassword: String!
+    newPassword: String!
+  ): StatusResponse! @hasPermissions(permissions: ["user.password.set.*"])
 }
 `, BuiltIn: false},
 }
@@ -5717,6 +5771,28 @@ func (ec *executionContext) field_Mutation_approveUser_args(ctx context.Context,
 		return nil, err
 	}
 	args["msg"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_changeUserPassword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "currentPassword",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["currentPassword"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "newPassword",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["newPassword"] = arg1
 	return args, nil
 }
 
@@ -11315,6 +11391,68 @@ func (ec *executionContext) fieldContext_Mutation_updateUserPassword(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateUserPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_changeUserPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_changeUserPassword(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ChangeUserPassword(ctx, fc.Args["currentPassword"].(string), fc.Args["newPassword"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				permissions, err := ec.unmarshalNString2ᚕstringᚄ(ctx, []any{"user.password.set.*"})
+				if err != nil {
+					var zeroVal *models.StatusResponse
+					return zeroVal, err
+				}
+				if ec.Directives.HasPermissions == nil {
+					var zeroVal *models.StatusResponse
+					return zeroVal, errors.New("directive hasPermissions is not implemented")
+				}
+				return ec.Directives.HasPermissions(ctx, nil, directive0, permissions)
+			}
+
+			next = directive1
+			return ec._fieldMiddleware(ctx, nil, next)
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v *models.StatusResponse) graphql.Marshaler {
+			return ec.marshalNStatusResponse2ᚖgithubᚗcomᚋgeniusrabbitᚋblazeᚑapiᚋserverᚋgraphqlᚋmodelsᚐStatusResponse(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_changeUserPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_StatusResponse(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_changeUserPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -20622,6 +20760,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateUserPassword":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateUserPassword(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "changeUserPassword":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_changeUserPassword(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

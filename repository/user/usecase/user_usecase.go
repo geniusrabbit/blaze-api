@@ -18,7 +18,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
-var ErrInvalidPasswordResetCode = errors.New(`invalid password reset code`)
+var (
+	ErrInvalidPasswordResetCode = errors.New(`invalid password reset code`)
+	ErrInvalidCurrentPassword   = errors.New(`current password is incorrect`)
+	ErrPasswordTooShort         = errors.New(`password must be at least 8 characters`)
+)
 
 // UserUsecase provides bussiness logic for user access
 type UserUsecase struct {
@@ -105,6 +109,21 @@ func (a *UserUsecase) SetPassword(ctx context.Context, userObj *user.User, passw
 		return errors.Wrap(acl.ErrNoPermissions, `set password`)
 	}
 	return a.userRepo.SetPassword(ctx, userObj, password)
+}
+
+// ChangePassword for the current session user
+func (a *UserUsecase) ChangePassword(ctx context.Context, currentPassword, newPassword string) error {
+	userObj := session.User(ctx)
+	if userObj == nil || userObj.ID == 0 {
+		return acl.ErrNoPermissions
+	}
+	if len(newPassword) < 8 {
+		return ErrPasswordTooShort
+	}
+	if _, err := a.userRepo.GetByPassword(ctx, userObj.Email, currentPassword); err != nil {
+		return ErrInvalidCurrentPassword
+	}
+	return a.SetPassword(ctx, userObj, newPassword)
 }
 
 // ResetPassword for the exists user
