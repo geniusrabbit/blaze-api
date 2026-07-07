@@ -30,7 +30,6 @@ type AccountGraphQLMappers[
 	TGQLAccount any,
 	TGQLPayload any,
 	TGQLCreateInput any,
-	TGQLCreatePayload any,
 	TGQLUpdateInput any,
 	TGQLFilter any,
 	TGQLOrder any,
@@ -42,8 +41,6 @@ type AccountGraphQLMappers[
 	ToGQL(T) TGQLAccount
 	// NewPayload wraps a GQL account in the mutation payload type.
 	NewPayload(clientMutationID string, accountID uint64, account TGQLAccount) TGQLPayload
-	// NewCreatePayload wraps a GQL account and owner in the register payload type.
-	NewCreatePayload(clientMutationID string, account TGQLAccount, owner TGQLUser) TGQLCreatePayload
 	// FromCreateInput builds a new domain account from a create mutation input.
 	FromCreateInput(TGQLCreateInput) T
 	// FromUpdateInput merges an update mutation input into an existing domain account.
@@ -63,47 +60,41 @@ type FuncAccountMapper[
 	TGQLAccount any,
 	TGQLPayload any,
 	TGQLCreateInput any,
-	TGQLCreatePayload any,
 	TGQLUpdateInput any,
 	TGQLFilter any,
 	TGQLOrder any,
 	TGQLUser any,
 ] struct {
-	NewFn              func() T
-	ToGQLFn            func(T) TGQLAccount
-	NewPayloadFn       func(clientMutationID string, accountID uint64, account TGQLAccount) TGQLPayload
-	NewCreatePayloadFn func(clientMutationID string, account TGQLAccount, owner TGQLUser) TGQLCreatePayload
-	FromCreateFn       func(TGQLCreateInput) T
-	FromUpdateFn       func(TGQLUpdateInput, T) T
-	FromFilterFn       func(TGQLFilter) account.QOption
-	FromOrderFn        func(TGQLOrder) account.QOption
+	NewFn        func() T
+	ToGQLFn      func(T) TGQLAccount
+	NewPayloadFn func(clientMutationID string, accountID uint64, account TGQLAccount) TGQLPayload
+	FromCreateFn func(TGQLCreateInput) T
+	FromUpdateFn func(TGQLUpdateInput, T) T
+	FromFilterFn func(TGQLFilter) account.QOption
+	FromOrderFn  func(TGQLOrder) account.QOption
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) New() T {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) New() T {
 	return m.NewFn()
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) ToGQL(a T) TGQLAccount {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) ToGQL(a T) TGQLAccount {
 	return m.ToGQLFn(a)
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) NewPayload(clientMutationID string, accountID uint64, account TGQLAccount) TGQLPayload {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) NewPayload(clientMutationID string, accountID uint64, account TGQLAccount) TGQLPayload {
 	return m.NewPayloadFn(clientMutationID, accountID, account)
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) NewCreatePayload(clientMutationID string, account TGQLAccount, owner TGQLUser) TGQLCreatePayload {
-	return m.NewCreatePayloadFn(clientMutationID, account, owner)
-}
-
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromCreateInput(inp TGQLCreateInput) T {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromCreateInput(inp TGQLCreateInput) T {
 	return m.FromCreateFn(inp)
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromUpdateInput(inp TGQLUpdateInput, dest T) T {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromUpdateInput(inp TGQLUpdateInput, dest T) T {
 	return m.FromUpdateFn(inp, dest)
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromFilter(f TGQLFilter) account.QOption {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromFilter(f TGQLFilter) account.QOption {
 	if m.FromFilterFn != nil {
 		return m.FromFilterFn(f)
 	}
@@ -116,7 +107,7 @@ func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCrea
 	panic("FromFilterFn is nil and TGQLFilter does not implement ConvertFilter()")
 }
 
-func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLCreatePayload, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromOrder(o TGQLOrder) account.QOption {
+func (m FuncAccountMapper[T, TGQLAccount, TGQLPayload, TGQLCreateInput, TGQLUpdateInput, TGQLFilter, TGQLOrder, TGQLUser]) FromOrder(o TGQLOrder) account.QOption {
 	if m.FromOrderFn != nil {
 		return m.FromOrderFn(o)
 	}

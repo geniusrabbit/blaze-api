@@ -42,18 +42,6 @@ type SocialAccount {
   deletedAt: Time
 }
 
-type SocialAccountEdge {
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-
-  """
-  The item at the end of the edge.
-  """
-  node: SocialAccount
-}
-
 """
 SocialAccountConnection implements collection accessor interface with pagination
 """
@@ -62,11 +50,6 @@ type SocialAccountConnection {
   The total number of records
   """
   totalCount: Int!
-
-  """
-  The edges for each of the social account's lists
-  """
-  edges: [SocialAccountEdge!]
 
   """
   A list of the social accounts, as a convenience when edges are not needed.

@@ -13,14 +13,12 @@ import (
 type AccountGraphQLMappers[T accountrepo.Model, TGQLAccount any] = accountgraphql.AccountGraphQLMappers[
 	T,
 	TGQLAccount,
-	*exmodels.AccountPayload,          // TGQLPayload
-	*exmodels.AccountCreateInput,      // TGQLCreateInput
-	*exmodels.AccountCreatePayload,    // TGQLCreatePayload
-	*exmodels.AccountUpdateInput,      // TGQLUpdateInput (status-only update in base schema)
-	*exmodels.AccountListFilter,       // TFilter
-	*exmodels.AccountListOrder,        // TOrder
-	exmodels.AccountEdge,              // TGQLEdge
-	accountgraphql.BaseAccountGQLUser, // TGQLUser
+	*exmodels.AccountPayload,     // TGQLPayload
+	*exmodels.AccountCreateInput, // TGQLCreateInput
+	*exmodels.AccountUpdateInput, // TGQLUpdateInput (status-only update in base schema)
+	*exmodels.AccountListFilter,  // TFilter
+	*exmodels.AccountListOrder,   // TOrder
+	*exmodels.User,               // TGQLUser
 ]
 
 // AccountGraphQLMappersImpl implements AccountGraphQLMappers for example/api.
@@ -49,21 +47,6 @@ func (AccountGraphQLMappersImpl) NewPayload(clientMutationID string, accountID u
 		AccountID:        accountID,
 		Account:          acc,
 	}
-}
-
-// NewCreatePayload builds register payload from parts.
-func (AccountGraphQLMappersImpl) NewCreatePayload(clientMutationID string, account *exmodels.Account, owner accountgraphql.BaseAccountGQLUser) *exmodels.AccountCreatePayload {
-	acc := account
-	return &exmodels.AccountCreatePayload{
-		ClientMutationID: clientMutationID,
-		Owner:            owner,
-		Account:          acc,
-	}
-}
-
-// ToEdge builds account edge for list responses.
-func (AccountGraphQLMappersImpl) ToEdge(cursor string, node *exmodels.Account) exmodels.AccountEdge {
-	return exmodels.AccountEdge{Cursor: cursor, Node: node}
 }
 
 // FromCreateInput builds a new domain Account from a create-account account input.

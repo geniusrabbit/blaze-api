@@ -38,6 +38,6 @@ func (r *mutationResolver) RejectAccountMember(ctx context.Context, memberID uin
 }
 
 // ListMembers is the resolver for the listMembers field.
-func (r *queryResolver) ListMembers(ctx context.Context, filter *basemodels.MemberListFilter, order []*basemodels.MemberListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.Member, any], error) {
+func (r *queryResolver) ListMembers(ctx context.Context, filter *basemodels.MemberListFilter, order []*basemodels.MemberListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.Member], error) {
 	return r.members.List(ctx, filter, order, page)
 }

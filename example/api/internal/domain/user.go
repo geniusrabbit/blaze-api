@@ -10,6 +10,7 @@ type User struct {
 	userModels.UserBase
 	userModels.UserEmail
 	userModels.UserPassword
+	userModels.UserUsername
 }
 
 func (u *User) NewWithID(id uint64) user.Model {

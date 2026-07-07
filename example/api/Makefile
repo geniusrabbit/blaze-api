@@ -16,15 +16,15 @@ DOCKER_CONTAINER_MUGRATE_IMAGE := ${DOCKER_CONTAINER_IMAGE}:migrate-latest
 build-gql: ## Build graphql server
 	cd protocol/graphql && go run github.com/99designs/gqlgen
 
-.PHONY: build-api
-build-api: ## Build API application
+.PHONY: build
+build: ## Build API application
 	@echo "Build application"
 	@rm -rf .build
 	@$(call do_build,"cmd/api/main.go",api)
 
 .PHONY: build-docker-dev
-build-docker-dev: build-api
-	echo "Build develop docker image"
+build-docker-dev: build
+	@echo "Build develop docker image"
 	DOCKER_BUILDKIT=${DOCKER_BUILDKIT} docker build -t ${DOCKER_CONTAINER_IMAGE} -f deploy/develop/api.Dockerfile  ../../
 
 .PHONY: run-api
@@ -62,8 +62,8 @@ migrate: build-migrate ## Migrate migrations and fixtures
 dev-migrate: build-migrate ## Migrate development migrations and fixtures
 	$(DOCKER_COMPOSE) run --rm dev-migration
 
-.PHONY: dbcli
-dbcli: ## Open development database
+.PHONY: db-cli
+db-cli: ## Open development database
 	$(DOCKER_COMPOSE) exec $(DOCKER_DATABASE_NAME) psql -U $(DATABASE_USER) $(DATABASE_DB)
 
 .PHONY: help

@@ -16,14 +16,6 @@ type Option {
 }
 
 """
-The edge type for Option.
-"""
-type OptionEdge {
-  cursor: String!
-  node: Option!
-}
-
-"""
 The connection type for Option.
 """
 type OptionConnection {
@@ -31,11 +23,6 @@ type OptionConnection {
   The total number of campaigns
   """
   totalCount: Int!
-
-  """
-  A list of edges.
-  """
-  edges: [OptionEdge!]!
 
   """
   A list of options.

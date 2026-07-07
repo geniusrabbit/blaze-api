@@ -101,23 +101,6 @@ input AccountUpdateInput {
   status: ApproveStatus
 }
 
-type AccountCreatePayload {
-  """
-  A unique identifier for the client performing the mutation.
-  """
-  clientMutationID: String!
-
-  """
-  The account object
-  """
-  account: Account!
-
-  """
-  The user object
-  """
-  owner: User!
-}
-
 ###############################################################################
 # Query declarations
 ###############################################################################
@@ -173,10 +156,8 @@ extend type Mutation {
   Register the new account.
   Account can create only by the user with `account.register` permission.
   """
-  registerAccount(
-    ownerID: ID64!
-    input: AccountCreateInput!
-  ): AccountCreatePayload! @hasPermissions(permissions: ["account.register"])
+  registerAccount(ownerID: ID64!, input: AccountCreateInput!): AccountPayload!
+    @hasPermissions(permissions: ["account.register"])
 
   """
   Update account info

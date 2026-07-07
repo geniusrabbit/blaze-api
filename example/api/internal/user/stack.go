@@ -41,7 +41,7 @@ type Module[T user.AuthCapableModel] struct {
 // NewModule wires the full auth-capable user stack (example/api).
 func NewModule[T user.AuthCapableModel](newModel func() T) Module[T] {
 	repo := NewRepository(newModel)
-	core := useruc.NewUsecase(repo, newModel)
+	core := useruc.NewUsecase(repo)
 	return Module[T]{
 		NewModel: newModel,
 		Repo:     repo,

@@ -32,7 +32,6 @@ type QueryResolver[
 	TGQLAccount any,
 	TGQLAccountPayload any,
 	TGQLAccountCreateInput any,
-	TGQLAccountCreatePayload any,
 	TGQLAccountUpdateInput any,
 	TGQLAccountListFilter any,
 	TGQLAccountListOrder any,
@@ -43,7 +42,7 @@ type QueryResolver[
 	users          user.Usecase[TUser]
 	usersMapper    user_graphql.UserGraphQLMappersBase[TUser, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]
 	accounts       account.Usecase[TUser, TDomain]
-	accountsMapper AccountGraphQLMappers[TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser]
+	accountsMapper AccountGraphQLMappers[TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser]
 	members        account.MemberUsecase[TUser, TDomain]
 }
 
@@ -54,7 +53,6 @@ type QueryResolverConfig[
 	TGQLAccount any,
 	TGQLAccountPayload any,
 	TGQLAccountCreateInput any,
-	TGQLAccountCreatePayload any,
 	TGQLAccountUpdateInput any,
 	TGQLAccountListFilter any,
 	TGQLAccountListOrder any,
@@ -65,7 +63,7 @@ type QueryResolverConfig[
 	Users          user.Usecase[TUser]
 	UsersMapper    user_graphql.UserGraphQLMappersBase[TUser, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]
 	Accounts       account.Usecase[TUser, TDomain]
-	AccountsMapper AccountGraphQLMappers[TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser]
+	AccountsMapper AccountGraphQLMappers[TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser]
 	Members        account.MemberUsecase[TUser, TDomain]
 }
 
@@ -76,7 +74,6 @@ func NewQueryResolver[
 	TGQLAccount any,
 	TGQLAccountPayload any,
 	TGQLAccountCreateInput any,
-	TGQLAccountCreatePayload any,
 	TGQLAccountUpdateInput any,
 	TGQLAccountListFilter any,
 	TGQLAccountListOrder any,
@@ -84,9 +81,9 @@ func NewQueryResolver[
 	TGQLUserCreateInput any,
 	TGQLUserUpdateInput any,
 ](
-	cfg QueryResolverConfig[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput],
-) *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput] {
-	return &QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]{
+	cfg QueryResolverConfig[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput],
+) *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput] {
+	return &QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]{
 		users:          cfg.Users,
 		usersMapper:    cfg.UsersMapper,
 		accounts:       cfg.Accounts,
@@ -96,7 +93,7 @@ func NewQueryResolver[
 }
 
 // CurrentAccount returns the current account info.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) CurrentAccount(ctx context.Context) (TGQLAccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) CurrentAccount(ctx context.Context) (TGQLAccountPayload, error) {
 	var zero TDomain
 	acc := session.Account(ctx)
 	typed, _ := acc.(TDomain)
@@ -108,7 +105,7 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 }
 
 // Account returns the account info.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) Account(ctx context.Context, id uint64) (TGQLAccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) Account(ctx context.Context, id uint64) (TGQLAccountPayload, error) {
 	acc, err := r.accounts.Get(ctx, id)
 	if err != nil {
 		var zero TGQLAccountPayload
@@ -118,8 +115,8 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 }
 
 // RegisterAccount creates a new account.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) RegisterAccount(ctx context.Context, ownerID uint64, input TGQLAccountCreateInput) (TGQLAccountCreatePayload, error) {
-	var zero TGQLAccountCreatePayload
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) RegisterAccount(ctx context.Context, ownerID uint64, input TGQLAccountCreateInput) (TGQLAccountPayload, error) {
+	var zero TGQLAccountPayload
 	accObj := r.accountsMapper.FromCreateInput(input)
 	userObj, err := r.users.Get(ctx, ownerID)
 	if err != nil {
@@ -142,12 +139,12 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 			zap.Error(err))
 	}
 
-	return r.accountsMapper.NewCreatePayload(
-		requestid.Get(ctx), r.accountsMapper.ToGQL(accObj), r.usersMapper.ToGQL(userObj)), nil
+	return r.accountsMapper.NewPayload(
+		requestid.Get(ctx), accObj.GetID(), r.accountsMapper.ToGQL(accObj)), nil
 }
 
 // UpdateAccount is the resolver for the updateAccount field.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) UpdateAccount(ctx context.Context, id uint64, input TGQLAccountUpdateInput) (TGQLAccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) UpdateAccount(ctx context.Context, id uint64, input TGQLAccountUpdateInput) (TGQLAccountPayload, error) {
 	var zero TGQLAccountPayload
 	accModel := r.accountsMapper.FromUpdateInput(input, r.accountsMapper.New())
 	if setter, ok := any(accModel).(interface{ SetID(uint64) }); ok {
@@ -165,16 +162,16 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 }
 
 // ApproveAccount is the resolver for the approveAccount field.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) ApproveAccount(ctx context.Context, id uint64, msg string) (TGQLAccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) ApproveAccount(ctx context.Context, id uint64, msg string) (TGQLAccountPayload, error) {
 	return r.updateApproveStatus(ctx, id, pkgModels.ApprovedApproveStatus, msg)
 }
 
 // RejectAccount is the resolver for the rejectAccount field.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) RejectAccount(ctx context.Context, id uint64, msg string) (TGQLAccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) RejectAccount(ctx context.Context, id uint64, msg string) (TGQLAccountPayload, error) {
 	return r.updateApproveStatus(ctx, id, pkgModels.DisapprovedApproveStatus, msg)
 }
 
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg string) (TGQLAccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg string) (TGQLAccountPayload, error) {
 	var zero TGQLAccountPayload
 	type approvable interface {
 		SetApprove(pkgModels.ApproveStatus)
@@ -233,7 +230,7 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 }
 
 // ListAccounts list by filter.
-func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) ListAccounts(
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) ListAccounts(
 	ctx context.Context,
 	filter TGQLAccountListFilter,
 	order []TGQLAccountListOrder,

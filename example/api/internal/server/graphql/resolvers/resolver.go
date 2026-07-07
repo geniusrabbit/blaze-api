@@ -15,11 +15,11 @@ import (
 
 // Resolver is example/api GraphQL root with extended Account schema types.
 type Resolver struct {
-	users             wiring.UserQueryHandler
+	users             wiring.UserQueryResolver
 	accAuth           accountgraphql.AuthQueryHandler
 	loginHandler      wiring.EmailPasswordLoginHandler
-	accounts          wiring.ExampleAccountQueryHandler
-	members           wiring.ExampleMemberQueryHandler
+	accounts          wiring.AccountQueryHandler
+	members           accountgraphql.MemberQueryHandler
 	socAccounts       *socialaccountgraphql.QueryResolver
 	roles             *rbacgraphql.QueryResolver
 	authclients       *authclientgraphql.QueryResolver
@@ -34,11 +34,11 @@ type Resolver struct {
 func NewResolver(
 	provider *jwt.Provider,
 	options option.Usecase,
-	userHandler wiring.UserQueryHandler,
+	userHandler wiring.UserQueryResolver,
 	authHandler accountgraphql.AuthQueryHandler,
 	loginHandler wiring.EmailPasswordLoginHandler,
-	accountHandler wiring.ExampleAccountQueryHandler,
-	memberHandler wiring.ExampleMemberQueryHandler,
+	accountHandler wiring.AccountQueryHandler,
+	memberHandler accountgraphql.MemberQueryHandler,
 ) *Resolver {
 	return &Resolver{
 		users:             userHandler,

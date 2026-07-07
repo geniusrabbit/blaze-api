@@ -558,62 +558,6 @@ type StatusResponse struct {
 	Message *string `json:"message,omitempty"`
 }
 
-// User represents a user object of the system.
-// Core fields only — extend in consumer schema via `extend type User`.
-type User struct {
-	// The primary key of the user
-	ID uint64 `json:"ID"`
-	// Status of user active
-	Status ApproveStatus `json:"status"`
-	// Message which defined during user approve/rejection process
-	StatusMessage *string   `json:"statusMessage,omitempty"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
-	// Email address (optional trait — present only when user.Email is embedded).
-	Email string `json:"email"`
-	// Unique username (separate from email, optional trait).
-	Username string `json:"username"`
-}
-
-type UserCreateInput struct {
-	Status *ApproveStatus `json:"status,omitempty"`
-}
-
-type UserInput struct {
-	Email    *string `json:"email,omitempty"`
-	Username *string `json:"username,omitempty"`
-}
-
-// UserListFilter implements filter for user list query
-type UserListFilter struct {
-	ID     []uint64 `json:"ID,omitempty"`
-	Emails []string `json:"emails,omitempty"`
-}
-
-// UserListOrder implements order for user list query
-type UserListOrder struct {
-	ID        *Ordering `json:"ID,omitempty"`
-	Status    *Ordering `json:"status,omitempty"`
-	CreatedAt *Ordering `json:"createdAt,omitempty"`
-	UpdatedAt *Ordering `json:"updatedAt,omitempty"`
-	Email     *Ordering `json:"email,omitempty"`
-	Username  *Ordering `json:"username,omitempty"`
-}
-
-// UserPayload wrapper to access of user oprtation results
-type UserPayload struct {
-	// A unique identifier for the client performing the mutation.
-	ClientMutationID string `json:"clientMutationID"`
-	// User ID operation result
-	UserID uint64 `json:"userID"`
-	// User object accessor
-	User *User `json:"user,omitempty"`
-}
-
-type UserUpdateInput struct {
-	Status *ApproveStatus `json:"status,omitempty"`
-}
-
 type OptionType string
 
 const (

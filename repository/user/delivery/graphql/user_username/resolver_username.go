@@ -2,11 +2,13 @@ package graphql
 
 import (
 	"context"
+	"errors"
 
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	usergraphql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
-	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
+
+var ErrUserDoesNotSupportUsername = errors.New(`user model does not support username trait`)
 
 // UsernameModel is the constraint for user models that carry a separate username.
 type UsernameModel interface {
@@ -61,9 +63,16 @@ func (r *QueryResolverUsername[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload
 	if err != nil {
 		return err
 	}
-	if inp, ok := any(input).(*gqlmodels.UserInput); ok && inp.Username != nil {
+	type usernameGetter interface {
+		GetUsername() string
+	}
+	if unameGet, ok := any(userObj).(usernameGetter); !ok {
+		return ErrUserDoesNotSupportUsername
+	} else if username := unameGet.GetUsername(); username == "" {
+		return errors.New(`user does not have a username set`)
+	} else {
 		if setter, ok := any(userObj).(interface{ SetUsername(string) }); ok {
-			setter.SetUsername(*inp.Username)
+			setter.SetUsername(username)
 		}
 	}
 	return r.core.Update(ctx, userObj)

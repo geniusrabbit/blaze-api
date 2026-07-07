@@ -88,18 +88,6 @@ type AuthClient {
   deletedAt: Time
 }
 
-type AuthClientEdge {
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-
-  """
-  The item at the end of the edge.
-  """
-  node: AuthClient
-}
-
 """
 AuthClientConnection implements collection accessor interface with pagination.
 """
@@ -108,11 +96,6 @@ type AuthClientConnection {
   The total number of campaigns
   """
   totalCount: Int!
-
-  """
-  The edges for each of the AuthClient's lists
-  """
-  edges: [AuthClientEdge!]
 
   """
   A list of the AuthClient's, as a convenience when edges are not needed.

@@ -8,7 +8,7 @@ extend type User {
   username: String!
 }
 
-extend input UserInput {
+extend input UserCreateInput {
   username: String
 }
 

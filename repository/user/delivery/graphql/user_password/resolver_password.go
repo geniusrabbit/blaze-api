@@ -21,7 +21,6 @@ type QueryResolverPassword[
 	TGQLUserListOrder any,
 ] struct {
 	core          user.Usecase[TDomain]
-	passRepo      user.PasswordRepository[TDomain]
 	password      user.PasswordUsecase[TDomain]
 	userFromInput graphql.UserInputMapper[TDomain, TGQLUserInput]
 	newPayload    graphql.UserPayloadFactory[TGQLUserPayload, TGQLUser]
@@ -38,7 +37,6 @@ type QueryResolverPasswordConfig[
 	TGQLUserListOrder any,
 ] struct {
 	Core          user.Usecase[TDomain]
-	PassRepo      user.PasswordRepository[TDomain]
 	Password      user.PasswordUsecase[TDomain]
 	UserFromInput graphql.UserInputMapper[TDomain, TGQLUserInput]
 	NewPayload    graphql.UserPayloadFactory[TGQLUserPayload, TGQLUser]
@@ -56,7 +54,6 @@ func NewQueryResolverPassword[
 ](cfg QueryResolverPasswordConfig[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) *QueryResolverPassword[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder] {
 	return &QueryResolverPassword[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]{
 		core:          cfg.Core,
-		passRepo:      cfg.PassRepo,
 		password:      cfg.Password,
 		userFromInput: cfg.UserFromInput,
 		newPayload:    cfg.NewPayload,
@@ -68,7 +65,7 @@ func NewQueryResolverPassword[
 func (r *QueryResolverPassword[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) CreateUser(ctx context.Context, input TGQLUserInput) (TGQLUserPayload, error) {
 	var zero TGQLUserPayload
 	userObj := r.userFromInput(input)
-	uid, err := r.passRepo.CreateWithPassword(ctx, userObj, "GQL create user")
+	uid, err := r.password.Repo().CreateWithPassword(ctx, userObj, "GQL create user")
 	if err != nil {
 		return zero, err
 	}

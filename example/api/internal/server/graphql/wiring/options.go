@@ -1,6 +1,7 @@
 package wiring
 
 import (
+	exmodels "github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountgraphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
@@ -8,21 +9,23 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
+type AccountQueryHandler = accountgraphql.AccountQueryHandler[*exmodels.Account, *exmodels.AccountPayload, *exmodels.AccountCreateInput, *exmodels.AccountUpdateInput, *exmodels.AccountListFilter, *exmodels.AccountListOrder]
+
 // OptionsConfig carries all resolver overrides for the example/api GraphQL handler.
 // Instantiate with concrete user/account types at the entry point (e.g. main.go).
-type OptionsConfig[TUser, TAccount any] struct {
-	UserHandler    UserQueryHandler
+type OptionsConfig struct {
+	UserHandler    UserQueryResolver
 	AuthHandler    accountgraphql.AuthQueryHandler
-	LoginHandler   EmailPasswordLoginHandler
-	AccountHandler ExampleAccountQueryHandler
-	MemberHandler  ExampleMemberQueryHandler
+	LoginHandler   accountgraphql.AccountLoginHandler
+	AccountHandler AccountQueryHandler
+	MemberHandler  accountgraphql.MemberQueryHandler
 }
 
-// Option is a functional option applied to OptionsConfig[TUser, TAccount].
-type Option[TUser, TAccount any] func(*OptionsConfig[TUser, TAccount])
+// Option is a functional option applied to OptionsConfig.
+type Option func(*OptionsConfig)
 
 // Apply runs all options against cfg and returns it.
-func Apply[TUser, TAccount any](opts []Option[TUser, TAccount], cfg *OptionsConfig[TUser, TAccount]) *OptionsConfig[TUser, TAccount] {
+func Apply(opts []Option, cfg *OptionsConfig) *OptionsConfig {
 	for _, o := range opts {
 		o(cfg)
 	}
@@ -43,12 +46,12 @@ func Apply[TUser, TAccount any](opts []Option[TUser, TAccount], cfg *OptionsConf
 //	)
 func WithUserAccountResolvers[TUser user.Model, TAccount account.Model](
 	provider *jwt.Provider,
-	user UserQueryHandler,
+	user UserQueryResolver,
 	auth *accountgraphql.AuthResolver[TUser, TAccount],
-	accounts ExampleAccountQueryHandler,
-	members ExampleMemberQueryHandler,
-) Option[TUser, TAccount] {
-	return func(cfg *OptionsConfig[TUser, TAccount]) {
+	accounts AccountQueryHandler,
+	members accountgraphql.MemberQueryHandler,
+) Option {
+	return func(cfg *OptionsConfig) {
 		cfg.UserHandler = user
 		cfg.AuthHandler = auth
 		cfg.AccountHandler = accounts
@@ -63,8 +66,8 @@ func WithUserLoginHandler[TUser user.Model, TAccount account.Model](
 	provider *jwt.Provider,
 	userLogin accountlogin.LoginPasswordAuth[TUser],
 	sessionRepo account.SessionRepository[TUser, TAccount],
-) Option[TUser, TAccount] {
-	return func(cfg *OptionsConfig[TUser, TAccount]) {
-		cfg.LoginHandler = accountlogin.New[TUser, TAccount](provider, userLogin, sessionRepo)
+) Option {
+	return func(cfg *OptionsConfig) {
+		cfg.LoginHandler = accountlogin.New(provider, userLogin, sessionRepo)
 	}
 }

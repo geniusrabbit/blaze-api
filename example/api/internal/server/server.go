@@ -41,7 +41,7 @@ type HTTPServer struct {
 	SessionManager *scs.SessionManager
 	AuthLoader     *accAuth.Loader[*domain.User, *domain.Account]
 	Logger         *zap.Logger
-	GraphqlOptions graphql.Options[*domain.User, *domain.Account]
+	GraphqlOptions graphql.Options
 }
 
 // Run starts a HTTP server and blocks while running if successful.

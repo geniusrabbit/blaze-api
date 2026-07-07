@@ -130,9 +130,7 @@ func UserFromCreateInput(input *exmodels.UserCreateInput, appStatus ...pkgModels
 		status = appStatus[0]
 	}
 	u.SetApprove(status)
-	if input.Email != nil {
-		u.SetEmail(*input.Email)
-	}
+	u.SetEmail(input.Email)
 	return u
 }
 

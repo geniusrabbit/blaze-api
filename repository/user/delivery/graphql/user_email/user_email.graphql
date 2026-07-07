@@ -8,8 +8,14 @@ extend type User {
   email: String!
 }
 
-extend input UserInput {
+extend input UserCreateInput {
+  email: String!
+    @regex(pattern: "^[^@]+@[^@]+\\.[^@]+$", trim: true, ornil: false)
+}
+
+extend input UserUpdateInput {
   email: String
+    @regex(pattern: "^[^@]+@[^@]+\\.[^@]+$", trim: true, ornil: true)
 }
 
 extend input UserListFilter {

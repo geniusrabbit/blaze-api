@@ -20,21 +20,6 @@ type HistoryAction {
 }
 
 """
-Edge of action history object.
-"""
-type HistoryActionEdge {
-  """
-  The item at the end of the edge.
-  """
-  node: HistoryAction!
-
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-}
-
-"""
 A connection to a list of items.
 """
 type HistoryActionConnection {
@@ -42,11 +27,6 @@ type HistoryActionConnection {
   The total number of nodes in this connection, ignoring pagination.
   """
   totalCount: Int!
-
-  """
-  Edges for the HistoryActionConnection connection.
-  """
-  edges: [HistoryActionEdge!]
 
   """
   A list of nodes in the connection (without going through the `edges` field).

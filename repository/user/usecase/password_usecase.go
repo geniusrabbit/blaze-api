@@ -35,6 +35,11 @@ func NewPasswordUsecase[T user.PasswordCapableModel](core user.Usecase[T], passR
 	}
 }
 
+// Repo returns the underlying password repository.
+func (a *PasswordUsecase[T]) Repo() user.PasswordRepository[T] {
+	return a.passRepo
+}
+
 // SetPassword sets a new password for the user with access control check.
 func (a *PasswordUsecase[T]) SetPassword(ctx context.Context, userObj T, password string) error {
 	if !acl.HaveObjectPermissions(ctx, userObj, `password.set.*`) {

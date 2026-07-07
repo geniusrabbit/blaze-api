@@ -9,7 +9,7 @@ import (
 )
 
 // UserConnection implements collection accessor interface with pagination (base schema types).
-type UserConnection[TGQLUser any] = connectors.CollectionConnection[TGQLUser, any]
+type UserConnection[TGQLUser any] = connectors.CollectionConnection[TGQLUser]
 
 // NewUserConnection based on query object.
 func NewUserConnection[
@@ -24,14 +24,14 @@ func NewUserConnection[
 	toGraphQL UserGraphQLConverter[TDomain, TGQLUser],
 ) *UserConnection[TGQLUser] {
 	toList := UserGraphQLListConverter(toGraphQL)
-	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[TGQLUser, any]{
-		FetchDataListFunc: func(ctx context.Context) ([]*TGQLUser, error) {
+	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[TGQLUser]{
+		FetchDataListFunc: func(ctx context.Context) ([]TGQLUser, error) {
 			opts := append(order, filter, page.Pagination())
 			users, err := usersAccessor.FetchList(ctx, opts...)
 			if err != nil {
 				return nil, err
 			}
-			return connectors.PtrSlice(toList(users)), nil
+			return toList(users), nil
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
 			return usersAccessor.Count(ctx, filter)

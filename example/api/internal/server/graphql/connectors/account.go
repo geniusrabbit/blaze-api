@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	UserConnection    = usergraphql.UserConnection[exmodels.User]
-	AccountConnection = accountgraphql.AccountConnection[exmodels.Account]
+	UserConnection    = usergraphql.UserConnection[*exmodels.User]
+	AccountConnection = accountgraphql.AccountConnection[*exmodels.Account]
 	MemberConnection  = accountgraphql.MemberConnection
 )

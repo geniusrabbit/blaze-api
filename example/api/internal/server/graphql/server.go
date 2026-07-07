@@ -24,12 +24,19 @@ import (
 )
 
 // GraphQL mux handler
-func GraphQL(provider *jwt.Provider, options option.Usecase, opts ...Option[*appinit.UserType, *appinit.AccountType]) http.Handler {
-	cfg := Apply(opts, new(OptionsConfig[*appinit.UserType, *appinit.AccountType]))
-
+func GraphQL(provider *jwt.Provider, options option.Usecase, opts ...Option) http.Handler {
+	cfg := Apply(opts, new(OptionsConfig))
 	srv := handler.New(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolvers.NewResolver(provider, options, cfg.UserHandler, cfg.AuthHandler, cfg.LoginHandler, cfg.AccountHandler, cfg.MemberHandler),
+			Resolvers: resolvers.NewResolver(
+				provider,
+				options,
+				cfg.UserHandler,
+				cfg.AuthHandler,
+				cfg.LoginHandler,
+				cfg.AccountHandler,
+				cfg.MemberHandler,
+			),
 			Directives: generated.DirectiveRoot{
 				HasPermissions:    directives.HasPermissions[*appinit.UserType, *appinit.AccountType],
 				Acl:               directives.HasPermissions[*appinit.UserType, *appinit.AccountType],

@@ -3,7 +3,6 @@ package graphql
 import (
 	"context"
 
-	"github.com/geniusrabbit/blaze-api/repository/account"
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
@@ -19,21 +18,25 @@ type AuthQueryHandler interface {
 	ListRolesAndPermissions(ctx context.Context, accountID uint64, order []*gqlmodels.RBACRoleListOrder) (*rbacgql.RBACRoleConnection, error)
 }
 
+type AccountLoginHandler interface {
+	Login(ctx context.Context, login, password string, accountID ...uint64) (*gqlmodels.SessionToken, error)
+}
+
 // AccountQueryHandler is the method set required for account GraphQL resolvers.
-type AccountQueryHandler[TGQLAccount, TPayload, TCreateInput, TUpdateInput any] interface {
+type AccountQueryHandler[TGQLAccount, TPayload, TCreateInput, TUpdateInput, TFilter, TOrder any] interface {
 	CurrentAccount(ctx context.Context) (TPayload, error)
 	Account(ctx context.Context, id uint64) (TPayload, error)
 	RegisterAccount(ctx context.Context, ownerID uint64, input TCreateInput) (TPayload, error)
 	UpdateAccount(ctx context.Context, id uint64, input TUpdateInput) (TPayload, error)
 	ApproveAccount(ctx context.Context, id uint64, msg string) (TPayload, error)
 	RejectAccount(ctx context.Context, id uint64, msg string) (TPayload, error)
-	ListAccounts(ctx context.Context, filter account.QOption, order []*account.QOption, page *gqlmodels.Page) (*AccountConnection[TGQLAccount], error)
+	ListAccounts(ctx context.Context, filter TFilter, order []TOrder, page *gqlmodels.Page) (*AccountConnection[TGQLAccount], error)
 }
 
 // MemberQueryHandler is the method set required for account member GraphQL resolvers.
 type MemberQueryHandler interface {
-	Invite(ctx context.Context, accountID uint64, member gqlmodels.InviteMemberInput) (*gqlmodels.MemberPayload, error)
-	Update(ctx context.Context, memberID uint64, member gqlmodels.MemberInput) (*gqlmodels.MemberPayload, error)
+	Invite(ctx context.Context, accountID uint64, member *gqlmodels.InviteMemberInput) (*gqlmodels.MemberPayload, error)
+	Update(ctx context.Context, memberID uint64, member *gqlmodels.MemberInput) (*gqlmodels.MemberPayload, error)
 	Remove(ctx context.Context, memberID uint64) (*gqlmodels.MemberPayload, error)
 	Approve(ctx context.Context, memberID uint64, msg string) (*gqlmodels.MemberPayload, error)
 	Reject(ctx context.Context, memberID uint64, msg string) (*gqlmodels.MemberPayload, error)

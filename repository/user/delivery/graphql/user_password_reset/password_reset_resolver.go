@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"context"
-	"errors"
 
 	"go.uber.org/zap"
 
@@ -100,9 +99,6 @@ func (r *PasswordResetQueryResolver[T]) UpdateUserPassword(ctx context.Context, 
 func (r *PasswordResetQueryResolver[T]) UpdateResetedUserPassword(ctx context.Context, token, email, password string) (*gqlmodels.StatusResponse, error) {
 	userObj, err := r.email.GetByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, userusecase.ErrInvalidPasswordResetCode) {
-			return nil, userusecase.ErrInvalidPasswordResetCode
-		}
 		return nil, err
 	}
 	var zero T

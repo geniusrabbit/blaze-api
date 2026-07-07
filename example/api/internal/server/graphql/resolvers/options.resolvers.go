@@ -24,6 +24,6 @@ func (r *queryResolver) Option(ctx context.Context, name string, typeArg basemod
 }
 
 // ListOptions is the resolver for the listOptions field.
-func (r *queryResolver) ListOptions(ctx context.Context, filter *basemodels.OptionListFilter, order []*basemodels.OptionListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.Option, basemodels.OptionEdge], error) {
+func (r *queryResolver) ListOptions(ctx context.Context, filter *basemodels.OptionListFilter, order []*basemodels.OptionListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.Option], error) {
 	return r.options.List(ctx, filter, order, page)
 }

@@ -25,6 +25,7 @@ type EmailUsecase[T EmailCapableModel] interface {
 
 // PasswordUsecase provides password management operations (no email lookup).
 type PasswordUsecase[T PasswordCapableModel] interface {
+	Repo() PasswordRepository[T]
 	SetPassword(ctx context.Context, user T, password string) error
 	ChangePassword(ctx context.Context, currentPassword, newPassword string) error
 	ResetPassword(ctx context.Context, userID uint64) (*UserPasswordReset, T, error)

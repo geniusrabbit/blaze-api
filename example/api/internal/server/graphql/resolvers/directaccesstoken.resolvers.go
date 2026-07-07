@@ -29,6 +29,6 @@ func (r *queryResolver) GetDirectAccessToken(ctx context.Context, id uint64) (*b
 }
 
 // ListDirectAccessTokens is the resolver for the listDirectAccessTokens field.
-func (r *queryResolver) ListDirectAccessTokens(ctx context.Context, filter *basemodels.DirectAccessTokenListFilter, order []*basemodels.DirectAccessTokenListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.DirectAccessToken, basemodels.DirectAccessTokenEdge], error) {
+func (r *queryResolver) ListDirectAccessTokens(ctx context.Context, filter *basemodels.DirectAccessTokenListFilter, order []*basemodels.DirectAccessTokenListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.DirectAccessToken], error) {
 	return r.directaccesstoken.List(ctx, filter, order, page)
 }

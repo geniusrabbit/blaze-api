@@ -79,6 +79,7 @@ func (r *Resolver[TUser, TAccount]) Login(ctx context.Context, login, password s
 	if len(accountID) > 0 {
 		accID = accountID[0]
 	}
+
 	user, err := r.userLogin.Login(ctx, login, password)
 	if err != nil {
 		return nil, err
@@ -106,20 +107,18 @@ func (r *Resolver[TUser, TAccount]) sessionTokenFromAccount(
 	token string,
 	expiresAt time.Time,
 ) (*gqlmodels.SessionToken, error) {
-	var zeroAcc TAccount
+	isAdmin := false
 	roles := []lrbac.Role{}
-	if any(acc) != any(zeroAcc) {
+	if !gocast.IsEmpty(acc) {
 		if checker := acc.PermissionsChecker(); checker != nil {
 			roles = append(roles, checker.ChildRoles()...)
 			if role, ok := checker.(lrbac.Role); ok {
 				roles = append(roles, role)
 			}
 		}
-	}
-	var zeroUser TUser
-	isAdmin := false
-	if any(acc) != any(zeroAcc) && any(user) != any(zeroUser) {
-		isAdmin = acc.IsAdminUser(user.GetID())
+		if !gocast.IsEmpty(user) {
+			isAdmin = acc.IsAdminUser(user.GetID())
+		}
 	}
 	return &gqlmodels.SessionToken{
 		Token:     token,
@@ -129,11 +128,7 @@ func (r *Resolver[TUser, TAccount]) sessionTokenFromAccount(
 	}, nil
 }
 
-func (r *Resolver[TUser, TAccount]) accountForUser(
-	ctx context.Context,
-	user TUser,
-	accountID uint64,
-) (TAccount, error) {
+func (r *Resolver[TUser, TAccount]) accountForUser(ctx context.Context, user TUser, accountID uint64) (TAccount, error) {
 	var zero TAccount
 	accounts, err := r.accountRepo.FetchList(ctx,
 		&account.Filter{

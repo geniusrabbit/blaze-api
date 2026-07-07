@@ -33,8 +33,8 @@ func NewMemberQueryResolver[TUser user.Model, TAccount account.Model, TGQLAccoun
 }
 
 // Invite is the resolver for the inviteAccountMember field.
-func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Invite(ctx context.Context, accountID uint64, member models.InviteMemberInput) (*models.MemberPayload, error) {
-	accountMember, err := r.members.InviteMember(ctx, accountID, member.UserID, InviteMemberAllRoles(&member)...)
+func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Invite(ctx context.Context, accountID uint64, member *models.InviteMemberInput) (*models.MemberPayload, error) {
+	accountMember, err := r.members.InviteMember(ctx, accountID, member.UserID, InviteMemberAllRoles(member)...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +46,8 @@ func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Invite(ctx context.C
 }
 
 // Update is the resolver for the updateAccountMember field.
-func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Update(ctx context.Context, memberID uint64, member models.MemberInput) (*models.MemberPayload, error) {
-	accountMember, err := r.members.SetMemberRoles(ctx, memberID, MemberAllRoles(&member)...)
+func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Update(ctx context.Context, memberID uint64, member *models.MemberInput) (*models.MemberPayload, error) {
+	accountMember, err := r.members.SetMemberRoles(ctx, memberID, MemberAllRoles(member)...)
 	if err != nil {
 		return nil, err
 	}

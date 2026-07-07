@@ -33,6 +33,6 @@ func (r *queryResolver) AuthClient(ctx context.Context, id string) (*basemodels.
 }
 
 // ListAuthClients is the resolver for the listAuthClients field.
-func (r *queryResolver) ListAuthClients(ctx context.Context, filter *basemodels.AuthClientListFilter, order []*basemodels.AuthClientListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.AuthClient, basemodels.AuthClientEdge], error) {
+func (r *queryResolver) ListAuthClients(ctx context.Context, filter *basemodels.AuthClientListFilter, order []*basemodels.AuthClientListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.AuthClient], error) {
 	return r.authclients.ListAuthClients(ctx, filter, order, page)
 }

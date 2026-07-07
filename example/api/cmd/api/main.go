@@ -18,6 +18,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/example/api/internal/domain"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql"
+	exmodels "github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/wiring"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/facebook"
@@ -137,8 +138,8 @@ func main() {
 				DevAccountID: conf.Session.DevAccountID,
 			}, nil), deps.AuthLoader),
 		},
-		GraphqlOptions: graphql.Options[*domain.User, *domain.Account]{
-			graphql.WithUserAccountResolvers[*domain.User, *domain.Account](
+		GraphqlOptions: graphql.Options{
+			graphql.WithUserAccountResolvers(
 				jwtProvider,
 				wiring.NewExampleUserQueryResolver(deps.UserModule),
 				accountgraphql.NewAuthResolver(
@@ -148,23 +149,21 @@ func main() {
 					rbacrepo.New(),
 				),
 				wiring.NewExampleAccountQueryResolver(
-					wiring.ExampleAccountQueryResolverConfig[*appinit.UserType, *appinit.AccountType]{
-						UserRepo: deps.GraphQL.UserRepo,
+					wiring.ExampleAccountQueryResolverConfig{
+						Users:    deps.UserModule.Core,
 						Accounts: deps.AccountUC,
 						Members:  deps.MemberUC,
 					},
 				),
-				wiring.NewExampleMemberQueryResolver(
-					deps.AccountUC,
-					deps.MemberUC,
-					deps.GraphQL.UserRepo,
-					deps.GraphQL.NewAccount,
-					deps.GraphQL.NewUser,
-					deps.GraphQL.ToGraphQL,
-					domain.UserToGraphQLPtr,
+				accountgraphql.NewMemberQueryResolver(
+					accountgraphql.MemberQueryResolverConfig[*domain.User, *domain.Account, *exmodels.Account]{
+						Accounts: deps.AccountUC,
+						Members:  deps.MemberUC,
+						UserRepo: deps.GraphQL.UserRepo,
+					},
 				),
 			),
-			graphql.WithUserLoginHandler[*domain.User, *domain.Account](
+			graphql.WithUserLoginHandler(
 				jwtProvider,
 				accountlogin.NewEmailPasswordLogin(deps.UserModule.Repo, deps.UserModule.Repo),
 				deps.AccountRepo,

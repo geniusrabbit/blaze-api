@@ -24,7 +24,7 @@ func (r *mutationResolver) SwitchAccount(ctx context.Context, id uint64) (*basem
 }
 
 // RegisterAccount is the resolver for the registerAccount field.
-func (r *mutationResolver) RegisterAccount(ctx context.Context, ownerID uint64, input exmodels.AccountCreateInput) (*exmodels.AccountCreatePayload, error) {
+func (r *mutationResolver) RegisterAccount(ctx context.Context, ownerID uint64, input exmodels.AccountCreateInput) (*exmodels.AccountPayload, error) {
 	return r.accounts.RegisterAccount(ctx, ownerID, &input)
 }
 
@@ -59,11 +59,11 @@ func (r *queryResolver) Account(ctx context.Context, id uint64) (*exmodels.Accou
 }
 
 // ListAccounts is the resolver for the listAccounts field.
-func (r *queryResolver) ListAccounts(ctx context.Context, filter *exmodels.AccountListFilter, order []*exmodels.AccountListOrder, page *basemodels.Page) (*connectors.CollectionConnection[exmodels.Account, any], error) {
+func (r *queryResolver) ListAccounts(ctx context.Context, filter *exmodels.AccountListFilter, order []*exmodels.AccountListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*exmodels.Account], error) {
 	return r.accounts.ListAccounts(ctx, filter, order, page)
 }
 
 // ListAccountRolesAndPermissions is the resolver for the listAccountRolesAndPermissions field.
-func (r *queryResolver) ListAccountRolesAndPermissions(ctx context.Context, accountID uint64, order []*basemodels.RBACRoleListOrder) (*connectors.CollectionConnection[basemodels.RBACRole, basemodels.RBACRoleEdge], error) {
+func (r *queryResolver) ListAccountRolesAndPermissions(ctx context.Context, accountID uint64, order []*basemodels.RBACRoleListOrder) (*connectors.CollectionConnection[*basemodels.RBACRole], error) {
 	return r.accAuth.ListRolesAndPermissions(ctx, accountID, order)
 }

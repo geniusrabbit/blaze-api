@@ -23,11 +23,11 @@ func (r *queryResolver) SocialAccount(ctx context.Context, id uint64) (*basemode
 }
 
 // CurrentSocialAccounts is the resolver for the currentSocialAccounts field.
-func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *basemodels.SocialAccountListFilter, order []*basemodels.SocialAccountListOrder) (*connectors.CollectionConnection[basemodels.SocialAccount, basemodels.SocialAccountEdge], error) {
+func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *basemodels.SocialAccountListFilter, order []*basemodels.SocialAccountListOrder) (*connectors.CollectionConnection[*basemodels.SocialAccount], error) {
 	return r.socAccounts.ListCurrent(ctx, filter, order)
 }
 
 // ListSocialAccounts is the resolver for the listSocialAccounts field.
-func (r *queryResolver) ListSocialAccounts(ctx context.Context, filter *basemodels.SocialAccountListFilter, order []*basemodels.SocialAccountListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.SocialAccount, basemodels.SocialAccountEdge], error) {
+func (r *queryResolver) ListSocialAccounts(ctx context.Context, filter *basemodels.SocialAccountListFilter, order []*basemodels.SocialAccountListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.SocialAccount], error) {
 	return r.socAccounts.List(ctx, filter, order, page)
 }

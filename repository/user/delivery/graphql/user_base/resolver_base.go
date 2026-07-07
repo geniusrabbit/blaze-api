@@ -35,51 +35,54 @@ func userFromSession[T user.Model](ctx context.Context) T {
 type QueryResolverBase[
 	TDomain user.Model,
 	TGQLUser any,
-	TGQLUserInput any,
+	TGQLUserCreateInput any,
+	TGQLUserUpdateInput any,
 	TGQLUserPayload any,
 	TGQLUserListFilter any,
 	TGQLUserListOrder any,
 ] struct {
 	core   user.Usecase[TDomain]
-	mapper graphql.UserGraphQLMappers[TDomain, TGQLUser, TGQLUserInput, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]
+	mapper graphql.UserGraphQLMappers[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]
 }
 
 // QueryResolverBaseConfig wires core user GraphQL resolver.
 type QueryResolverBaseConfig[
 	TDomain user.Model,
 	TGQLUser any,
-	TGQLUserInput any,
+	TGQLUserCreateInput any,
+	TGQLUserUpdateInput any,
 	TGQLUserPayload any,
 	TGQLUserListFilter any,
 	TGQLUserListOrder any,
 ] struct {
 	Core   user.Usecase[TDomain]
-	Mapper graphql.UserGraphQLMappers[TDomain, TGQLUser, TGQLUserInput, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]
+	Mapper graphql.UserGraphQLMappers[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]
 }
 
 // NewQueryResolverBase returns core user API resolver.
 func NewQueryResolverBase[
 	TDomain user.Model,
 	TGQLUser any,
-	TGQLUserInput any,
+	TGQLUserCreateInput any,
+	TGQLUserUpdateInput any,
 	TGQLUserPayload any,
 	TGQLUserListFilter any,
 	TGQLUserListOrder any,
-](cfg QueryResolverBaseConfig[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder] {
-	return &QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]{
+](cfg QueryResolverBaseConfig[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder] {
+	return &QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]{
 		core:   cfg.Core,
 		mapper: cfg.Mapper,
 	}
 }
 
 // CurrentUser returns the current user info.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) CurrentUser(ctx context.Context) (TGQLUserPayload, error) {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) CurrentUser(ctx context.Context) (TGQLUserPayload, error) {
 	userObj := userFromSession[TDomain](ctx)
 	return r.mapper.NewPayload(requestid.Get(ctx), userObj.GetID(), r.mapper.ToGQL(userObj)), nil
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) UpdateUser(ctx context.Context, id uint64, input TGQLUserInput) (TGQLUserPayload, error) {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) UpdateUser(ctx context.Context, id uint64, input TGQLUserUpdateInput) (TGQLUserPayload, error) {
 	var zero TGQLUserPayload
 	userObj, err := r.core.Get(ctx, id)
 	if err != nil {
@@ -93,16 +96,16 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TG
 }
 
 // ApproveUser is the resolver for the approveUser field.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ApproveUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error) {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ApproveUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error) {
 	return r.updateApproveStatus(ctx, id, pkgModels.ApprovedApproveStatus, msg)
 }
 
 // RejectUser is the resolver for the rejectUser field.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) RejectUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error) {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) RejectUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error) {
 	return r.updateApproveStatus(ctx, id, pkgModels.DisapprovedApproveStatus, msg)
 }
 
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg *string) (TGQLUserPayload, error) {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg *string) (TGQLUserPayload, error) {
 	var zero TGQLUserPayload
 	userObj, err := r.core.Get(ctx, id)
 	if err != nil {
@@ -128,7 +131,7 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TG
 }
 
 // ListUsers list by filter.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ListUsers(
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ListUsers(
 	ctx context.Context,
 	filter TGQLUserListFilter,
 	order []TGQLUserListOrder,
@@ -145,21 +148,21 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TG
 }
 
 // UserFromInput builds domain user from GraphQL input (used by password resolver).
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) UserFromInput(input TGQLUserInput) TDomain {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) UserFromInput(input TGQLUserCreateInput) TDomain {
 	return r.mapper.FromCreateInput(input)
 }
 
 // ToGraphQL converts domain user to GraphQL type.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ToGraphQL(userObj TDomain) TGQLUser {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ToGraphQL(userObj TDomain) TGQLUser {
 	return r.mapper.ToGQL(userObj)
 }
 
 // NewUserPayload builds GraphQL payload.
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) NewUserPayload(ctx context.Context, userID uint64, userObj TDomain) TGQLUserPayload {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) NewUserPayload(ctx context.Context, userID uint64, userObj TDomain) TGQLUserPayload {
 	return r.mapper.NewPayload(requestid.Get(ctx), userID, r.mapper.ToGQL(userObj))
 }
 
 // Core returns core usecase (for email resolver ID lookup).
-func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) Core() user.Usecase[TDomain] {
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) Core() user.Usecase[TDomain] {
 	return r.core
 }

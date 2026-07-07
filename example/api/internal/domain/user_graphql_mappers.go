@@ -1,7 +1,6 @@
 package domain
 
 import (
-	accountgraphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
 	userrepo "github.com/geniusrabbit/blaze-api/repository/user"
 	usergraphql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
 
@@ -63,7 +62,7 @@ func (UserGraphQLMappersImpl) NewPayload(clientMutationID string, userID uint64,
 }
 
 // ToAccountGQL converts a domain User to the account-facing GQL user type.
-func (UserGraphQLMappersImpl) ToAccountGQL(u *User) accountgraphql.BaseAccountGQLUser {
+func (UserGraphQLMappersImpl) ToAccountGQL(u *User) *exmodels.User {
 	return UserToGraphQLPtr(u)
 }
 

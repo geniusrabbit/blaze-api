@@ -13,6 +13,6 @@ import (
 )
 
 // ListHistory is the resolver for the listHistory field.
-func (r *queryResolver) ListHistory(ctx context.Context, filter *basemodels.HistoryActionListFilter, order []*basemodels.HistoryActionListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.HistoryAction, basemodels.HistoryActionEdge], error) {
+func (r *queryResolver) ListHistory(ctx context.Context, filter *basemodels.HistoryActionListFilter, order []*basemodels.HistoryActionListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.HistoryAction], error) {
 	return r.historylogs.List(ctx, filter, order, page)
 }

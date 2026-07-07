@@ -38,7 +38,7 @@ func (r *queryResolver) CheckPermission(ctx context.Context, name string, key *s
 }
 
 // ListRoles is the resolver for the listRoles field.
-func (r *queryResolver) ListRoles(ctx context.Context, filter *basemodels.RBACRoleListFilter, order []*basemodels.RBACRoleListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.RBACRole, basemodels.RBACRoleEdge], error) {
+func (r *queryResolver) ListRoles(ctx context.Context, filter *basemodels.RBACRoleListFilter, order []*basemodels.RBACRoleListOrder, page *basemodels.Page) (*connectors.CollectionConnection[*basemodels.RBACRole], error) {
 	return r.roles.ListRoles(ctx, filter, order, page)
 }
 
