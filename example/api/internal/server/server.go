@@ -51,7 +51,7 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 
 	mux := chi.NewRouter()
 	mux.With(basicauth.NewFromEnv("Graph", "GRAPHQL_USERS_")).
-		Handle("/", playground.Handler("Query console", "/graphql"))
+		Handle("/playground", playground.Handler("Query console", "/graphql"))
 	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,

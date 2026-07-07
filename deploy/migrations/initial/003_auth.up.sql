@@ -1,5 +1,5 @@
 
-CREATE TABLE auth_client
+CREATE TABLE IF NOT EXISTS auth_client
 ( id                      VARCHAR(128)                NOT NULL      PRIMARY KEY
 , account_id              BIGINT                      NOT NULL      REFERENCES account_base (id) MATCH SIMPLE
                                                                         ON UPDATE NO ACTION
@@ -64,7 +64,7 @@ AFTER INSERT OR UPDATE OR DELETE ON auth_client
 
 -- NOTE: for specific user permissions need to implement additional table like connect between user and gateway
 
-CREATE TABLE auth_session
+CREATE TABLE IF NOT EXISTS auth_session
 ( id                      BIGSERIAL                   PRIMARY KEY
 , active                  BOOLEAN                     NOT NULL      DEFAULT TRUE
 

@@ -160,6 +160,11 @@ type permissionConfig struct {
 	RoleCacheLifetime time.Duration `json:"role_cache_lifetime" yaml:"role_cache_lifetime" env:"PERMISSIONS_CACHE_LIFETIME" default:"10s"`
 }
 
+type superuserConfig struct {
+	Email    string `json:"email" yaml:"email" env:"SUPERUSER_EMAIL" default:"super@project.com"`
+	Password string `json:"password" yaml:"password" env:"SUPERUSER_PASSWORD"`
+}
+
 type systemConfig struct {
 	Storage storageConfig `json:"storage" yaml:"storage"`
 }
@@ -178,6 +183,7 @@ type ConfigType struct {
 	Server      serverConfig     `json:"server" yaml:"server"`
 	Session     sessionConfig    `json:"session" yaml:"session"`
 	System      systemConfig     `json:"system" yaml:"system"`
+	Superuser   superuserConfig  `json:"superuser" yaml:"superuser"`
 	SocialAuth  socialAuthConfig `json:"social_auth" yaml:"social_auth"`
 	OAuth2      oauth2Config     `json:"oauth2" yaml:"oauth2"`
 	Permissions permissionConfig `json:"permissions" yaml:"permissions"`

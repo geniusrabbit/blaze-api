@@ -10,7 +10,6 @@ import (
 	useremail "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql/user_email"
 	userpassword "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql/user_password"
 	userpassreset "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql/user_password_reset"
-	userusername "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql/user_username"
 )
 
 type UserQueryResolver interface {
@@ -28,12 +27,12 @@ type UserQueryResolver interface {
 		*exmodels.User,
 		*exmodels.UserPayload,
 	]
-	usergraphql.UserUsernameQueryResolver[
-		*domain.User,
-		*exmodels.User,
-		*exmodels.UserCreateInput,
-		*exmodels.UserPayload,
-	]
+	// usergraphql.UserUsernameQueryResolver[
+	// 	*domain.User,
+	// 	*exmodels.User,
+	// 	*exmodels.UserCreateInput,
+	// 	*exmodels.UserPayload,
+	// ]
 	usergraphql.UserPasswordQueryResolver[
 		*domain.User,
 		*exmodels.User,
@@ -62,14 +61,14 @@ type userQueryResolver struct {
 		*exmodels.User,
 		*exmodels.UserPayload,
 	]
-	userusername.QueryResolverUsername[
-		*domain.User,
-		*exmodels.User,
-		*exmodels.UserCreateInput,
-		*exmodels.UserPayload,
-		*exmodels.UserListFilter,
-		*exmodels.UserListOrder,
-	]
+	// userusername.QueryResolverUsername[
+	// 	*domain.User,
+	// 	*exmodels.User,
+	// 	*exmodels.UserCreateInput,
+	// 	*exmodels.UserPayload,
+	// 	*exmodels.UserListFilter,
+	// 	*exmodels.UserListOrder,
+	// ]
 	userpassword.QueryResolverPassword[
 		*domain.User,
 		*exmodels.User,
@@ -115,17 +114,17 @@ func NewUserQueryResolver(
 			ToGraphQL:  mapper.ToGQL,
 			NewPayload: mapper.NewPayload,
 		}),
-		QueryResolverUsername: *userusername.NewQueryResolverUsername(userusername.QueryResolverUsernameConfig[
-			*domain.User,
-			*exmodels.User,
-			*exmodels.UserCreateInput,
-			*exmodels.UserPayload,
-			*exmodels.UserListFilter,
-			*exmodels.UserListOrder,
-		]{
-			Core:      core,
-			ToGraphQL: mapper.ToGQL,
-		}),
+		// QueryResolverUsername: *userusername.NewQueryResolverUsername(userusername.QueryResolverUsernameConfig[
+		// 	*domain.User,
+		// 	*exmodels.User,
+		// 	*exmodels.UserCreateInput,
+		// 	*exmodels.UserPayload,
+		// 	*exmodels.UserListFilter,
+		// 	*exmodels.UserListOrder,
+		// ]{
+		// 	Core:      core,
+		// 	ToGraphQL: mapper.ToGQL,
+		// }),
 		QueryResolverPassword: *userpassword.NewQueryResolverPassword(userpassword.QueryResolverPasswordConfig[
 			*domain.User,
 			*exmodels.User,

@@ -7,7 +7,6 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
 	models1 "github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
@@ -16,35 +15,35 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input models1.UserCreateInput) (*models1.UserPayload, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+	return r.users.CreateUser(ctx, &input)
 }
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id uint64, input models1.UserUpdateInput) (*models1.UserPayload, error) {
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+	return r.users.UpdateUser(ctx, id, &input)
 }
 
 // ApproveUser is the resolver for the approveUser field.
 func (r *mutationResolver) ApproveUser(ctx context.Context, id uint64, msg *string) (*models1.UserPayload, error) {
-	panic(fmt.Errorf("not implemented: ApproveUser - approveUser"))
+	return r.users.ApproveUser(ctx, id, msg)
 }
 
 // RejectUser is the resolver for the rejectUser field.
 func (r *mutationResolver) RejectUser(ctx context.Context, id uint64, msg *string) (*models1.UserPayload, error) {
-	panic(fmt.Errorf("not implemented: RejectUser - rejectUser"))
+	return r.users.RejectUser(ctx, id, msg)
 }
 
 // CurrentUser is the resolver for the currentUser field.
 func (r *queryResolver) CurrentUser(ctx context.Context) (*models1.UserPayload, error) {
-	panic(fmt.Errorf("not implemented: CurrentUser - currentUser"))
+	return r.users.CurrentUser(ctx)
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id uint64, username string) (*models1.UserPayload, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return r.users.User(ctx, id, username)
 }
 
 // ListUsers is the resolver for the listUsers field.
 func (r *queryResolver) ListUsers(ctx context.Context, filter *models1.UserListFilter, order []*models1.UserListOrder, page *models.Page) (*connectors.CollectionConnection[*models1.User], error) {
-	panic(fmt.Errorf("not implemented: ListUsers - listUsers"))
+	return r.users.ListUsers(ctx, filter, order, page)
 }

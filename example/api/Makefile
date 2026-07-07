@@ -1,15 +1,16 @@
 include .env
 export
 
-include ../../deploy/build.mk
-
 SHELL := /bin/bash -o pipefail
 
 PROJECT_WORKSPACE ?= blaze-api
 PROJECT_NAME ?= blaze-api
-DOCKER_COMPOSE := docker-compose -p $(PROJECT_WORKSPACE) -f deploy/develop/docker-compose.yml
+DOCKER_COMPOSE := docker compose -p $(PROJECT_WORKSPACE) -f deploy/develop/docker-compose.yml
 DOCKER_CONTAINER_IMAGE := github.com/geniusrabbit/${PROJECT_NAME}
 DOCKER_CONTAINER_MUGRATE_IMAGE := ${DOCKER_CONTAINER_IMAGE}:migrate-latest
+APP_TAGS ?= migrate,postgres,redis,kafka,nats,graphql,grpc,metrics,opentelemetry
+
+include ../../deploy/build.mk
 
 
 .PHONY: build-gql

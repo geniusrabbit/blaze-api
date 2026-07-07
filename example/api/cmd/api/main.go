@@ -38,6 +38,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
 	rbacrepo "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/delivery/rest"
+	socautherepo "github.com/geniusrabbit/blaze-api/repository/socialauth/repository"
+	socautheuse "github.com/geniusrabbit/blaze-api/repository/socialauth/usecase"
 )
 
 var (
@@ -58,11 +60,15 @@ func init() {
 	fatalError(migratedb.Migrate(context.Background(), conf.System.Storage.MasterConnect, []migratedb.MigrateSource{
 		{
 			URI:                   []string{"file:///data/migrations/initial"},
-			SchemaMigrationsTable: "schema_migrations_prod",
+			SchemaMigrationsTable: "schema_migrations_initial",
 		},
 		{
 			URI:                   []string{"file:///data/migrations/fixtures"},
-			SchemaMigrationsTable: "schema_migrations_dev",
+			SchemaMigrationsTable: "schema_migrations_fixtures",
+		},
+		{
+			URI:                   []string{"file:///data/migrations/traits"},
+			SchemaMigrationsTable: "schema_migrations_traits",
 		},
 	}), "migrate database")
 }
@@ -124,6 +130,10 @@ func main() {
 	ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)
 	ctx = permissions.WithManager(ctx, permissionManager)
 
+	fatalError(
+		appinit.EnsureSuperuser(ctx, conf.Superuser.Email, conf.Superuser.Password, deps),
+		"init superuser")
+
 	httpServer := server.HTTPServer{
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
@@ -184,6 +194,10 @@ func main() {
 						rest.WithAccountResolver(func(ctx context.Context, filter *account.Filter) ([]*domain.Account, error) {
 							return deps.AccountRepo.FetchList(ctx, filter)
 						}),
+						rest.WithSocialAuthUsecase(socautheuse.New(
+							socautherepo.New(),
+							deps.UserModule.Repo,
+						)),
 					).HandleWrapper("/auth/facebook"),
 				)
 			}

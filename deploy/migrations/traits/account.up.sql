@@ -2,14 +2,21 @@
 -- Adds common account traits/metadata table for the blaze-api account domain.
 -- Run with: migrate -path deploy/migrations -database $DATABASE_URL up
 
-CREATE TABLE IF NOT EXISTS account_traits (
-    id           BIGSERIAL    PRIMARY KEY,
-    account_id   BIGINT       NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
-    name         VARCHAR(255) NOT NULL,
-    value        TEXT         NOT NULL DEFAULT '',
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    UNIQUE (account_id, name)
-);
+BEGIN;
 
-CREATE INDEX IF NOT EXISTS idx_account_traits_account_id ON account_traits (account_id);
+ALTER TABLE account_base
+  ADD COLUMN IF NOT EXISTS logo_uri VARCHAR(1024) NOT NULL DEFAULT '';
+
+ALTER TABLE account_base
+  ADD COLUMN IF NOT EXISTS policy_uri VARCHAR(1024) NOT NULL DEFAULT '';
+
+ALTER TABLE account_base
+  ADD COLUMN IF NOT EXISTS tos_uri VARCHAR(1024) NOT NULL DEFAULT '';
+
+ALTER TABLE account_base
+  ADD COLUMN IF NOT EXISTS client_uri VARCHAR(1024) NOT NULL DEFAULT '';
+
+ALTER TABLE account_base
+  ADD COLUMN IF NOT EXISTS contacts TEXT[];
+
+COMMIT;

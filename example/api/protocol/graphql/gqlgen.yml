@@ -5,6 +5,9 @@ schema:
   - ../../../../protocol/graphql/schemas/*.graphql
   - ../../../../repository/**/*.graphql
   - ../../../../repository/user/delivery/graphql/user_base/*.graphql
+  - ../../../../repository/user/delivery/graphql/user_email/*.graphql
+  - ../../../../repository/user/delivery/graphql/user_password/*.graphql
+  - ../../../../repository/user/delivery/graphql/user_password_reset/*.graphql
   - ./extensions/*.graphql
 
 skip_mod_tidy: true
