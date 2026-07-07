@@ -10,43 +10,46 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2/serverprovider"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/tokenextractor"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
-	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
-	accountRepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 var (
 	errAccessTokensOnlyAllows = errors.New("only access tokens are allowed in the authorization header")
 )
 
-type Authorizer struct {
+type Authorizer[TUser user.Model, TAccount account.Model] struct {
 	provider fosite.OAuth2Provider
+	accounts account.SessionRepository[TUser, TAccount]
 }
 
-func NewAuthorizer(provider fosite.OAuth2Provider) *Authorizer {
-	return &Authorizer{
+func NewAuthorizer[TUser user.Model, TAccount account.Model](
+	provider fosite.OAuth2Provider,
+	accounts account.SessionRepository[TUser, TAccount],
+) *Authorizer[TUser, TAccount] {
+	return &Authorizer[TUser, TAccount]{
 		provider: provider,
+		accounts: accounts,
 	}
 }
 
-func (au *Authorizer) AuthorizerCode() string {
+func (au *Authorizer[TUser, TAccount]) AuthorizerCode() string {
 	return "oauth2"
 }
 
-func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (string, *userModels.User, *accountModels.Account, error) {
-	var (
-		userObj    *userModels.User
-		accountObj *accountModels.Account
-		ctx        = r.Context()
-		token, err = tokenextractor.DefaultExtractor(r)
-		accounts   = accountRepo.NewAccountRepository()
-	)
+func (au *Authorizer[TUser, TAccount]) Authorize(w http.ResponseWriter, r *http.Request) (string, TUser, TAccount, error) {
+	var zeroUser TUser
+	var zeroAcc TAccount
+	ctx := r.Context()
+
+	token, err := tokenextractor.DefaultExtractor(r)
 	if err != nil {
 		ctxlogger.Get(r.Context()).Error("token extraction", zap.Error(err))
-		return "", nil, nil, nil
+		return "", zeroUser, zeroAcc, nil
 	}
+
 	if token == "" {
-		return "", nil, nil, nil
+		return "", zeroUser, zeroAcc, nil
 	}
 
 	oauth2Ctx := serverprovider.NewContext(ctx)
@@ -54,13 +57,15 @@ func (au *Authorizer) Authorize(w http.ResponseWriter, r *http.Request) (string,
 		oauth2Ctx, token, fosite.AccessToken, &fosite.DefaultSession{})
 	if errToken != nil {
 		ctxlogger.Get(r.Context()).Debug("token introspection", zap.Error(errToken))
-		return "", nil, nil, nil
+		return "", zeroUser, zeroAcc, nil
 	}
+
 	if tokenType != fosite.AccessToken {
-		return "", nil, nil, errAccessTokensOnlyAllows
+		return "", zeroUser, zeroAcc, errAccessTokensOnlyAllows
 	}
+
 	session := accessReq.GetSession().(*serverprovider.Session)
-	userObj, accountObj, err = accounts.GetByToken(ctx, session.AccessToken)
+	userObj, accountObj, err := au.accounts.GetByToken(ctx, session.AccessToken)
 
 	return token, userObj, accountObj, err
 }

@@ -25,9 +25,9 @@ func NewSocialAccountConnection(
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]{
 		// FetchDataListFunc retrieves the paginated list of social accounts.
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.SocialAccount, error) {
-			opts := []socialaccount.QOption{filter.Filter(), page.Pagination()}
+			opts := []socialaccount.QOption{FromGQLFilter(filter), page.Pagination()}
 			for _, o := range order {
-				if ord := o.Order(); ord != nil {
+				if ord := FromGQLOrder(o); ord != nil {
 					opts = append(opts, ord)
 				}
 			}
@@ -36,7 +36,7 @@ func NewSocialAccountConnection(
 		},
 		// CountDataFunc returns the total count of social accounts matching the filter.
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return accountsAccessor.Count(ctx, filter.Filter())
+			return accountsAccessor.Count(ctx, FromGQLFilter(filter))
 		},
 		// ConvertToEdgeFunc transforms a social account into a GraphQL edge with cursor.
 		ConvertToEdgeFunc: func(obj *gqlmodels.SocialAccount) *gqlmodels.SocialAccountEdge {

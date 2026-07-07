@@ -5,7 +5,8 @@ import (
 	"reflect"
 
 	"github.com/demdxx/gocast/v2"
-	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
@@ -18,17 +19,21 @@ type (
 	}
 )
 
-func ownedObject(ctx context.Context, obj any, user *userModels.User, acc *accountModels.Account) any {
-	switch obj.(type) {
-	case nil:
-		return nil
-	case *accountModels.Account, accountModels.Account:
-		return &accountModels.Account{ID: acc.ID, Admins: []uint64{user.ID}}
-	case *userModels.User, userModels.User:
-		return &userModels.User{ID: user.ID}
+type userACLSubject struct {
+	userModels.UserBase
+}
+
+func (userACLSubject) TableName() string        { return "account_user" }
+func (userACLSubject) RBACResourceName() string { return "user" }
+
+func ownedObject(ctx context.Context, obj any, usr user.Model, acc account.Model) any {
+	switch rbacObjectName(obj) {
+	case "account":
+		return account.ACLAccountStub(acc.GetID(), usr.GetID())
+	case "user":
+		return userACLSubject{UserBase: userModels.UserBase{ID: usr.GetID()}}
 	}
 
-	// Get object struct type value
 	tp := reflect.TypeOf(obj).Elem()
 	for tp.Kind() == reflect.Ptr || tp.Kind() == reflect.Interface {
 		tp = tp.Elem()
@@ -37,24 +42,31 @@ func ownedObject(ctx context.Context, obj any, user *userModels.User, acc *accou
 		return obj
 	}
 
-	// Create new object with the same type
 	newObj := reflect.New(tp).Interface()
 
-	// Set account and user owner IDs
 	if setter, ok := newObj.(accountOwnerSetter); ok {
-		setter.SetAccountOwnerID(acc.ID)
+		setter.SetAccountOwnerID(acc.GetID())
 	} else {
-		_ = gocast.SetStructFieldValue(ctx, newObj, `AccountID`, acc.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerAccountID`, acc.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `AccountID`, acc.GetID())
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerAccountID`, acc.GetID())
 	}
 
-	// Set user owner ID
 	if setter, ok := newObj.(userOwnerSetter); ok {
-		setter.SetUserOwnerID(user.ID)
+		setter.SetUserOwnerID(usr.GetID())
 	} else {
-		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, user.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, user.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, user.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, usr.GetID())
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, usr.GetID())
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, usr.GetID())
 	}
 	return newObj
+}
+
+func rbacObjectName(obj any) string {
+	if obj == nil {
+		return ""
+	}
+	if checker, ok := obj.(interface{ RBACResourceName() string }); ok {
+		return checker.RBACResourceName()
+	}
+	return ""
 }

@@ -9,30 +9,30 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	basemodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // CreateAuthClient is the resolver for the createAuthClient field.
-func (r *mutationResolver) CreateAuthClient(ctx context.Context, input models.AuthClientCreateInput) (*models.AuthClientPayload, error) {
-	return r.Resolver.Mutation().CreateAuthClient(ctx, input)
+func (r *mutationResolver) CreateAuthClient(ctx context.Context, input basemodels.AuthClientCreateInput) (*basemodels.AuthClientPayload, error) {
+	return r.authclients.CreateAuthClient(ctx, &input)
 }
 
 // UpdateAuthClient is the resolver for the updateAuthClient field.
-func (r *mutationResolver) UpdateAuthClient(ctx context.Context, id string, input models.AuthClientUpdateInput) (*models.AuthClientPayload, error) {
-	return r.Resolver.Mutation().UpdateAuthClient(ctx, id, input)
+func (r *mutationResolver) UpdateAuthClient(ctx context.Context, id string, input basemodels.AuthClientUpdateInput) (*basemodels.AuthClientPayload, error) {
+	return r.authclients.UpdateAuthClient(ctx, id, &input)
 }
 
 // DeleteAuthClient is the resolver for the deleteAuthClient field.
-func (r *mutationResolver) DeleteAuthClient(ctx context.Context, id string, msg *string) (*models.AuthClientPayload, error) {
-	return r.Resolver.Mutation().DeleteAuthClient(ctx, id, msg)
+func (r *mutationResolver) DeleteAuthClient(ctx context.Context, id string, msg *string) (*basemodels.AuthClientPayload, error) {
+	return r.authclients.DeleteAuthClient(ctx, id, msg)
 }
 
 // AuthClient is the resolver for the authClient field.
-func (r *queryResolver) AuthClient(ctx context.Context, id string) (*models.AuthClientPayload, error) {
-	return r.Resolver.Query().AuthClient(ctx, id)
+func (r *queryResolver) AuthClient(ctx context.Context, id string) (*basemodels.AuthClientPayload, error) {
+	return r.authclients.AuthClient(ctx, id)
 }
 
 // ListAuthClients is the resolver for the listAuthClients field.
-func (r *queryResolver) ListAuthClients(ctx context.Context, filter *models.AuthClientListFilter, order []*models.AuthClientListOrder, page *models.Page) (*connectors.CollectionConnection[models.AuthClient, models.AuthClientEdge], error) {
-	return r.Resolver.Query().ListAuthClients(ctx, filter, order, page)
+func (r *queryResolver) ListAuthClients(ctx context.Context, filter *basemodels.AuthClientListFilter, order []*basemodels.AuthClientListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.AuthClient, basemodels.AuthClientEdge], error) {
+	return r.authclients.ListAuthClients(ctx, filter, order, page)
 }

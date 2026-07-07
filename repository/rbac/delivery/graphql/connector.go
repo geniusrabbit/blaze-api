@@ -17,9 +17,9 @@ type RBACRoleConnection = connectors.CollectionConnection[gqlmodels.RBACRole, gq
 func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filter *gqlmodels.RBACRoleListFilter, order []*gqlmodels.RBACRoleListOrder, page *gqlmodels.Page) *RBACRoleConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.RBACRole, gqlmodels.RBACRoleEdge]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.RBACRole, error) {
-			opts := []rbac.QOption{filter.Filter(), page.Pagination()}
+			opts := []rbac.QOption{FromGQLFilter(filter), page.Pagination()}
 			for _, o := range order {
-				if ord := o.Order(); ord != nil {
+				if ord := FromGQLOrder(o); ord != nil {
 					opts = append(opts, ord)
 				}
 			}
@@ -27,7 +27,7 @@ func NewRBACRoleConnection(ctx context.Context, rolesAccessor rbac.Usecase, filt
 			return FromRBACRoleModelList(ctx, roles), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return rolesAccessor.Count(ctx, filter.Filter())
+			return rolesAccessor.Count(ctx, FromGQLFilter(filter))
 		},
 		ConvertToEdgeFunc: func(obj *gqlmodels.RBACRole) *gqlmodels.RBACRoleEdge {
 			return &gqlmodels.RBACRoleEdge{
@@ -49,11 +49,13 @@ func NewRBACRoleConnectionByIDs(ctx context.Context, rolesPepo rbac.Repository, 
 			if len(ids) > 0 {
 				opts := []rbac.QOption{&rbac.Filter{ID: ids}}
 				for _, o := range order {
-					if ord := o.Order(); ord != nil {
+					if ord := FromGQLOrder(o); ord != nil {
 						opts = append(opts, ord)
 					}
 				}
-				roles, err = rolesPepo.FetchList(ctx, opts...)
+				if roles, err = rolesPepo.FetchList(ctx, opts...); err != nil {
+					return nil, err
+				}
 			}
 			return FromRBACRoleModelList(ctx, roles), err
 		},

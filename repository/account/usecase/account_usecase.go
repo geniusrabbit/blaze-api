@@ -19,40 +19,49 @@ import (
 var ErrOwnerRequired = errors.New("owner is required")
 
 // AccountUsecase provides bussiness logic for account access
-type AccountUsecase struct {
-	userRepo    user.Repository
-	accountRepo account.Repository
-	memberRepo  account.MemberRepository
+type AccountUsecase[TUser user.Model, TAccount account.Model] struct {
+	userRepo    user.Repository[TUser]
+	accountRepo account.SessionRepository[TUser, TAccount]
+	memberRepo  account.MemberRepository[TUser, TAccount]
 }
 
 // NewAccountUsecase object controller
-func NewAccountUsecase(userRepo user.Repository, accountRepo account.Repository, memberRepo account.MemberRepository) *AccountUsecase {
-	return &AccountUsecase{
+func NewAccountUsecase[TUser user.Model, TAccount account.Model](
+	userRepo user.Repository[TUser],
+	accountRepo account.SessionRepository[TUser, TAccount],
+	memberRepo account.MemberRepository[TUser, TAccount],
+) *AccountUsecase[TUser, TAccount] {
+	return &AccountUsecase[TUser, TAccount]{
 		userRepo:    userRepo,
 		accountRepo: accountRepo,
 		memberRepo:  memberRepo,
 	}
 }
 
+// EmptyObject returns a new empty account object of type TAccount.
+func (a *AccountUsecase[TUser, TAccount]) EmptyObject() TAccount {
+	return a.accountRepo.EmptyObject()
+}
+
 // Get returns the group by ID if have access
-func (a *AccountUsecase) Get(ctx context.Context, id uint64) (*account.Account, error) {
+func (a *AccountUsecase[TUser, TAccount]) Get(ctx context.Context, id uint64) (TAccount, error) {
+	var zero TAccount
 	accountObj, err := a.accountRepo.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 	if !acl.HaveAccessView(ctx, accountObj) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view account")
+		return zero, errors.Wrap(acl.ErrNoPermissions, "view account")
 	}
 	return accountObj, nil
 }
 
 // FetchList of accounts by filter
-func (a *AccountUsecase) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
+func (a *AccountUsecase[TUser, TAccount]) FetchList(ctx context.Context, opts ...account.QOption) ([]TAccount, error) {
 	if !acl.HaveAccessList(ctx, session.Account(ctx)) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
-	// If not `system` access then filter by current user
-	if !acl.HaveAccessList(ctx, &account.Account{}) {
+	if !acl.HaveAccessList(ctx, a.EmptyObject()) {
 		var err error
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.Filter{}); err != nil {
 			return nil, errors.Wrap(acl.ErrNoPermissions, err.Error())
@@ -62,12 +71,11 @@ func (a *AccountUsecase) FetchList(ctx context.Context, opts ...account.QOption)
 }
 
 // Count of accounts by filter
-func (a *AccountUsecase) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
+func (a *AccountUsecase[TUser, TAccount]) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	if !acl.HaveAccessCount(ctx, session.Account(ctx)) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "list account")
 	}
-	// If not `system` access then filter by current user
-	if !acl.HaveAccessCount(ctx, &account.Account{}) {
+	if !acl.HaveAccessCount(ctx, a.EmptyObject()) {
 		var err error
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.Filter{}); err != nil {
 			return 0, errors.Wrap(acl.ErrNoPermissions, err.Error())
@@ -76,72 +84,90 @@ func (a *AccountUsecase) Count(ctx context.Context, opts ...account.QOption) (in
 	return a.accountRepo.Count(ctx, opts...)
 }
 
-// Store new object into database
-func (a *AccountUsecase) Store(ctx context.Context, accountObj *account.Account) (uint64, error) {
-	var err error
-	if accountObj.ID == 0 {
+// Update updates the account if have access, or creates new one if ID is 0
+func (a *AccountUsecase[TUser, TAccount]) Update(ctx context.Context, accountObj TAccount) (uint64, error) {
+	if accountObj.GetID() == 0 {
 		if !acl.HaveAccessCreate(ctx, accountObj) {
 			return 0, errors.Wrap(acl.ErrNoPermissions, "create account")
 		}
-		accountObj.ID, err = a.accountRepo.Create(ctx, accountObj)
-		return accountObj.ID, err
+		id, err := a.accountRepo.Create(ctx, accountObj)
+		return id, err
 	}
 	if !acl.HaveAccessUpdate(ctx, accountObj) {
 		return 0, errors.Wrap(acl.ErrNoPermissions, "update account")
 	}
-	return accountObj.ID, a.accountRepo.Update(
-		historylog.WithPK(ctx, accountObj.ID),
-		accountObj.ID,
+	return accountObj.GetID(), a.accountRepo.Update(
+		historylog.WithPK(ctx, accountObj.GetID()),
+		accountObj.GetID(),
 		accountObj,
 	)
 }
 
-// Register new account with owner if not exists
-func (a *AccountUsecase) Register(ctx context.Context, ownerObj *user.User, accountObj *account.Account, password string) (uint64, error) {
-	if ownerObj == nil || (ownerObj.ID == 0 && ownerObj.Email == "") {
+// Register new account with owner if not exists (requires email + password repositories on userRepo).
+func (a *AccountUsecase[TUser, TAccount]) Register(ctx context.Context, ownerObj TUser, accountObj TAccount) (uint64, error) {
+	var zeroUser TUser
+	type emailLookup interface {
+		GetByEmail(context.Context, string) (TUser, error)
+	}
+
+	emailRepo, ok := any(a.userRepo).(emailLookup)
+	if !ok {
+		return 0, errors.New("user repository does not support email lookup")
+	}
+
+	ownerEmail := ""
+	if em, ok := any(ownerObj).(user.EmailModel); ok {
+		ownerEmail = em.GetEmail()
+	}
+
+	if any(ownerObj) == any(zeroUser) || (ownerObj.GetID() == 0 && ownerEmail == "") {
 		return 0, errors.Wrap(ErrOwnerRequired, "invalid user data")
 	}
+
+	// Check permissions for account registration
 	if !acl.HavePermissions(ctx, "account.register") {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "register account")
+		return 0, acl.ErrNoPermissions.WithMessage("register account")
 	}
-	if ownerObj.ID == 0 {
-		if user, _ := a.userRepo.GetByEmail(ctx, ownerObj.Email); user != nil {
-			return 0, fmt.Errorf("user with email %s cant be registered", ownerObj.Email)
+
+	// Check if user already exists by email
+	if ownerObj.GetID() == 0 {
+		if existing, _ := emailRepo.GetByEmail(ctx, ownerEmail); any(existing) != any(zeroUser) && existing.GetID() != 0 {
+			return 0, fmt.Errorf("user with email %s cant be registered", ownerEmail)
 		}
 	}
+
 	// Execute all operations in transaction
-	err := database.ContextTransactionExec(ctx, func(txctx context.Context, tx *gorm.DB) error {
-		// If user not exists then create it
-		if ownerObj.ID == 0 {
-			uid, err := a.userRepo.Create(txctx, ownerObj, password)
+	err := database.ContextTransactionExec(ctx, func(txCtx context.Context, tx *gorm.DB) error {
+		// Create user if not exists
+		if ownerObj.GetID() == 0 {
+			uid, err := a.userRepo.Create(txCtx, ownerObj)
 			if err != nil {
 				return err
 			}
-			ownerObj.ID = uid
+			setUserID(ownerObj, uid)
 		}
-		// Create account
-		aid, err := a.accountRepo.Create(txctx, accountObj)
+
+		// Create account and link owner as member
+		aid, err := a.accountRepo.Create(txCtx, accountObj)
 		if err != nil {
 			return err
 		}
-		accountObj.ID = aid
-		// Link the user to the account as owner (admin)
-		if err := a.memberRepo.LinkMember(txctx, accountObj, true, ownerObj); err != nil {
-			return err
-		}
-		return nil
+		setAccountID(accountObj, aid)
+
+		// Link owner as member with admin role
+		return a.memberRepo.LinkMember(txCtx, accountObj, true, ownerObj)
 	})
-	return accountObj.ID, err
+	return accountObj.GetID(), err
 }
 
 // Delete delites record by ID
-func (a *AccountUsecase) Delete(ctx context.Context, id uint64) error {
+func (a *AccountUsecase[TUser, TAccount]) Delete(ctx context.Context, id uint64) error {
 	accountObj, err := a.accountRepo.Get(ctx, id)
 	if err != nil {
 		return err
 	}
 	if !acl.HaveAccessDelete(ctx, accountObj) {
-		return errors.Wrap(acl.ErrNoPermissions, "delete account")
+		return acl.ErrNoPermissions.WithMessage("delete account")
 	}
 	return a.accountRepo.Delete(historylog.WithPK(ctx, id), id)
 }

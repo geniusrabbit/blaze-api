@@ -12,6 +12,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken"
 	datModels "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
+	datokenrepo "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/repository"
+	datokenusecase "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/usecase"
 	"github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -23,6 +25,11 @@ type QueryResolver struct {
 // NewQueryResolver creates a new QueryResolver instance.
 func NewQueryResolver(uc directaccesstoken.Usecase) *QueryResolver {
 	return &QueryResolver{uc: uc}
+}
+
+// NewDefaultQueryResolver returns a new QueryResolver with the default usecase.
+func NewDefaultQueryResolver() *QueryResolver {
+	return &QueryResolver{uc: datokenusecase.New(datokenrepo.NewDirectAccessTokenRepository())}
 }
 
 // Generate creates a new direct access token with the specified parameters.
@@ -45,7 +52,7 @@ func (r *QueryResolver) Generate(ctx context.Context, userID *uint64, descriptio
 	// Generate token using the usecase
 	token, err := r.uc.Generate(ctx,
 		gocast.IfThenExec(userID != nil, func() uint64 { return *userID }, func() uint64 { return 0 }),
-		session.Account(ctx).ID,
+		session.AccountID(ctx),
 		description,
 		*expiresAt,
 	)
@@ -55,13 +62,13 @@ func (r *QueryResolver) Generate(ctx context.Context, userID *uint64, descriptio
 
 	return &models.DirectAccessTokenPayload{
 		ClientMutationID: requestid.Get(ctx),
-		Token:            models.FromDirectAccessToken(token),
+		Token:            FromDirectAccessToken(token),
 	}, nil
 }
 
 // Revoke revokes direct access tokens matching the provided filter.
 func (r *QueryResolver) Revoke(ctx context.Context, filter models.DirectAccessTokenListFilter) (*models.StatusResponse, error) {
-	err := r.uc.Revoke(ctx, filter.Filter())
+	err := r.uc.Revoke(ctx, FromFilterGraphQL(&filter))
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +89,7 @@ func (r *QueryResolver) Get(ctx context.Context, id uint64) (*models.DirectAcces
 
 	return &models.DirectAccessTokenPayload{
 		ClientMutationID: requestid.Get(ctx),
-		Token:            models.FromDirectAccessToken(token),
+		Token:            FromDirectAccessToken(token),
 	}, nil
 }
 

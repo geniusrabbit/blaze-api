@@ -19,8 +19,8 @@ func SkipNoPermissions(ctx context.Context, obj any, next graphql.Resolver, perm
 
 	pm := permissions.FromContext(ctx)
 	for _, perm := range perms {
-		_, obj := objectByPermissionName(pm, perm)
-		newObj := ownedObject(ctx, obj, user, account)
+		objName, permObj := objectByPermissionName(pm, perm)
+		newObj := ownedObject(ctx, permObj, user, account, objName)
 		if !account.CheckPermissions(ctx, newObj, perm) {
 			return nil, nil
 		}

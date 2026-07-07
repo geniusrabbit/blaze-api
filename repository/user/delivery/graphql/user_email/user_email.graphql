@@ -1,0 +1,29 @@
+# Email trait — adds email field to User and related input/filter/order types.
+# Include this module when your user struct embeds user.Email.
+
+extend type User {
+  """
+  Email address (optional trait — present only when user.Email is embedded).
+  """
+  email: String!
+}
+
+extend input UserInput {
+  email: String
+}
+
+extend input UserListFilter {
+  emails: [String!]
+}
+
+extend input UserListOrder {
+  email: Ordering
+}
+
+extend type Mutation {
+  """
+  Change email address for the current session user.
+  """
+  changeUserEmail(newEmail: String!): StatusResponse!
+    @hasPermissions(permissions: ["user.email.set.*"])
+}

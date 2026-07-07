@@ -33,11 +33,11 @@ func (u *Usecase) Get(ctx context.Context, id uint64) (*models.AccountSocial, er
 // FetchList of social accounts
 func (u *Usecase) FetchList(ctx context.Context, opts ...socialaccount.QOption) ([]*models.AccountSocial, error) {
 	if !acl.HaveAccessList(ctx, &models.AccountSocial{}) {
-		if !acl.HaveAccessList(ctx, &models.AccountSocial{UserID: session.User(ctx).ID}) {
+		if !acl.HaveAccessList(ctx, &models.AccountSocial{UserID: session.User(ctx).GetID()}) {
 			return nil, acl.ErrNoPermissions.WithMessage("list social account")
 		}
 		opts = append(opts, &socialaccount.Filter{
-			UserID: []uint64{session.User(ctx).ID},
+			UserID: []uint64{session.User(ctx).GetID()},
 		})
 	}
 	return u.repo.FetchList(ctx, opts...)
@@ -46,11 +46,11 @@ func (u *Usecase) FetchList(ctx context.Context, opts ...socialaccount.QOption) 
 // Count social accounts
 func (u *Usecase) Count(ctx context.Context, opts ...socialaccount.QOption) (int64, error) {
 	if !acl.HaveAccessCount(ctx, &models.AccountSocial{}) {
-		if !acl.HaveAccessCount(ctx, &models.AccountSocial{UserID: session.User(ctx).ID}) {
+		if !acl.HaveAccessCount(ctx, &models.AccountSocial{UserID: session.User(ctx).GetID()}) {
 			return 0, acl.ErrNoPermissions.WithMessage("count social account")
 		}
 		opts = append(opts, &socialaccount.Filter{
-			UserID: []uint64{session.User(ctx).ID},
+			UserID: []uint64{session.User(ctx).GetID()},
 		})
 	}
 	return u.repo.Count(ctx, opts...)

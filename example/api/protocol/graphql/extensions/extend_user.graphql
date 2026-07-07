@@ -1,0 +1,16 @@
+# Example consumer: extended user list filter/order fields.
+
+extend type User {
+  notes: String
+}
+
+extend input UserListFilter {
+  accountID: [ID64!]
+  roles: [ID64!]
+}
+
+extend input UserListOrder {
+  registrationDate: Ordering
+  country: Ordering
+  manager: Ordering
+}

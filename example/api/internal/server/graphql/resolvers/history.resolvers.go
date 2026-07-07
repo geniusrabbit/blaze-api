@@ -9,10 +9,10 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	basemodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // ListHistory is the resolver for the listHistory field.
-func (r *queryResolver) ListHistory(ctx context.Context, filter *models.HistoryActionListFilter, order []*models.HistoryActionListOrder, page *models.Page) (*connectors.CollectionConnection[models.HistoryAction, models.HistoryActionEdge], error) {
-	return r.Resolver.Query().ListHistory(ctx, filter, order, page)
+func (r *queryResolver) ListHistory(ctx context.Context, filter *basemodels.HistoryActionListFilter, order []*basemodels.HistoryActionListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.HistoryAction, basemodels.HistoryActionEdge], error) {
+	return r.historylogs.List(ctx, filter, order, page)
 }

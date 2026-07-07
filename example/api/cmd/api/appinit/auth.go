@@ -11,17 +11,31 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/domain"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2/serverprovider"
 	"github.com/geniusrabbit/blaze-api/pkg/cache"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/dummy"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/memory"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/redis"
-	user_repository "github.com/geniusrabbit/blaze-api/repository/user/repository"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
+type oauthUserAccessor struct {
+	email    user.EmailRepository[*domain.User]
+	password user.PasswordRepository[*domain.User]
+}
+
+func (a oauthUserAccessor) GetByEmail(ctx context.Context, email string) (user.Model, error) {
+	return a.email.GetByEmail(ctx, email)
+}
+
+func (a oauthUserAccessor) GetByPassword(ctx context.Context, userID uint64, password string) (user.Model, error) {
+	return a.password.GetByPassword(ctx, userID, password)
+}
+
 // Auth new provider
-func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm.DB) (fosite.OAuth2Provider, *jwt.Provider) {
+func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm.DB, deps *Deps) (fosite.OAuth2Provider, *jwt.Provider) {
 	oauth2config := &fosite.Config{
 		AccessTokenLifespan:           conf.OAuth2.AccessTokenLifespan,
 		RefreshTokenLifespan:          conf.OAuth2.RefreshTokenLifespan,
@@ -31,10 +45,9 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 		SendDebugMessagesToClients:    conf.OAuth2.SendDebugMessagesToClients,
 	}
 	sessionCache := newCache(ctx, conf.OAuth2.CacheConnect, conf.OAuth2.CacheLifetime)
-	userRepository := user_repository.NewUserRepository()
 	oauth2storage := serverprovider.NewDatabaseStorage(
 		masterDatabase,
-		userRepository,
+		oauthUserAccessor{email: deps.UserModule.Repo, password: deps.UserModule.Repo},
 		sessionCache,
 		conf.OAuth2.CacheLifetime,
 	)

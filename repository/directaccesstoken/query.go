@@ -77,7 +77,7 @@ func (ord *ListOrder) PrepareQuery(query *gorm.DB) *gorm.DB {
 // AdjustPermissions scopes the filter to the current session account.
 // It always overwrites AccountID to ensure results are restricted to the caller's account.
 func (fl *Filter) AdjustPermissions(ctx context.Context) error {
-	fl.AccountID = []uint64{session.Account(ctx).ID}
+	fl.AccountID = []uint64{session.AccountID(ctx)}
 	return nil
 }
 

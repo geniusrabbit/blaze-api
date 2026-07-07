@@ -7,9 +7,10 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
-	"github.com/geniusrabbit/blaze-api/repository/account/auth"
-	accountRepository "github.com/geniusrabbit/blaze-api/repository/account/repository"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	accauth "github.com/geniusrabbit/blaze-api/repository/account/auth"
 	directAccRepository "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/repository"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 // TokenSource defines where and how to extract a token from an HTTP request.
@@ -30,34 +31,32 @@ func (ts TokenSource) Extract(r *http.Request) string {
 }
 
 // HTTPWrapper is middleware that validates direct access tokens and injects user/account context.
-func HTTPWrapper(h http.Handler, sources ...TokenSource) http.Handler {
-	// Default to header-based token if no sources specified
+func HTTPWrapper[TUser user.Model, TAccount account.Model](
+	h http.Handler,
+	loader *accauth.Loader[TUser, TAccount],
+	sources ...TokenSource,
+) http.Handler {
 	if len(sources) == 0 {
 		sources = append(sources, TokenSource{Type: "header", Name: "D-Access-Token"})
 	}
 
 	actokens := directAccRepository.NewDirectAccessTokenRepository()
-	accounts := accountRepository.NewAccountRepository()
-	members := accountRepository.NewMemberRepository()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := ""
 		ctx := r.Context()
 
-		// Extract token from request
 		for _, source := range sources {
 			if token = source.Extract(r); token != "" {
 				break
 			}
 		}
 
-		// Validate token exists
 		if token == "" {
 			badRequest(w)
 			return
 		}
 
-		// Load token object from repository
 		tokenObj, err := actokens.GetByToken(ctx, token)
 		if err != nil {
 			ctxlogger.Get(ctx).Error("invalid token load", zap.Error(err))
@@ -65,40 +64,43 @@ func HTTPWrapper(h http.Handler, sources ...TokenSource) http.Handler {
 			return
 		}
 
-		// Load associated user and account
-		user, acc, err := auth.UserAccountByID(ctx, tokenObj.UserID.V, tokenObj.AccountID, nil, nil)
+		var zeroUser TUser
+		var zeroAcc TAccount
+		userObj, acc, err := loader.UserAccountByID(ctx, tokenObj.UserID.V, tokenObj.AccountID, zeroUser, zeroAcc)
 		if err != nil {
 			ctxlogger.Get(ctx).Error("invalid user load", zap.Error(err))
 			unauthorized(w)
 			return
 		}
 
-		// Validate account found
-		if acc == nil {
+		if any(acc) == any(zeroAcc) {
 			ctxlogger.Get(ctx).Info("user and account not found")
 			unauthorized(w)
 			return
 		}
 
-		// Verify user is member of account
-		if user != nil && !members.IsMember(ctx, user.ID, acc.ID) {
+		if any(userObj) != any(zeroUser) && !loader.Members.IsMember(ctx, userObj.GetID(), acc.GetID()) {
 			ctxlogger.Get(ctx).Error("user is not a member of the account")
 			unauthorized(w)
 			return
 		}
 
-		// Load user permissions for the account
-		err = accounts.LoadPermissions(ctx, acc, user)
-		if err != nil {
+		if err = loader.Accounts.LoadPermissions(ctx, acc, userObj); err != nil {
 			ctxlogger.Get(ctx).Error("load permissions", zap.Error(err))
 			unauthorized(w)
 			return
 		}
 
-		// Inject user and account into context
-		ctx = session.WithUserAccount(ctx, user, acc)
+		ctx = session.WithUserAccount(ctx, userObj, acc)
 		h.ServeHTTP(w, r.WithContext(session.WithToken(ctx, token)))
 	})
+}
+
+// badRequest responds with a 400 Bad Request error.
+func badRequest(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	_, _ = w.Write([]byte(`{"errors":[{"message":"Bad Request","code":400}]}`))
 }
 
 // unauthorized responds with a 401 Unauthorized error.
@@ -106,11 +108,4 @@ func unauthorized(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
 	_, _ = w.Write([]byte(`{"errors":[{"message":"Unauthorized","code":401}]}`))
-}
-
-// badRequest responds with a 400 Bad Request error.
-func badRequest(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	_, _ = w.Write([]byte(`{"errors":[{"message":"Bad request","code":400}]}`))
 }

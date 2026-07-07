@@ -36,9 +36,9 @@ func NewDirectAccessTokenConnection(
 		&connectors.DataAccessorFunc[gqlmodels.DirectAccessToken, gqlmodels.DirectAccessTokenEdge]{
 			// FetchDataListFunc retrieves the list of direct access tokens with applied filters, ordering, and pagination.
 			FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.DirectAccessToken, error) {
-				opts := []directaccesstoken.QOption{filter.Filter(), page.Pagination()}
+				opts := []directaccesstoken.QOption{FromFilterGraphQL(filter), page.Pagination()}
 				for _, o := range order {
-					if ord := o.Order(); ord != nil {
+					if ord := FromOrderGraphQL(o); ord != nil {
 						opts = append(opts, ord)
 					}
 				}
@@ -48,11 +48,11 @@ func NewDirectAccessTokenConnection(
 						directAccessTokens[i] = fnPrep(token)
 					}
 				}
-				return gqlmodels.FromDirectAccessTokenModelList(directAccessTokens), err
+				return FromDirectAccessTokenModelList(directAccessTokens), err
 			},
 			// CountDataFunc returns the total count of direct access tokens matching the filter criteria.
 			CountDataFunc: func(ctx context.Context) (int64, error) {
-				return directAccessTokenAccessor.Count(ctx, filter.Filter())
+				return directAccessTokenAccessor.Count(ctx, FromFilterGraphQL(filter))
 			},
 			// ConvertToEdgeFunc transforms a token into a GraphQL edge with cursor and node information.
 			ConvertToEdgeFunc: func(obj *gqlmodels.DirectAccessToken) *gqlmodels.DirectAccessTokenEdge {

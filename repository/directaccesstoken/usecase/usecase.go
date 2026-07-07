@@ -38,8 +38,7 @@ func (u *Usecase) Get(ctx context.Context, id uint64) (*models.DirectAccessToken
 // FetchList retrieves a filtered and paginated list of direct access tokens.
 func (u *Usecase) FetchList(ctx context.Context, opts ...directaccesstoken.QOption) ([]*models.DirectAccessToken, error) {
 	if !acl.HaveAccessList(ctx, &models.DirectAccessToken{}) {
-		acc := session.Account(ctx)
-		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
+		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
 			return nil, errors.Wrap(acl.ErrNoPermissions, "list access tokens")
 		}
 		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
@@ -50,8 +49,7 @@ func (u *Usecase) FetchList(ctx context.Context, opts ...directaccesstoken.QOpti
 // Count returns the total count of direct access tokens matching the filter.
 func (u *Usecase) Count(ctx context.Context, opts ...directaccesstoken.QOption) (int64, error) {
 	if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{}) {
-		acc := session.Account(ctx)
-		if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
+		if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
 			return 0, errors.Wrap(acl.ErrNoPermissions, "count access tokens")
 		}
 		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
@@ -73,8 +71,7 @@ func (u *Usecase) Generate(ctx context.Context, userID, accountID uint64, descri
 // Revoke revokes direct access tokens matching the filter criteria.
 func (u *Usecase) Revoke(ctx context.Context, opts ...directaccesstoken.QOption) error {
 	if !acl.HaveAccessDelete(ctx, &models.DirectAccessToken{}) {
-		acc := session.Account(ctx)
-		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: acc.ID}) {
+		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
 			return errors.Wrap(acl.ErrNoPermissions, "revoke access tokens")
 		}
 		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})

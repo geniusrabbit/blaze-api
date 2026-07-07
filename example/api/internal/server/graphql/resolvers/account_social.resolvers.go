@@ -9,25 +9,25 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	basemodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // DisconnectSocialAccount is the resolver for the disconnectSocialAccount field.
-func (r *mutationResolver) DisconnectSocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error) {
-	return r.Resolver.Mutation().DisconnectSocialAccount(ctx, id)
+func (r *mutationResolver) DisconnectSocialAccount(ctx context.Context, id uint64) (*basemodels.SocialAccountPayload, error) {
+	return r.socAccounts.Disconnect(ctx, id)
 }
 
 // SocialAccount is the resolver for the socialAccount field.
-func (r *queryResolver) SocialAccount(ctx context.Context, id uint64) (*models.SocialAccountPayload, error) {
-	return r.Resolver.Query().SocialAccount(ctx, id)
+func (r *queryResolver) SocialAccount(ctx context.Context, id uint64) (*basemodels.SocialAccountPayload, error) {
+	return r.socAccounts.Get(ctx, id)
 }
 
 // CurrentSocialAccounts is the resolver for the currentSocialAccounts field.
-func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order []*models.SocialAccountListOrder) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
-	return r.Resolver.Query().CurrentSocialAccounts(ctx, filter, order)
+func (r *queryResolver) CurrentSocialAccounts(ctx context.Context, filter *basemodels.SocialAccountListFilter, order []*basemodels.SocialAccountListOrder) (*connectors.CollectionConnection[basemodels.SocialAccount, basemodels.SocialAccountEdge], error) {
+	return r.socAccounts.ListCurrent(ctx, filter, order)
 }
 
 // ListSocialAccounts is the resolver for the listSocialAccounts field.
-func (r *queryResolver) ListSocialAccounts(ctx context.Context, filter *models.SocialAccountListFilter, order []*models.SocialAccountListOrder, page *models.Page) (*connectors.CollectionConnection[models.SocialAccount, models.SocialAccountEdge], error) {
-	return r.Resolver.Query().ListSocialAccounts(ctx, filter, order, page)
+func (r *queryResolver) ListSocialAccounts(ctx context.Context, filter *basemodels.SocialAccountListFilter, order []*basemodels.SocialAccountListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.SocialAccount, basemodels.SocialAccountEdge], error) {
+	return r.socAccounts.List(ctx, filter, order, page)
 }

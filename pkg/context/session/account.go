@@ -7,10 +7,10 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountCtx "github.com/geniusrabbit/blaze-api/repository/account/context"
+	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	userContext "github.com/geniusrabbit/blaze-api/repository/user/context"
-	// "github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
-	// "google.golang.org/grpc/metadata"
+	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 // Permission auth specific constants
@@ -19,64 +19,130 @@ const (
 	AnonymousDefaultRole = `anonymous`
 )
 
-// WithUserAccount puts to the context user and account models
-func WithUserAccount(ctx context.Context, userObj *user.User, accountObj *account.Account) context.Context {
-	if accountObj == nil {
+// placeholderAccount satisfies account.Model for anonymous/dev session bootstrap only.
+type placeholderAccount struct {
+	accountModels.AccountBase
+}
+
+func (placeholderAccount) TableName() string { return "account_base" }
+
+func (a *placeholderAccount) NewWithIDs(id uint64, adminUserIDs ...uint64) account.Model {
+	acc := &placeholderAccount{}
+	acc.ID = id
+	acc.Admins = adminUserIDs
+	return acc
+}
+
+func newPlaceholderAccount(perm accountModels.PermissionChecker, adminUserID uint64) *placeholderAccount {
+	acc := &placeholderAccount{}
+	acc.SetPermissions(perm)
+	if adminUserID > 0 {
+		acc.Admins = []uint64{adminUserID}
+	}
+	return acc
+}
+
+func accountFromContext(ctx context.Context) account.Model {
+	if acc, ok := accountCtx.SessionAccount(ctx).(account.Model); ok {
+		return acc
+	}
+	return newPlaceholderAccount(nil, 0)
+}
+
+// anonymousSessionUser is a minimal user.Model for unauthenticated requests.
+type anonymousSessionUser struct {
+	userModels.UserBase
+	userModels.UserEmail
+}
+
+func (anonymousSessionUser) TableName() string        { return "anonymous_user" }
+func (anonymousSessionUser) RBACResourceName() string { return "anonymous.user" }
+
+func (u *anonymousSessionUser) NewWithID(id uint64) user.Model {
+	return &anonymousSessionUser{UserBase: userModels.UserBase{ID: id}}
+}
+
+var anonymousUser = &anonymousSessionUser{
+	UserEmail: userModels.UserEmail{Email: "<anonymous>"},
+	UserBase:  userModels.UserBase{Approve: models.ApprovedApproveStatus},
+}
+
+// WithUserAccount puts user and account models into context.
+func WithUserAccount[TUser user.Model](ctx context.Context, userObj TUser, accountObj account.Model) context.Context {
+	if accountObj == nil || (accountObj.GetID() == 0 && accountObj.IsAnonymous()) {
 		pm := permissions.FromContext(ctx)
 		role := pm.Role(ctx, AnonymousDefaultRole)
-		accountObj = &account.Account{
-			Title:       "<anonymous>",
-			Permissions: role,
-			Admins:      []uint64{userObj.ID},
+		adminID := uint64(0)
+		if !userObj.IsNil() && !userObj.IsAnonymous() {
+			adminID = userObj.GetID()
 		}
+		accountObj = newPlaceholderAccount(role, adminID)
 	}
 	ctx = userContext.WithSessionUser(ctx, userObj)
 	ctx = accountCtx.WithSessionAccount(ctx, accountObj)
 	return ctx
 }
 
-// WithAnonymousUserAccount puts to context user and account with anonym permissions
+// WithAnonymousUserAccount puts anonymous user and account into context.
 func WithAnonymousUserAccount(ctx context.Context) context.Context {
 	pm := permissions.FromContext(ctx)
 	role := pm.Role(ctx, AnonymousDefaultRole)
-	return WithUserAccount(ctx,
-		&user.User{Email: "<anonymous>", Approve: models.ApprovedApproveStatus},
-		&account.Account{Title: "<anonymous>", Permissions: role})
+	return WithUserAccount(ctx, anonymousUser, newPlaceholderAccount(role, 0))
 }
 
-// WithUserAccountDevelop sets development objects into the context
-// nolint:unused // ...
+// WithUserAccountDevelop sets development objects into the context.
 func WithUserAccountDevelop(ctx context.Context) context.Context {
 	manager := permissions.NewTestManager(ctx)
-	role := manager.Role(ctx, `test`) // INFO: Assume that there is no error because of this is the test manager
-	ctx = WithUserAccount(ctx,
-		&user.User{ID: 1},
-		&account.Account{ID: 1, Permissions: role, Admins: []uint64{1}},
-	)
-	// if changelog.MessageQueue(ctx) == nil {
-	// 	ctx = changelog.WithMessageQueue(ctx)
-	// }
-	return ctx
+	role := manager.Role(ctx, `test`)
+	acc := newPlaceholderAccount(role, 1)
+	acc.SetID(1)
+	devUser := &anonymousSessionUser{UserBase: userModels.UserBase{ID: 1}}
+	return WithUserAccount(ctx, devUser, acc)
 }
 
-// UserAccount returns user + account models
-func UserAccount(ctx context.Context) (u *user.User, a *account.Account) {
-	if u = userContext.SessionUser(ctx); u == nil {
-		u = &user.Anonymous
+// UserAccount returns user + account models from context.
+func UserAccount(ctx context.Context) (user.Model, account.Model) {
+	u := userContext.SessionUser(ctx)
+	if u == nil {
+		u = anonymousUser
 	}
-	if a = accountCtx.SessionAccount(ctx); a == nil {
-		a = &account.Account{}
+	return u, accountFromContext(ctx)
+}
+
+// UserModel returns current user as Model interface.
+func UserModel(ctx context.Context) user.Model {
+	u, _ := UserAccount(ctx)
+	return u
+}
+
+// AccountModel returns current account as Model interface.
+func AccountModel(ctx context.Context) account.Model {
+	_, a := UserAccount(ctx)
+	return a
+}
+
+// Account returns current account model.
+func Account(ctx context.Context) account.Model {
+	return accountFromContext(ctx)
+}
+
+// AccountID returns current account ID (0 when absent).
+func AccountID(ctx context.Context) uint64 {
+	if acc := Account(ctx); acc != nil {
+		return acc.GetID()
 	}
-	return u, a
+	return 0
 }
 
-// Account returns current account model
-func Account(ctx context.Context) *account.Account {
-	return accountCtx.SessionAccount(ctx)
+// User returns current user model.
+func User(ctx context.Context) user.Model {
+	return UserModel(ctx)
 }
 
-// User returns current user model
-// nolint:unused // temporary
-func User(ctx context.Context) *user.User {
-	return userContext.SessionUser(ctx)
+// UserID returns current user ID (0 when absent).
+func UserID(ctx context.Context) uint64 {
+	if u := UserModel(ctx); u != nil {
+		return u.GetID()
+	}
+	return 0
 }

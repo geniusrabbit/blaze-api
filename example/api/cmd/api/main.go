@@ -15,7 +15,10 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/domain"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/wiring"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/facebook"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
@@ -29,9 +32,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/zlogger"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/authorizer"
+	accountgraphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
+	accountlogin "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql/account_login"
 	"github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
+	rbacrepo "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/delivery/rest"
-	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 var (
@@ -104,12 +109,14 @@ func main() {
 	// Register callback for history log (only for modifications)
 	fatalError(gormlog.Register(masterDatabase), "register history log")
 
+	deps := appinit.NewDeps()
+
 	// Init permission manager
 	permissionManager := permissions.NewManager(masterDatabase, conf.Permissions.RoleCacheLifetime)
-	appinit.InitModelPermissions(permissionManager)
+	appinit.InitModelPermissions(permissionManager, deps)
 
 	// Init OAuth2 provider
-	oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDatabase)
+	oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDatabase, deps)
 
 	// Prepare context
 	ctx = ctxlogger.WithLogger(ctx, loggerObj)
@@ -120,14 +127,48 @@ func main() {
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
 		SessionManager: appinit.SessionManager(conf.Session.CookieName, conf.Session.Lifetime),
-		Authorizers: []auth.Authorizer[*user.User, *account.Account]{
-			jwt.NewAuthorizer(jwtProvider),
-			oauth2.NewAuthorizer(oauth2provider),
+		AuthLoader:     deps.AuthLoader,
+		Authorizers: []auth.Authorizer[*domain.User, *domain.Account]{
+			jwt.NewAuthorizer(jwtProvider, deps.AuthLoader),
+			oauth2.NewAuthorizer(oauth2provider, deps.AccountRepo),
 			authorizer.NewDevTokenAuthorizer(gocast.IfThen(conf.IsDebug(), &authorizer.AuthOption{
 				DevToken:     conf.Session.DevToken,
 				DevUserID:    conf.Session.DevUserID,
 				DevAccountID: conf.Session.DevAccountID,
-			}, nil)),
+			}, nil), deps.AuthLoader),
+		},
+		GraphqlOptions: graphql.Options[*domain.User, *domain.Account]{
+			graphql.WithUserAccountResolvers[*domain.User, *domain.Account](
+				jwtProvider,
+				wiring.NewExampleUserQueryResolver(deps.UserModule),
+				accountgraphql.NewAuthResolver(
+					jwtProvider,
+					deps.AccountRepo,
+					deps.AccountUC,
+					rbacrepo.New(),
+				),
+				wiring.NewExampleAccountQueryResolver(
+					wiring.ExampleAccountQueryResolverConfig[*appinit.UserType, *appinit.AccountType]{
+						UserRepo: deps.GraphQL.UserRepo,
+						Accounts: deps.AccountUC,
+						Members:  deps.MemberUC,
+					},
+				),
+				wiring.NewExampleMemberQueryResolver(
+					deps.AccountUC,
+					deps.MemberUC,
+					deps.GraphQL.UserRepo,
+					deps.GraphQL.NewAccount,
+					deps.GraphQL.NewUser,
+					deps.GraphQL.ToGraphQL,
+					domain.UserToGraphQLPtr,
+				),
+			),
+			graphql.WithUserLoginHandler[*domain.User, *domain.Account](
+				jwtProvider,
+				accountlogin.NewEmailPasswordLogin(deps.UserModule.Repo, deps.UserModule.Repo),
+				deps.AccountRepo,
+			),
 		},
 		ContextWrap: func(ctx context.Context) context.Context {
 			ctx = ctxlogger.WithLogger(ctx, loggerObj)
@@ -139,8 +180,12 @@ func main() {
 			if conf.SocialAuth.Facebook.IsValid() {
 				oa2conf := conf.SocialAuth.Facebook.OAuth2Config("facebook")
 				mux.Handle("/auth/facebook/*",
-					rest.NewWrapper(facebook.NewFacebookConfig(oa2conf), rest.WithSessionProvider(jwtProvider)).
-						HandleWrapper("/auth/facebook"),
+					rest.NewWrapper(facebook.NewFacebookConfig(oa2conf),
+						rest.WithSessionProvider(jwtProvider),
+						rest.WithAccountResolver(func(ctx context.Context, filter *account.Filter) ([]*domain.Account, error) {
+							return deps.AccountRepo.FetchList(ctx, filter)
+						}),
+					).HandleWrapper("/auth/facebook"),
 				)
 			}
 		},

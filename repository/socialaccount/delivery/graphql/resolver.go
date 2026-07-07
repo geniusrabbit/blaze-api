@@ -7,6 +7,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
+	socrepo "github.com/geniusrabbit/blaze-api/repository/socialaccount/repository"
+	socusecase "github.com/geniusrabbit/blaze-api/repository/socialaccount/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -18,6 +20,11 @@ type QueryResolver struct {
 // NewQueryResolver creates a new QueryResolver instance.
 func NewQueryResolver(uc socialaccount.Usecase) *QueryResolver {
 	return &QueryResolver{accounts: uc}
+}
+
+// NewDefaultQueryResolver creates a default QueryResolver with a new social account usecase.
+func NewDefaultQueryResolver() *QueryResolver {
+	return &QueryResolver{accounts: socusecase.NewSocaccUsecase(socrepo.NewSocaccRepository())}
 }
 
 // Get retrieves a social account by ID.
@@ -42,10 +49,10 @@ func (r *QueryResolver) ListCurrent(
 	if filter == nil {
 		filter = &gqlmodels.SocialAccountListFilter{}
 	}
-	if len(filter.UserID) > 1 || (len(filter.UserID) == 1 && filter.UserID[0] != session.User(ctx).ID) {
+	if len(filter.UserID) > 1 || (len(filter.UserID) == 1 && filter.UserID[0] != session.User(ctx).GetID()) {
 		return nil, fmt.Errorf("filter by user id is not allowed for current user")
 	}
-	filter.UserID = append(filter.UserID[:0], session.User(ctx).ID)
+	filter.UserID = append(filter.UserID[:0], session.User(ctx).GetID())
 	return NewSocialAccountConnection(ctx, r.accounts, filter, order, nil), nil
 }
 

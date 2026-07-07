@@ -3,65 +3,71 @@ package graphql
 import (
 	"context"
 
-	"github.com/demdxx/gocast/v2"
-
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
-// AccountConnection implements collection accessor interface with pagination
-type AccountConnection = connectors.CollectionConnection[gqlmodels.Account, gqlmodels.AccountEdge]
+// AccountConnection implements collection accessor interface with pagination (base schema types).
+type AccountConnection[TGQLAccount any] = connectors.CollectionConnection[TGQLAccount, any]
 
-// NewAccountConnection based on query object
-func NewAccountConnection(ctx context.Context, accountsAccessor account.Usecase, filter *gqlmodels.AccountListFilter, order []*gqlmodels.AccountListOrder, page *gqlmodels.Page) *AccountConnection {
-	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.Account, gqlmodels.AccountEdge]{
-		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Account, error) {
-			opts := []account.QOption{filter.Filter(), page.Pagination()}
-			for _, o := range order {
-				if ord := o.Order(); ord != nil {
-					opts = append(opts, ord)
-				}
-			}
+// NewAccountConnection based on query object.
+func NewAccountConnection[
+	TUser user.Model,
+	TDomain account.Model,
+	TGQLAccount any,
+](
+	ctx context.Context,
+	accountsAccessor account.Usecase[TUser, TDomain],
+	filter account.QOption,
+	order []account.QOption,
+	page *gqlmodels.Page,
+	toGraphQL AccountGraphQLConverter[TDomain, TGQLAccount],
+) *AccountConnection[TGQLAccount] {
+	toList := AccountGraphQLListConverter(toGraphQL)
+	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[TGQLAccount, any]{
+		FetchDataListFunc: func(ctx context.Context) ([]*TGQLAccount, error) {
+			opts := []account.QOption{filter, page.Pagination()}
+			opts = append(opts, order...)
 			accounts, err := accountsAccessor.FetchList(ctx, opts...)
-			return FromAccountModelList(accounts), err
+			if err != nil {
+				return nil, err
+			}
+			return connectors.PtrSlice(toList(accounts)), nil
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return accountsAccessor.Count(ctx, filter.Filter())
-		},
-		ConvertToEdgeFunc: func(obj *gqlmodels.Account) *gqlmodels.AccountEdge {
-			return &gqlmodels.AccountEdge{
-				Cursor: gocast.Str(obj.ID),
-				Node:   obj,
-			}
+			return accountsAccessor.Count(ctx, filter)
 		},
 	}, page)
 }
 
-// MemberConnection implements collection accessor interface with pagination
-type MemberConnection = connectors.CollectionConnection[gqlmodels.Member, gqlmodels.MemberEdge]
+// MemberConnection implements collection accessor interface with pagination.
+type MemberConnection = connectors.CollectionConnection[gqlmodels.Member, any]
 
-// NewMemberConnection based on query object
-func NewMemberConnection(ctx context.Context, membersAccessor account.MemberUsecase, filter *gqlmodels.MemberListFilter, order []*gqlmodels.MemberListOrder, page *gqlmodels.Page) *MemberConnection {
-	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.Member, gqlmodels.MemberEdge]{
+// NewMemberConnection based on query object.
+func NewMemberConnection[TUser user.Model, TDomain account.Model](
+	ctx context.Context,
+	membersAccessor account.MemberUsecase[TUser, TDomain],
+	accounts account.Usecase[TUser, TDomain],
+	users user.Repository[TUser],
+	filter *gqlmodels.MemberListFilter,
+	order []*gqlmodels.MemberListOrder,
+	page *gqlmodels.Page,
+) *MemberConnection {
+	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.Member, any]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Member, error) {
-			opts := []account.QOption{filter.Filter(), page.Pagination()}
+			opts := []account.QOption{FromMemberGQLFilter(filter), page.Pagination()}
 			for _, o := range order {
-				if ord := o.Order(); ord != nil {
+				if ord := FromMemberGQLOrder(o); ord != nil {
 					opts = append(opts, ord)
 				}
 			}
 			members, err := membersAccessor.FetchListMembers(ctx, opts...)
-			return FromMemberModelList(ctx, members), err
+			return FromMemberModelList(ctx, members, accounts, users), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return membersAccessor.CountMembers(ctx, filter.Filter())
-		},
-		ConvertToEdgeFunc: func(obj *gqlmodels.Member) *gqlmodels.MemberEdge {
-			return &gqlmodels.MemberEdge{
-				Cursor: gocast.Str(obj.ID),
-				Node:   obj,
-			}
+			return membersAccessor.CountMembers(ctx, FromMemberGQLFilter(filter))
 		},
 	}, page)
 }

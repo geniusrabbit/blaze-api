@@ -1,0 +1,59 @@
+# Example consumer: OAuth2-style account profile fields (extend base Account schema).
+
+extend type Account {
+  title: String!
+  description: String!
+
+  """
+  logoURI is an URL string that references a logo for the client.
+  """
+  logoURI: String!
+
+  """
+  policyURI is a URL string that points to a human-readable privacy policy document.
+  """
+  policyURI: String!
+
+  """
+  termsOfServiceURI is a URL string that points to a human-readable terms of service document.
+  """
+  termsOfServiceURI: String!
+
+  """
+  clientURI is an URL string of a web page providing information about the client.
+  """
+  clientURI: String!
+
+  """
+  contacts is a array of strings representing ways to contact people responsible for this client.
+  """
+  contacts: [String!]
+}
+
+extend input AccountCreateInput {
+  title: String
+  description: String
+  logoURI: String
+  policyURI: String
+  termsOfServiceURI: String
+  clientURI: String
+  contacts: [String!]
+}
+
+extend input AccountUpdateInput {
+  title: String
+  description: String
+  logoURI: String
+  policyURI: String
+  termsOfServiceURI: String
+  clientURI: String
+  contacts: [String!]
+}
+
+extend input AccountListFilter {
+  title: [String!]
+}
+
+extend input AccountListOrder {
+  title: Ordering
+}

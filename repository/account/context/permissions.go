@@ -8,10 +8,10 @@ import (
 
 // PermissionCheckAccountFromContext returns the original account for permission checks
 // from the given context, or nil if not found.
-func PermissionCheckAccountFromContext(ctx context.Context) *models.Account {
+func PermissionCheckAccountFromContext(ctx context.Context) SessionModel {
 	switch acc := ctx.Value(models.CtxPermissionCheckAccount).(type) {
 	case nil:
-	case *models.Account:
+	case SessionModel:
 		return acc
 	}
 	return nil

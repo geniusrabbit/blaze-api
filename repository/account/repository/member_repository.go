@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
-	"github.com/geniusrabbit/blaze-api/repository"
+	baseRepo "github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/models"
 	prbac "github.com/geniusrabbit/blaze-api/repository/rbac"
@@ -20,75 +20,84 @@ import (
 )
 
 var (
-	// ErrInvalidRoleList error in case of invalid role list
-	ErrInvalidRoleList = errors.New(`invalid role list, check your permissions`)
-
-	// ErrAccountHaveToHaveAdmin error in case of no any admin in account
+	ErrInvalidRoleList        = errors.New(`invalid role list, check your permissions`)
 	ErrAccountHaveToHaveAdmin = errors.New(`account must have at least one admin`)
 )
 
-// Repository DAO which provides functionality of working with accounts
-type MemberRepository struct {
-	repository.Repository
-	rbacUse prbac.Usecase
+type memberRepository[TUser user.Model, TAccount account.Model] struct {
+	baseRepo.Repository
+	rbacUse   prbac.Usecase
+	newMember func() *account.Member[TUser, TAccount]
 }
 
-// NewMemberRepository account repository
-func NewMemberRepository() *MemberRepository {
-	return &MemberRepository{
-		rbacUse: userbac.NewDefault(),
+// NewMemberRepositoryFor creates generic member repository.
+func NewMemberRepositoryFor[TUser user.Model, TAccount account.Model](newMember func() *account.Member[TUser, TAccount]) account.MemberRepository[TUser, TAccount] {
+	if newMember == nil {
+		panic(`newMember function must be provided`)
 	}
+	return &memberRepository[TUser, TAccount]{rbacUse: userbac.NewDefault(), newMember: newMember}
 }
 
-// FetchListMembers returns the list of members from account
-func (r *MemberRepository) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*models.AccountMember, error) {
+// EmptyObject returns a new empty member object of type Member[TUser, TAccount].
+func (r *memberRepository[TUser, TAccount]) EmptyObject() *account.Member[TUser, TAccount] {
+	return r.newMember()
+}
+
+func (r *memberRepository[TUser, TAccount]) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*account.Member[TUser, TAccount], error) {
 	var (
-		list  []*models.AccountMember
-		query = r.Slave(ctx).Model((*models.AccountMember)(nil))
+		bases []models.MemberBase
+		query = r.Slave(ctx).Model(&models.MemberBase{})
 	)
 	query = account.ListOptions(opts).PrepareQuery(query)
-	query = query.Preload(clause.Associations)
-	err := query.Find(&list).Error
-	return list, err
+	if err := query.Find(&bases).Error; err != nil {
+		return nil, err
+	}
+	list := make([]*account.Member[TUser, TAccount], len(bases))
+	for i, base := range bases {
+		m := r.newMember()
+		m.MemberBase = base
+		list[i] = m
+	}
+	return list, nil
 }
 
-// CountMembers returns the count of members from account
-func (r *MemberRepository) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
+func (r *memberRepository[TUser, TAccount]) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
 	var (
 		count int64
-		query = r.Slave(ctx).Model((*models.AccountMember)(nil))
+		query = r.Slave(ctx).Model(&models.MemberBase{})
 	)
 	query = account.ListOptions(opts).PrepareQuery(query)
 	err := query.Count(&count).Error
 	return count, err
 }
 
-// Member returns the member object by account and user
-func (r *MemberRepository) Member(ctx context.Context, userID, accountID uint64) (*models.AccountMember, error) {
+func (r *memberRepository[TUser, TAccount]) Member(ctx context.Context, userID, accountID uint64) (*account.Member[TUser, TAccount], error) {
 	return r.memberByQuery(ctx, `account_id=? AND user_id=?`, accountID, userID)
 }
 
-// MemberByID returns the member object by ID
-func (r *MemberRepository) MemberByID(ctx context.Context, id uint64) (*models.AccountMember, error) {
+func (r *memberRepository[TUser, TAccount]) MemberByID(ctx context.Context, id uint64) (*account.Member[TUser, TAccount], error) {
 	return r.memberByQuery(ctx, `id=?`, id)
 }
 
-func (r *MemberRepository) memberByQuery(ctx context.Context, query ...any) (*models.AccountMember, error) {
-	var member models.AccountMember
+func (r *memberRepository[TUser, TAccount]) memberByQuery(ctx context.Context, query ...any) (*account.Member[TUser, TAccount], error) {
+	var base models.MemberBase
 	err := r.Slave(ctx).
-		Preload(clause.Associations).
-		Find(&member, query...).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) || member.ID == 0 {
+		Model(&models.MemberBase{}).
+		Preload("Roles").
+		Where(query[0], query[1:]...).
+		First(&base).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) || base.ID == 0 {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &member, err
+	member := r.newMember()
+	member.MemberBase = base
+	return member, nil
 }
 
-// IsMember check the user if linked to account
-func (r *MemberRepository) IsMember(ctx context.Context, userID, accountID uint64) bool {
+func (r *memberRepository[TUser, TAccount]) IsMember(ctx context.Context, userID, accountID uint64) bool {
 	count, _ := r.CountMembers(ctx, &account.MemberFilter{
 		UserID:    []uint64{userID},
 		AccountID: []uint64{accountID},
@@ -96,32 +105,32 @@ func (r *MemberRepository) IsMember(ctx context.Context, userID, accountID uint6
 	return count > 0
 }
 
-// IsAdmin check the user if linked to account as admin
-func (r *MemberRepository) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
+func (r *memberRepository[TUser, TAccount]) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
 	if accountID == 0 || userID == 0 {
 		return false
 	}
-	var member models.AccountMember
+	var member models.MemberBase
 	err := r.Slave(ctx).
-		Find(&member, `account_id=? AND user_id=?`, accountID, userID).Error
+		Model(&models.MemberBase{}).
+		Where(`account_id=? AND user_id=?`, accountID, userID).
+		First(&member).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) || member.ID == 0 {
 		return false
 	}
 	return err == nil && member.IsAdmin
 }
 
-// LinkMember into account
-func (r *MemberRepository) LinkMember(ctx context.Context, accountObj *models.Account, isAdmin bool, members ...*user.User) error {
+func (r *memberRepository[TUser, TAccount]) LinkMember(ctx context.Context, accountObj TAccount, isAdmin bool, members ...TUser) error {
 	return r.Master(ctx).Transaction(func(tx *gorm.DB) error {
-		query := tx.Model((*models.AccountMember)(nil)).Clauses(clause.OnConflict{
+		query := tx.Model(&models.MemberBase{}).Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "account_id"}, {Name: "user_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"approve_status", "is_admin"}),
 		})
 		for _, userObj := range members {
-			err := query.Create(&models.AccountMember{
+			err := query.Create(&models.MemberBase{
 				Approve:   pkgModels.ApprovedApproveStatus,
-				AccountID: accountObj.ID,
-				UserID:    userObj.ID,
+				AccountID: accountObj.GetID(),
+				UserID:    userObj.GetID(),
 				IsAdmin:   isAdmin,
 			}).Error
 			if err != nil {
@@ -132,26 +141,25 @@ func (r *MemberRepository) LinkMember(ctx context.Context, accountObj *models.Ac
 	})
 }
 
-// UnlinkMember from the account
-func (r *MemberRepository) UnlinkMember(ctx context.Context, accountObj *models.Account, users ...*user.User) error {
+func (r *memberRepository[TUser, TAccount]) UnlinkMember(ctx context.Context, accountObj TAccount, users ...TUser) error {
 	ids := make([]uint64, 0, len(users))
-	for _, user := range users {
-		ids = append(ids, user.ID)
+	for _, u := range users {
+		ids = append(ids, u.GetID())
 	}
-	return r.Master(ctx).Model((*models.AccountMember)(nil)).Delete(`id=ANY(?)`, ids).Error
+	return r.Master(ctx).
+		Where(`account_id=? AND user_id IN ?`, accountObj.GetID(), ids).
+		Delete(&models.MemberBase{}).Error
 }
 
-// SetMemberRoles into account
-func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *models.Account, user *user.User, roles ...string) error {
+func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, accountObj TAccount, userObj TUser, roles ...string) error {
 	var (
 		listRoles   []*prbac.Role
-		member, err = r.Member(ctx, user.ID, accountObj.ID)
+		member, err = r.Member(ctx, userObj.GetID(), accountObj.GetID())
 	)
 	if err != nil {
 		return err
 	}
 
-	// Load roles for the member
 	if len(roles) > 0 {
 		if listRoles, err = r.rbacUse.FetchList(ctx, &prbac.Filter{Names: roles}); err != nil {
 			return err
@@ -161,16 +169,14 @@ func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *model
 		}
 	}
 
-	// Prepare member roles
 	wasAdmin := member.IsAdmin
 	member.Roles = listRoles
 	member.IsAdmin = xtypes.Slice[string](roles).Has(func(v string) bool { return v == "admin" || v == "account:admin" })
 
-	// Check if we have at least one admin in account
 	if wasAdmin != member.IsAdmin && !member.IsAdmin {
 		cnt, err := r.CountMembers(ctx, &account.MemberFilter{
-			AccountID: []uint64{accountObj.ID},
-			NotUserID: []uint64{user.ID},
+			AccountID: []uint64{accountObj.GetID()},
+			NotUserID: []uint64{userObj.GetID()},
 			IsAdmin:   null.BoolFrom(true),
 			Status:    []pkgModels.ApproveStatus{pkgModels.ApprovedApproveStatus},
 		})
@@ -182,15 +188,12 @@ func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *model
 		}
 	}
 
-	// Transaction for updating member roles
 	return r.TransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
-		// Save member object state
 		err := tx.Omit(clause.Associations).Save(member).Error
 		if err != nil {
 			return err
 		}
 		roleIDs := xtypes.SliceApply(listRoles, func(v *prbac.Role) uint64 { return v.ID })
-		// Remove roles for the member
 		err = tx.Model((*models.M2MAccountMemberRole)(nil)).
 			Where(`member_id=?`, member.ID).
 			Where(`role_id NOT IN (?)`, roleIDs).
@@ -198,7 +201,6 @@ func (r *MemberRepository) SetMemberRoles(ctx context.Context, accountObj *model
 		if err != nil {
 			return err
 		}
-		// Save roles for the member
 		return tx.Save(xtypes.SliceApply(listRoles, func(v *prbac.Role) *models.M2MAccountMemberRole {
 			return &models.M2MAccountMemberRole{
 				MemberID:  member.ID,

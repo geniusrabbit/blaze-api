@@ -7,46 +7,46 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/auth/tokenextractor"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
-	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
-	accountRepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
+	"github.com/geniusrabbit/blaze-api/repository/account"
+	accauth "github.com/geniusrabbit/blaze-api/repository/account/auth"
+	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 // DirectTokenAuthorizer implements authorization using direct token authentication.
-type DirectTokenAuthorizer struct {
+type DirectTokenAuthorizer[TUser user.Model, TAccount account.Model] struct {
 	extractor TokenExtractor
+	loader    *accauth.Loader[TUser, TAccount]
 }
 
 // NewDirectTokenAuthorizer creates a new instance of DirectTokenAuthorizer.
-func NewDirectTokenAuthorizer() *DirectTokenAuthorizer {
-	return &DirectTokenAuthorizer{
+func NewDirectTokenAuthorizer[TUser user.Model, TAccount account.Model](loader *accauth.Loader[TUser, TAccount]) *DirectTokenAuthorizer[TUser, TAccount] {
+	return &DirectTokenAuthorizer[TUser, TAccount]{
 		extractor: tokenextractor.DefaultExtractor,
+		loader:    loader,
 	}
 }
 
 // AuthorizerCode returns the identifier code for this authorizer.
-func (au *DirectTokenAuthorizer) AuthorizerCode() string {
+func (au *DirectTokenAuthorizer[TUser, TAccount]) AuthorizerCode() string {
 	return "directtoken"
 }
 
 // Authorize validates the request by extracting and verifying the token,
 // then retrieves the associated user and account information.
-func (au *DirectTokenAuthorizer) Authorize(w http.ResponseWriter, r *http.Request) (string, *userModels.User, *accountModels.Account, error) {
+func (au *DirectTokenAuthorizer[TUser, TAccount]) Authorize(w http.ResponseWriter, r *http.Request) (string, TUser, TAccount, error) {
+	var zeroUser TUser
+	var zeroAcc TAccount
 	ctx := r.Context()
 
-	// Extract token from the request
 	token, err := au.extractor(r)
 	if err != nil {
 		ctxlogger.Get(r.Context()).Error("token extraction", zap.Error(err))
-		return "", nil, nil, nil
+		return "", zeroUser, zeroAcc, nil
 	}
-
-	// Return early if no token is provided
 	if token == "" {
-		return "", nil, nil, nil
+		return "", zeroUser, zeroAcc, nil
 	}
 
-	// Retrieve user and account information by token
-	userObj, accountObj, err := accountRepo.NewAccountRepository().GetByToken(ctx, token)
+	userObj, accountObj, err := au.loader.Accounts.GetByToken(ctx, token)
 	return token, userObj, accountObj, err
 }

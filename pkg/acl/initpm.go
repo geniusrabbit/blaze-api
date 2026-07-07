@@ -62,13 +62,13 @@ func commonPermissionCheck(custCheck ...checkFnk) checkFnk {
 		// Check if resource belongs to the account.
 		// If the user have the permission to the account we can allow access
 		// even if the resource is not belongs to the user
-		if cover == `account` && checkOwnerAccount(resource, account.ID) == 1 {
+		if cover == `account` && checkOwnerAccount(resource, account.GetID()) == 1 {
 			return true
 		}
 
 		// Check if resource belongs to the specific user and account.
-		ccu := checkCreatorUser(resource, user.ID)
-		coa := checkOwnerAccount(resource, account.ID)
+		ccu := checkCreatorUser(resource, user.GetID())
+		coa := checkOwnerAccount(resource, account.GetID())
 		if (ccu == 1 && coa >= 0) || (ccu >= 0 && coa == 1) {
 			return true
 		}

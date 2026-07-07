@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
+	historylogrepo "github.com/geniusrabbit/blaze-api/repository/historylog/repository"
+	historylogusecase "github.com/geniusrabbit/blaze-api/repository/historylog/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -15,6 +17,11 @@ type QueryResolver struct {
 // NewQueryResolver returns new API resolver
 func NewQueryResolver(uc historylog.Usecase) *QueryResolver {
 	return &QueryResolver{uc: uc}
+}
+
+// NewDefaultQueryResolver returns new API resolver with default usecase
+func NewDefaultQueryResolver() *QueryResolver {
+	return &QueryResolver{uc: historylogusecase.NewUsecase(historylogrepo.New())}
 }
 
 // List changelogs is the resolver for the listChangelogs field.

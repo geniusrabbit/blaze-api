@@ -14,11 +14,9 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
-	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -27,130 +25,101 @@ var (
 	errUserIsNotAuthorized  = errors.New(`user is not authorized properly`)
 )
 
-// AuthResolver is the resolver for the Auth type
-type AuthResolver struct {
+// AuthResolver is the resolver for the Auth type.
+type AuthResolver[TUser user.Model, TAccount account.Model] struct {
 	provider       *jwt.Provider
-	userRepo       user.Repository
-	accountRepo    account.Repository
-	accountUsecase account.Usecase
+	accountRepo    account.SessionRepository[TUser, TAccount]
+	accountUsecase account.Usecase[TUser, TAccount]
 	roleRepo       rbac.Repository
 }
 
-// NewAuthResolver creates new resolver for the Auth type
-func NewAuthResolver(provider *jwt.Provider, userRepo user.Repository, accountRepo account.Repository, accountUsecase account.Usecase, roleRepo rbac.Repository) *AuthResolver {
-	return &AuthResolver{
+// NewAuthResolver creates new resolver for the Auth type.
+func NewAuthResolver[TUser user.Model, TAccount account.Model](
+	provider *jwt.Provider,
+	accountRepo account.SessionRepository[TUser, TAccount],
+	accountUsecase account.Usecase[TUser, TAccount],
+	roleRepo rbac.Repository,
+) *AuthResolver[TUser, TAccount] {
+	return &AuthResolver[TUser, TAccount]{
 		provider:       provider,
-		userRepo:       userRepo,
 		accountRepo:    accountRepo,
 		accountUsecase: accountUsecase,
 		roleRepo:       roleRepo,
 	}
 }
 
-// Login is the resolver for the login field
-func (r *AuthResolver) Login(ctx context.Context, login string, password string) (*gqlmodels.SessionToken, error) {
-	accountID := uint64(0)
-	user, err := r.userRepo.GetByPassword(ctx, login, password)
-	if err != nil {
-		return nil, err
-	}
-
-	account, err := accountForUser(ctx, r.accountRepo, user, accountID)
-	if err != nil {
-		return nil, err
-	}
-	if account != nil {
-		accountID = account.ID
-	}
-
-	token, expiresAt, err := r.provider.CreateToken(user.ID, accountID, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	roles := account.Permissions.ChildRoles()
-	if r, ok := account.Permissions.(lrbac.Role); ok {
-		roles = append(roles, r)
-	}
-	return &gqlmodels.SessionToken{
-		Token:     token,
-		ExpiresAt: expiresAt.UTC(),
-		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
-		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
-	}, nil
-}
-
-// Logout is the resolver for the logout field
-func (r *AuthResolver) Logout(ctx context.Context) (bool, error) {
+// Logout is the resolver for the logout field.
+func (r *AuthResolver[TUser, TAccount]) Logout(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// SwitchAccount is the resolver for the switchAccount field
-func (r *AuthResolver) SwitchAccount(ctx context.Context, id uint64) (*gqlmodels.SessionToken, error) {
-	user := session.User(ctx)
-	if user == nil {
+// SwitchAccount is the resolver for the switchAccount field.
+func (r *AuthResolver[TUser, TAccount]) SwitchAccount(ctx context.Context, id uint64) (*gqlmodels.SessionToken, error) {
+	userObj := session.User(ctx)
+	if userObj == nil || userObj.IsAnonymous() {
 		return nil, errUserIsNotAuthorized
 	}
 
-	account, err := accountForUser(ctx, r.accountRepo, user, id)
+	var typedUser TUser
+	if u, ok := any(userObj).(TUser); ok {
+		typedUser = u
+	}
+
+	acc, err := r.accountForUser(ctx, typedUser, id)
 	if err != nil {
 		return nil, err
 	}
 
-	token, expiresAt, err := r.provider.CreateToken(user.ID, account.ID, 0)
+	token, expiresAt, err := r.provider.CreateToken(userObj.GetID(), acc.GetID(), 0)
 	if err != nil {
 		return nil, err
 	}
 
-	roles := account.Permissions.ChildRoles()
-	if r, ok := account.Permissions.(lrbac.Role); ok {
-		roles = append(roles, r)
-	}
-	return &gqlmodels.SessionToken{
-		Token:     token,
-		ExpiresAt: expiresAt,
-		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
-		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
-	}, nil
+	return r.sessionTokenFromAccount(typedUser, acc, token, expiresAt)
 }
 
-// CurrentSession is the resolver for the currentSession field
-func (r *AuthResolver) CurrentSession(ctx context.Context) (*gqlmodels.SessionToken, error) {
-	user, account, token := session.User(ctx), session.Account(ctx), session.Token(ctx)
-	roles := append([]lrbac.Role{}, account.Permissions.ChildRoles()...)
-	if r, ok := account.Permissions.(lrbac.Role); ok {
-		roles = append(roles, r)
+// CurrentSession is the resolver for the currentSession field.
+func (r *AuthResolver[TUser, TAccount]) CurrentSession(ctx context.Context) (*gqlmodels.SessionToken, error) {
+	userObj := session.User(ctx)
+	accModel := session.Account(ctx)
+	token := session.Token(ctx)
+	var zero TAccount
+	acc, _ := accModel.(TAccount)
+	if any(acc) == any(zero) || acc.IsNil() {
+		acc = zero
 	}
-	return &gqlmodels.SessionToken{
-		Token:     token,
-		ExpiresAt: time.Now().Add(r.provider.TokenLifetime),
-		IsAdmin:   account.IsAdminUser(user.GetID()), // Is current account admin
-		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
-	}, nil
+	var typedUser TUser
+	if u, ok := any(userObj).(TUser); ok {
+		typedUser = u
+	}
+	return r.sessionTokenFromAccount(typedUser, acc, token, time.Now().Add(r.provider.TokenLifetime))
 }
 
-// ListRolesAndPermissions is the resolver for the listRolesAndPermissions field
-func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID uint64, order []*gqlmodels.RBACRoleListOrder) (*rbacgql.RBACRoleConnection, error) {
+// ListRolesAndPermissions is the resolver for the listRolesAndPermissions field.
+func (r *AuthResolver[TUser, TAccount]) ListRolesAndPermissions(ctx context.Context, accountID uint64, order []*gqlmodels.RBACRoleListOrder) (*rbacgql.RBACRoleConnection, error) {
 	var (
-		err     error
-		account *accountModels.Account
-		permIDs []uint64
+		err error
+		acc TAccount
 	)
 
-	// If accountID is provided, load that account and check permissions, otherwise use current session account
 	if accountID != 0 {
-		if account, err = r.accountUsecase.Get(ctx, accountID); err != nil {
+		if acc, err = r.accountUsecase.Get(ctx, accountID); err != nil {
 			return nil, err
 		}
-	} else if account = session.Account(ctx); account == nil {
+	} else if sessionAcc := session.Account(ctx); sessionAcc != nil {
+		if typed, ok := sessionAcc.(TAccount); ok {
+			acc = typed
+		}
+	}
+	if acc.IsNil() {
 		return nil, errUserIsNotAuthorized
 	}
 
-	// Collect permission IDs from the account's permissions and child roles
-	if account != nil && account.Permissions != nil {
-		childRoles := append([]lrbac.Role{}, account.Permissions.ChildRoles()...)
-		if r, ok := account.Permissions.(lrbac.Role); ok {
-			childRoles = append(childRoles, r)
+	var permIDs []uint64
+	if checker := acc.PermissionsChecker(); checker != nil {
+		childRoles := append([]lrbac.Role{}, checker.ChildRoles()...)
+		if role, ok := checker.(lrbac.Role); ok {
+			childRoles = append(childRoles, role)
 		}
 		permIDs = xtypes.SliceApply(childRoles, func(r lrbac.Role) uint64 {
 			switch ext := r.Ext().(type) {
@@ -164,27 +133,59 @@ func (r *AuthResolver) ListRolesAndPermissions(ctx context.Context, accountID ui
 	return rbacgql.NewRBACRoleConnectionByIDs(ctx, r.roleRepo, permIDs, order), nil
 }
 
-func accountForUser(ctx context.Context, accountRepo account.Repository, user *userModels.User, accountID uint64) (*accountModels.Account, error) {
-	accounts, err := accountRepo.FetchList(ctx,
+func (r *AuthResolver[TUser, TAccount]) sessionTokenFromAccount(
+	user TUser,
+	acc TAccount,
+	token string,
+	expiresAt time.Time,
+) (*gqlmodels.SessionToken, error) {
+	var zeroAcc TAccount
+	roles := []lrbac.Role{}
+	if any(acc) != any(zeroAcc) {
+		if checker := acc.PermissionsChecker(); checker != nil {
+			roles = append(roles, checker.ChildRoles()...)
+			if role, ok := checker.(lrbac.Role); ok {
+				roles = append(roles, role)
+			}
+		}
+	}
+	var zeroUser TUser
+	isAdmin := false
+	if any(acc) != any(zeroAcc) && any(user) != any(zeroUser) {
+		isAdmin = acc.IsAdminUser(user.GetID())
+	}
+	return &gqlmodels.SessionToken{
+		Token:     token,
+		ExpiresAt: expiresAt.UTC(),
+		IsAdmin:   isAdmin,
+		Roles:     xtypes.SliceApply(roles, func(r lrbac.Role) string { return r.Name() }),
+	}, nil
+}
+
+func (r *AuthResolver[TUser, TAccount]) accountForUser(
+	ctx context.Context,
+	user TUser,
+	accountID uint64,
+) (TAccount, error) {
+	var zero TAccount
+	accounts, err := r.accountRepo.FetchList(ctx,
 		&account.Filter{
 			ID:     gocast.IfThen(accountID > 0, []uint64{accountID}, nil),
-			UserID: []uint64{user.ID},
+			UserID: []uint64{user.GetID()},
 		},
-		nil,
 		&repository.Pagination{Size: 1},
 	)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 	if len(accounts) == 0 {
 		if accountID != 0 {
-			return nil, errInvalidAccountTarget
+			return zero, errInvalidAccountTarget
 		}
-		return nil, nil
+		return zero, nil
 	}
-	// Load permissions for the account and check membership
-	if err = accountRepo.LoadPermissions(ctx, accounts[0], user); err != nil {
-		return nil, err
+	if err = r.accountRepo.LoadPermissions(ctx, accounts[0], user); err != nil {
+		return zero, err
 	}
 	return accounts[0], nil
 }

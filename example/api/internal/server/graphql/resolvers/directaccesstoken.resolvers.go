@@ -10,25 +10,25 @@ import (
 	"time"
 
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	basemodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // GenerateDirectAccessToken is the resolver for the generateDirectAccessToken field.
-func (r *mutationResolver) GenerateDirectAccessToken(ctx context.Context, userID *uint64, description string, expiresAt *time.Time) (*models.DirectAccessTokenPayload, error) {
-	return r.Resolver.Mutation().GenerateDirectAccessToken(ctx, userID, description, expiresAt)
+func (r *mutationResolver) GenerateDirectAccessToken(ctx context.Context, userID *uint64, description string, expiresAt *time.Time) (*basemodels.DirectAccessTokenPayload, error) {
+	return r.directaccesstoken.Generate(ctx, userID, description, expiresAt)
 }
 
 // RevokeDirectAccessToken is the resolver for the revokeDirectAccessToken field.
-func (r *mutationResolver) RevokeDirectAccessToken(ctx context.Context, filter models.DirectAccessTokenListFilter) (*models.StatusResponse, error) {
-	return r.Resolver.Mutation().RevokeDirectAccessToken(ctx, filter)
+func (r *mutationResolver) RevokeDirectAccessToken(ctx context.Context, filter basemodels.DirectAccessTokenListFilter) (*basemodels.StatusResponse, error) {
+	return r.directaccesstoken.Revoke(ctx, filter)
 }
 
 // GetDirectAccessToken is the resolver for the getDirectAccessToken field.
-func (r *queryResolver) GetDirectAccessToken(ctx context.Context, id uint64) (*models.DirectAccessTokenPayload, error) {
-	return r.Resolver.Query().GetDirectAccessToken(ctx, id)
+func (r *queryResolver) GetDirectAccessToken(ctx context.Context, id uint64) (*basemodels.DirectAccessTokenPayload, error) {
+	return r.directaccesstoken.Get(ctx, id)
 }
 
 // ListDirectAccessTokens is the resolver for the listDirectAccessTokens field.
-func (r *queryResolver) ListDirectAccessTokens(ctx context.Context, filter *models.DirectAccessTokenListFilter, order []*models.DirectAccessTokenListOrder, page *models.Page) (*connectors.CollectionConnection[models.DirectAccessToken, models.DirectAccessTokenEdge], error) {
-	return r.Resolver.Query().ListDirectAccessTokens(ctx, filter, order, page)
+func (r *queryResolver) ListDirectAccessTokens(ctx context.Context, filter *basemodels.DirectAccessTokenListFilter, order []*basemodels.DirectAccessTokenListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.DirectAccessToken, basemodels.DirectAccessTokenEdge], error) {
+	return r.directaccesstoken.List(ctx, filter, order, page)
 }

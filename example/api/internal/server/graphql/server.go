@@ -14,6 +14,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/generated"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/resolvers"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
@@ -23,16 +24,22 @@ import (
 )
 
 // GraphQL mux handler
-func GraphQL(provider *jwt.Provider, options option.Usecase) http.Handler {
+func GraphQL(provider *jwt.Provider, options option.Usecase, opts ...Option[*appinit.UserType, *appinit.AccountType]) http.Handler {
+	cfg := Apply(opts, new(OptionsConfig[*appinit.UserType, *appinit.AccountType]))
+
 	srv := handler.New(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolvers.NewResolver(provider, options),
+			Resolvers: resolvers.NewResolver(provider, options, cfg.UserHandler, cfg.AuthHandler, cfg.LoginHandler, cfg.AccountHandler, cfg.MemberHandler),
 			Directives: generated.DirectiveRoot{
-				HasPermissions:    directives.HasPermissions,
-				Acl:               directives.HasPermissions,
+				HasPermissions:    directives.HasPermissions[*appinit.UserType, *appinit.AccountType],
+				Acl:               directives.HasPermissions[*appinit.UserType, *appinit.AccountType],
 				Auth:              directives.Auth,
 				SkipNoPermissions: directives.SkipNoPermissions,
 				CacheData:         directives.CacheData,
+				Length:            directives.ValidateLength,
+				Notempty:          directives.ValidateNotEmpty,
+				Range:             directives.ValidateRange,
+				Regex:             directives.ValidateRegex,
 			},
 		}),
 	)

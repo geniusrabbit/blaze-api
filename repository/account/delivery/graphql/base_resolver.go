@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/demdxx/xtypes"
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
@@ -15,8 +16,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	usergql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
+	user_graphql "github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -24,160 +24,197 @@ var (
 	ErrAccountIDRequired = errors.New("account id is required")
 )
 
-// QueryResolver implements GQL API methods
-type QueryResolver struct {
-	userRepo user.Repository
-	accounts account.Usecase
-	members  account.MemberUsecase
+// QueryResolver implements account GQL API methods.
+// TGQL* type parameters are consumer GraphQL schema types (base or extended via extend type).
+type QueryResolver[
+	TUser user.Model,
+	TDomain account.Model,
+	TGQLAccount any,
+	TGQLAccountPayload any,
+	TGQLAccountCreateInput any,
+	TGQLAccountCreatePayload any,
+	TGQLAccountUpdateInput any,
+	TGQLAccountListFilter any,
+	TGQLAccountListOrder any,
+	TGQLUser any,
+	TGQLUserCreateInput any,
+	TGQLUserUpdateInput any,
+] struct {
+	users          user.Usecase[TUser]
+	usersMapper    user_graphql.UserGraphQLMappersBase[TUser, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]
+	accounts       account.Usecase[TUser, TDomain]
+	accountsMapper AccountGraphQLMappers[TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser]
+	members        account.MemberUsecase[TUser, TDomain]
 }
 
-// NewQueryResolver returns new API resolver
-func NewQueryResolver(accounts account.Usecase, members account.MemberUsecase, userRepo user.Repository) *QueryResolver {
-	return &QueryResolver{
-		userRepo: userRepo,
-		accounts: accounts,
-		members:  members,
+// QueryResolverConfig wires generic account GraphQL resolvers.
+type QueryResolverConfig[
+	TUser user.Model,
+	TDomain account.Model,
+	TGQLAccount any,
+	TGQLAccountPayload any,
+	TGQLAccountCreateInput any,
+	TGQLAccountCreatePayload any,
+	TGQLAccountUpdateInput any,
+	TGQLAccountListFilter any,
+	TGQLAccountListOrder any,
+	TGQLUser any,
+	TGQLUserCreateInput any,
+	TGQLUserUpdateInput any,
+] struct {
+	Users          user.Usecase[TUser]
+	UsersMapper    user_graphql.UserGraphQLMappersBase[TUser, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]
+	Accounts       account.Usecase[TUser, TDomain]
+	AccountsMapper AccountGraphQLMappers[TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser]
+	Members        account.MemberUsecase[TUser, TDomain]
+}
+
+// NewQueryResolver returns new API resolver.
+func NewQueryResolver[
+	TUser user.Model,
+	TDomain account.Model,
+	TGQLAccount any,
+	TGQLAccountPayload any,
+	TGQLAccountCreateInput any,
+	TGQLAccountCreatePayload any,
+	TGQLAccountUpdateInput any,
+	TGQLAccountListFilter any,
+	TGQLAccountListOrder any,
+	TGQLUser any,
+	TGQLUserCreateInput any,
+	TGQLUserUpdateInput any,
+](
+	cfg QueryResolverConfig[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput],
+) *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput] {
+	return &QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]{
+		users:          cfg.Users,
+		usersMapper:    cfg.UsersMapper,
+		accounts:       cfg.Accounts,
+		accountsMapper: cfg.AccountsMapper,
+		members:        cfg.Members,
 	}
 }
 
-// CurrentAccount returns the current account info
-func (r *QueryResolver) CurrentAccount(ctx context.Context) (*gqlmodels.AccountPayload, error) {
-	account := session.Account(ctx)
-	return &gqlmodels.AccountPayload{
-		ClientMutationID: requestid.Get(ctx),
-		AccountID:        account.ID,
-		Account:          FromAccountModel(account),
-	}, nil
+// CurrentAccount returns the current account info.
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) CurrentAccount(ctx context.Context) (TGQLAccountPayload, error) {
+	var zero TDomain
+	acc := session.Account(ctx)
+	typed, _ := acc.(TDomain)
+	if any(typed) == any(zero) {
+		typed = zero
+	}
+	return r.accountsMapper.NewPayload(
+		requestid.Get(ctx), typed.GetID(), r.accountsMapper.ToGQL(typed)), nil
 }
 
-// Account returns the account info
-func (r *QueryResolver) Account(ctx context.Context, id uint64) (*gqlmodels.AccountPayload, error) {
+// Account returns the account info.
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) Account(ctx context.Context, id uint64) (TGQLAccountPayload, error) {
 	acc, err := r.accounts.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		var zero TGQLAccountPayload
+		return zero, err
 	}
-	return &gqlmodels.AccountPayload{
-		ClientMutationID: requestid.Get(ctx),
-		AccountID:        id,
-		Account:          FromAccountModel(acc),
-	}, nil
+	return r.accountsMapper.NewPayload(requestid.Get(ctx), id, r.accountsMapper.ToGQL(acc)), nil
 }
 
-// RegisterAccount creates a new account
-func (r *QueryResolver) RegisterAccount(ctx context.Context, input *gqlmodels.AccountCreateInput) (*gqlmodels.AccountCreatePayload, error) {
-	if (input.OwnerID == nil || *input.OwnerID == 0) && input.Owner == nil {
-		return nil, errors.New("owner is required")
+// RegisterAccount creates a new account.
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) RegisterAccount(ctx context.Context, ownerID uint64, input TGQLAccountCreateInput) (TGQLAccountCreatePayload, error) {
+	var zero TGQLAccountCreatePayload
+	accObj := r.accountsMapper.FromCreateInput(input)
+	userObj, err := r.users.Get(ctx, ownerID)
+	if err != nil {
+		return zero, err
 	}
 
-	if input.Owner != nil && input.Password == "" {
-		return nil, errors.New("password is required")
+	if _, err := r.accounts.Register(ctx, userObj, accObj); err != nil {
+		return zero, err
 	}
 
-	var (
-		userObj = input.Owner.Model(pkgModels.UndefinedApproveStatus)
-		accObj  = input.Account.Model(pkgModels.UndefinedApproveStatus)
-	)
-
-	if input.OwnerID != nil && *input.OwnerID > 0 {
-		if userObj != nil {
-			userObj.ID = *input.OwnerID
-		} else {
-			userObj = &userModels.User{ID: *input.OwnerID}
-		}
-	}
-
-	if _, err := r.accounts.Register(ctx, userObj, accObj, input.Password); err != nil {
-		return nil, err
-	} else {
-		userObj, _ = r.userRepo.Get(ctx, userObj.ID)
-	}
-
-	// Send message to the account owner about the account creation (welcome message)
-	err := messanger.Get(ctx).Send(ctx, "account.register",
-		[]string{userObj.Email}, map[string]any{
-			"id":      accObj.ID,
+	err = messanger.Get(ctx).Send(ctx, "account.register",
+		[]string{userEmail(userObj)}, map[string]any{
+			"id":      accObj.GetID(),
 			"account": accObj,
 			"owner":   userObj,
 		})
 	if err != nil {
-		// Log error if message sending failed but do not return error to the client
 		ctxlogger.Get(ctx).Error("Failed to send message",
 			zap.String("template", "account.register"),
 			zap.Error(err))
 	}
 
-	return &gqlmodels.AccountCreatePayload{
-		ClientMutationID: requestid.Get(ctx),
-		Account:          FromAccountModel(accObj),
-		Owner:            usergql.FromUserModel(userObj),
-	}, nil
+	return r.accountsMapper.NewCreatePayload(
+		requestid.Get(ctx), r.accountsMapper.ToGQL(accObj), r.usersMapper.ToGQL(userObj)), nil
 }
 
 // UpdateAccount is the resolver for the updateAccount field.
-func (r *QueryResolver) UpdateAccount(ctx context.Context, id uint64, input *gqlmodels.AccountInput) (*gqlmodels.AccountPayload, error) {
-	if id == 0 {
-		return nil, ErrAccountIDRequired
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) UpdateAccount(ctx context.Context, id uint64, input TGQLAccountUpdateInput) (TGQLAccountPayload, error) {
+	var zero TGQLAccountPayload
+	accModel := r.accountsMapper.FromUpdateInput(input, r.accountsMapper.New())
+	if setter, ok := any(accModel).(interface{ SetID(uint64) }); ok {
+		setter.SetID(id)
 	}
-	return r.createUpdateAccount(ctx, id, input)
-}
-
-func (r *QueryResolver) createUpdateAccount(ctx context.Context, id uint64, input *gqlmodels.AccountInput) (*gqlmodels.AccountPayload, error) {
-	accModel := input.Model()
-	accModel.ID = id
-	id, err := r.accounts.Store(ctx, accModel)
+	id, err := r.accounts.Update(ctx, accModel)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 	acc, err := r.accounts.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
-	return &gqlmodels.AccountPayload{
-		ClientMutationID: requestid.Get(ctx),
-		AccountID:        id,
-		Account:          FromAccountModel(acc),
-	}, nil
+	return r.accountsMapper.NewPayload(requestid.Get(ctx), id, r.accountsMapper.ToGQL(acc)), nil
 }
 
 // ApproveAccount is the resolver for the approveAccount field.
-func (r *QueryResolver) ApproveAccount(ctx context.Context, id uint64, msg string) (*gqlmodels.AccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) ApproveAccount(ctx context.Context, id uint64, msg string) (TGQLAccountPayload, error) {
 	return r.updateApproveStatus(ctx, id, pkgModels.ApprovedApproveStatus, msg)
 }
 
 // RejectAccount is the resolver for the rejectAccount field.
-func (r *QueryResolver) RejectAccount(ctx context.Context, id uint64, msg string) (*gqlmodels.AccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) RejectAccount(ctx context.Context, id uint64, msg string) (TGQLAccountPayload, error) {
 	return r.updateApproveStatus(ctx, id, pkgModels.DisapprovedApproveStatus, msg)
 }
 
-func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg string) (*gqlmodels.AccountPayload, error) {
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) updateApproveStatus(ctx context.Context, id uint64, status pkgModels.ApproveStatus, msg string) (TGQLAccountPayload, error) {
+	var zero TGQLAccountPayload
+	type approvable interface {
+		SetApprove(pkgModels.ApproveStatus)
+	}
+
+	// Get account and check permissions
 	acc, err := r.accounts.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
-	acc.Approve = status
-	saveCtx := historylog.WithMessage(ctx, msg)
+
+	// Set approval status and save account
+	if setter, ok := any(acc).(approvable); ok {
+		setter.SetApprove(status)
+	}
+
+	// Save account with history log
+	saveCtx := historylog.WithMessageAndPK(ctx, msg, id)
 	saveCtx = historylog.WithAction(saveCtx, strings.ToLower(status.String()))
 
-	// Store the updated account
-	if _, err = r.accounts.Store(saveCtx, acc); err != nil {
-		return nil, err
+	if _, err = r.accounts.Update(saveCtx, acc); err != nil {
+		return zero, err
 	}
 
-	// Get account owner
+	// Notify account admins about approval status change
 	members, err := r.members.FetchListMembers(ctx,
-		&account.MemberFilter{AccountID: []uint64{acc.ID}}, nil, nil)
+		&account.MemberFilter{AccountID: []uint64{acc.GetID()}}, nil, nil)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	recipients := make([]string, 0, len(members))
 	for _, member := range members {
 		if member.IsAdmin {
-			recipients = append(recipients, member.User.Email)
+			if email := userEmail(member.User); email != "" {
+				recipients = append(recipients, email)
+			}
 		}
 	}
 
-	// Send message to the account owner about the account creation (welcome message)
 	tmplName := "account." + strings.ToLower(status.String())
 	err = messanger.Get(ctx).Send(ctx, tmplName, recipients, map[string]any{
 		"id":      id,
@@ -188,21 +225,26 @@ func (r *QueryResolver) updateApproveStatus(ctx context.Context, id uint64, stat
 		ctxlogger.Get(ctx).Error("Failed to send message",
 			zap.String("template", tmplName),
 			zap.Error(err))
-		return nil, err
+		return zero, err
 	}
 
-	return &gqlmodels.AccountPayload{
-		ClientMutationID: requestid.Get(ctx),
-		AccountID:        id,
-		Account:          gqlmodels.FromAccountModel(acc),
-	}, nil
+	return r.accountsMapper.NewPayload(requestid.Get(ctx),
+		id, r.accountsMapper.ToGQL(acc)), nil
 }
 
-// ListAccounts list by filter
-func (r *QueryResolver) ListAccounts(ctx context.Context,
-	filter *gqlmodels.AccountListFilter,
-	order []*gqlmodels.AccountListOrder,
+// ListAccounts list by filter.
+func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAccountCreateInput, TGQLAccountCreatePayload, TGQLAccountUpdateInput, TGQLAccountListFilter, TGQLAccountListOrder, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput]) ListAccounts(
+	ctx context.Context,
+	filter TGQLAccountListFilter,
+	order []TGQLAccountListOrder,
 	page *gqlmodels.Page,
-) (*AccountConnection, error) {
-	return NewAccountConnection(ctx, r.accounts, filter, order, page), nil
+) (*AccountConnection[TGQLAccount], error) {
+	return NewAccountConnection(
+		ctx,
+		r.accounts,
+		r.accountsMapper.FromFilter(filter),
+		xtypes.SliceApply(order, r.accountsMapper.FromOrder),
+		page,
+		r.accountsMapper.ToGQL,
+	), nil
 }

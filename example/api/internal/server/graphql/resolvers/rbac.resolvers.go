@@ -9,45 +9,45 @@ import (
 	"context"
 
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
-	"github.com/geniusrabbit/blaze-api/server/graphql/models"
+	basemodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // CreateRole is the resolver for the createRole field.
-func (r *mutationResolver) CreateRole(ctx context.Context, input models.RBACRoleInput) (*models.RBACRolePayload, error) {
-	return r.Resolver.Mutation().CreateRole(ctx, input)
+func (r *mutationResolver) CreateRole(ctx context.Context, input basemodels.RBACRoleInput) (*basemodels.RBACRolePayload, error) {
+	return r.roles.CreateRole(ctx, &input)
 }
 
 // UpdateRole is the resolver for the updateRole field.
-func (r *mutationResolver) UpdateRole(ctx context.Context, id uint64, input models.RBACRoleInput) (*models.RBACRolePayload, error) {
-	return r.Resolver.Mutation().UpdateRole(ctx, id, input)
+func (r *mutationResolver) UpdateRole(ctx context.Context, id uint64, input basemodels.RBACRoleInput) (*basemodels.RBACRolePayload, error) {
+	return r.roles.UpdateRole(ctx, id, &input)
 }
 
 // DeleteRole is the resolver for the deleteRole field.
-func (r *mutationResolver) DeleteRole(ctx context.Context, id uint64, msg *string) (*models.RBACRolePayload, error) {
-	return r.Resolver.Mutation().DeleteRole(ctx, id, msg)
+func (r *mutationResolver) DeleteRole(ctx context.Context, id uint64, msg *string) (*basemodels.RBACRolePayload, error) {
+	return r.roles.DeleteRole(ctx, id, msg)
 }
 
 // Role is the resolver for the role field.
-func (r *queryResolver) Role(ctx context.Context, id uint64) (*models.RBACRolePayload, error) {
-	return r.Resolver.Query().Role(ctx, id)
+func (r *queryResolver) Role(ctx context.Context, id uint64) (*basemodels.RBACRolePayload, error) {
+	return r.roles.Role(ctx, id)
 }
 
 // CheckPermission is the resolver for the checkPermission field.
 func (r *queryResolver) CheckPermission(ctx context.Context, name string, key *string, targetID *string, idKey *string) (*string, error) {
-	return r.Resolver.Query().CheckPermission(ctx, name, key, targetID, idKey)
+	return r.roles.Check(ctx, name, key, targetID, idKey)
 }
 
 // ListRoles is the resolver for the listRoles field.
-func (r *queryResolver) ListRoles(ctx context.Context, filter *models.RBACRoleListFilter, order []*models.RBACRoleListOrder, page *models.Page) (*connectors.CollectionConnection[models.RBACRole, models.RBACRoleEdge], error) {
-	return r.Resolver.Query().ListRoles(ctx, filter, order, page)
+func (r *queryResolver) ListRoles(ctx context.Context, filter *basemodels.RBACRoleListFilter, order []*basemodels.RBACRoleListOrder, page *basemodels.Page) (*connectors.CollectionConnection[basemodels.RBACRole, basemodels.RBACRoleEdge], error) {
+	return r.roles.ListRoles(ctx, filter, order, page)
 }
 
 // ListPermissions is the resolver for the listPermissions field.
-func (r *queryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
-	return r.Resolver.Query().ListPermissions(ctx, patterns)
+func (r *queryResolver) ListPermissions(ctx context.Context, patterns []string) ([]*basemodels.RBACPermission, error) {
+	return r.roles.ListPermissions(ctx, patterns)
 }
 
 // ListMyPermissions is the resolver for the listMyPermissions field.
-func (r *queryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*models.RBACPermission, error) {
-	return r.Resolver.Query().ListMyPermissions(ctx, patterns)
+func (r *queryResolver) ListMyPermissions(ctx context.Context, patterns []string) ([]*basemodels.RBACPermission, error) {
+	return r.roles.ListMyPermissions(ctx, patterns)
 }

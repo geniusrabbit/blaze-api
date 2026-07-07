@@ -38,7 +38,7 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	}
 	if len(fl.UserID) > 0 {
 		query = query.Where(`id IN (SELECT account_id FROM `+
-			(*accountModels.AccountMember)(nil).TableName()+` WHERE user_id IN (?))`, fl.UserID)
+			accountModels.MemberTableName()+` WHERE user_id IN (?))`, fl.UserID)
 	}
 	if len(fl.Title) > 0 {
 		query = query.Where(`title IN (?)`, fl.Title)
@@ -54,10 +54,14 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 // uses the lower-level context sub-packages instead.
 func (fl *Filter) AdjustPermissions(ctx context.Context) error {
 	usr := userCtx.SessionUser(ctx)
-	if len(fl.UserID) == 0 {
-		fl.UserID = []uint64{usr.ID}
+	if usr == nil {
+		return errListFilterTooWide
 	}
-	if len(fl.UserID) != 1 || fl.UserID[0] != usr.ID {
+	userID := usr.GetID()
+	if len(fl.UserID) == 0 {
+		fl.UserID = []uint64{userID}
+	}
+	if len(fl.UserID) != 1 || fl.UserID[0] != userID {
 		return errListFilterTooWide
 	}
 	return nil
@@ -123,7 +127,7 @@ func (fl *MemberFilter) PrepareQuery(query *gorm.DB) *gorm.DB {
 // Cannot import pkg/acl or pkg/context/session due to an import cycle;
 // uses the lower-level context sub-packages instead.
 func (fl *MemberFilter) AdjustPermissions(ctx context.Context) error {
-	accID := accountCtx.SessionAccount(ctx).ID
+	accID := accountCtx.SessionAccount(ctx).GetID()
 	if l := len(fl.AccountID); l > 1 || (l == 1 && fl.AccountID[0] != accID) {
 		return errMemberFilterTooWide
 	}
