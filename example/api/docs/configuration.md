@@ -266,10 +266,13 @@ make build-gql
 ```
 
 Generated files — do **not** edit manually:
- github.com/99designs/gqlgen
+github.com/99designs/gqlgen
+
 ```
 
 Generated files — do **not** edit manually:
 
 - `internal/server/graphql/generated/exec.go`
+- `internal/server/graphql/models/generated.go`
+``
 - `internal/server/graphql/models/generated.go`
