@@ -92,16 +92,13 @@ type User struct {
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 	// Email address (optional trait — present only when user.Email is embedded).
-	Email string `json:"email"`
-	// Unique username (separate from email, optional trait).
-	Username string  `json:"username"`
-	Notes    *string `json:"notes,omitempty"`
+	Email string  `json:"email"`
+	Notes *string `json:"notes,omitempty"`
 }
 
 type UserCreateInput struct {
-	Status   *models.ApproveStatus `json:"status,omitempty"`
-	Email    string                `json:"email"`
-	Username *string               `json:"username,omitempty"`
+	Status *models.ApproveStatus `json:"status,omitempty"`
+	Email  string                `json:"email"`
 }
 
 // UserListFilter implements filter for user list query
@@ -119,7 +116,6 @@ type UserListOrder struct {
 	CreatedAt        *models.Ordering `json:"createdAt,omitempty"`
 	UpdatedAt        *models.Ordering `json:"updatedAt,omitempty"`
 	Email            *models.Ordering `json:"email,omitempty"`
-	Username         *models.Ordering `json:"username,omitempty"`
 	RegistrationDate *models.Ordering `json:"registrationDate,omitempty"`
 	Country          *models.Ordering `json:"country,omitempty"`
 	Manager          *models.Ordering `json:"manager,omitempty"`

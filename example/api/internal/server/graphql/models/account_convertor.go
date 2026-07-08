@@ -9,13 +9,13 @@ import (
 	basemodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
-// GetUsername returns the username of the user model.
-func (user *User) GetUsername() string {
-	if user == nil {
-		return ""
-	}
-	return user.Username
-}
+// // GetUsername returns the username of the user model.
+// func (user *User) GetUsername() string {
+// 	if user == nil {
+// 		return ""
+// 	}
+// 	return user.Username
+// }
 
 // Filter converts extended GraphQL filter to domain filter (includes title).
 func (fl *AccountListFilter) Filter() *account.Filter {
@@ -62,10 +62,7 @@ func (ord *UserListOrder) Order() *user.ListOrder {
 	if ord == nil {
 		return nil
 	}
-	emailOrder := ord.Username
-	if ord.Email != nil {
-		emailOrder = ord.Email
-	}
+	emailOrder := ord.Email
 	regOrder := ord.CreatedAt
 	if ord.RegistrationDate != nil {
 		regOrder = ord.RegistrationDate

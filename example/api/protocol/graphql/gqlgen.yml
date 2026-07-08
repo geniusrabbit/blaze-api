@@ -3,11 +3,14 @@
 
 schema:
   - ../../../../protocol/graphql/schemas/*.graphql
-  - ../../../../repository/**/*.graphql
-  - ../../../../repository/user/delivery/graphql/user_base/*.graphql
-  - ../../../../repository/user/delivery/graphql/user_email/*.graphql
-  - ../../../../repository/user/delivery/graphql/user_password/*.graphql
-  - ../../../../repository/user/delivery/graphql/user_password_reset/*.graphql
+  - ../../../../repository/*/*/graphql/*.graphql
+  - ../../../../repository/account/*/graphql/account_base/*.graphql
+  - ../../../../repository/account/*/graphql/account_login/*.graphql
+  - ../../../../repository/account/*/graphql/account_member.graphql
+  - ../../../../repository/user/*/graphql/user_base/*.graphql
+  - ../../../../repository/user/*/graphql/user_email/*.graphql
+  - ../../../../repository/user/*/graphql/user_password/*.graphql
+  - ../../../../repository/user/*/graphql/user_password_reset/*.graphql
   - ./extensions/*.graphql
 
 skip_mod_tidy: true
