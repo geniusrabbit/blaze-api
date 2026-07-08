@@ -45,7 +45,7 @@ func EnsureSuperuser(ctx context.Context, email, password string, deps *Deps) er
 		lg.Error("Failed to create superuser", zap.String("email", email), zap.Error(err))
 		return err
 	}
-	u.UserBase.ID = userID
+	u.ID = userID
 
 	// ===========================================================================
 	// Create system account and link superuser as admin member.
@@ -59,7 +59,7 @@ func EnsureSuperuser(ctx context.Context, email, password string, deps *Deps) er
 		lg.Error("Failed to create system account", zap.String("email", email), zap.Error(err))
 		return err
 	}
-	acc.AccountBase.ID = accID
+	acc.ID = accID
 
 	// ===========================================================================
 	// Link user as admin member of the system account.

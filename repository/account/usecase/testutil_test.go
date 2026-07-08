@@ -35,9 +35,3 @@ func testAccountStub(id uint64) *testAccount {
 	a.ID = id
 	return a
 }
-
-func testAccountFromProfile(title string) *testAccount {
-	a := &testAccount{}
-	a.Title = title
-	return a
-}

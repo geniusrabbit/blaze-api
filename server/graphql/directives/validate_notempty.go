@@ -23,7 +23,7 @@ func ValidateNotEmpty(ctx context.Context, obj any, next graphql.Resolver, trim,
 	default:
 		if gocast.IsEmpty(res) {
 			kind := reflect.ValueOf(res).Kind()
-			if ornil && (kind == reflect.Ptr ||
+			if ornil && (kind == reflect.Pointer ||
 				kind == reflect.Slice ||
 				kind == reflect.Map ||
 				kind == reflect.Array ||

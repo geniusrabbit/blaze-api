@@ -35,7 +35,7 @@ func ownedObject(ctx context.Context, obj any, usr user.Model, acc account.Model
 	}
 
 	tp := reflect.TypeOf(obj).Elem()
-	for tp.Kind() == reflect.Ptr || tp.Kind() == reflect.Interface {
+	for tp.Kind() == reflect.Pointer || tp.Kind() == reflect.Interface {
 		tp = tp.Elem()
 	}
 	if tp.Kind() != reflect.Struct {

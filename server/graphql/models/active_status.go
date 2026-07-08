@@ -48,7 +48,7 @@ func (e *ActiveStatus) UnmarshalGQL(v any) error {
 }
 
 func (e ActiveStatus) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *ActiveStatus) UnmarshalJSON(b []byte) error {

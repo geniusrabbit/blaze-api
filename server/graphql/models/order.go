@@ -50,7 +50,7 @@ func (e *Ordering) UnmarshalGQL(v any) error {
 }
 
 func (e Ordering) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *Ordering) UnmarshalJSON(b []byte) error {

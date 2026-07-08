@@ -50,7 +50,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			rv    = cdb.Statement.ReflectValue
 			data  = make(map[string]any, len(cdb.Statement.Schema.Fields))
 		)
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			rv = reflect.Indirect(rv)
 		}
 		if rv.Kind() == reflect.Struct {
