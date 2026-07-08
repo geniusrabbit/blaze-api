@@ -6,30 +6,42 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/account"
-	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/pkg/errors"
 )
 
 // MemberUsecase provides bussiness logic for account members
-type MemberUsecase struct {
-	userRepo    user.Repository
-	accountRepo account.Repository
-	memberRepo  account.MemberRepository
+type MemberUsecase[TUser user.Model, TAccount account.Model] struct {
+	userRepo    user.Repository[TUser]
+	accountRepo account.SessionRepository[TUser, TAccount]
+	memberRepo  account.MemberRepository[TUser, TAccount]
 }
 
 // NewMemberUsecase object controller
-func NewMemberUsecase(userRepo user.Repository, accountRepo account.Repository, memberRepo account.MemberRepository) *MemberUsecase {
-	return &MemberUsecase{
+func NewMemberUsecase[TUser user.Model, TAccount account.Model](
+	userRepo user.Repository[TUser],
+	accountRepo account.SessionRepository[TUser, TAccount],
+	memberRepo account.MemberRepository[TUser, TAccount],
+) *MemberUsecase[TUser, TAccount] {
+	return &MemberUsecase[TUser, TAccount]{
 		userRepo:    userRepo,
 		accountRepo: accountRepo,
 		memberRepo:  memberRepo,
 	}
 }
 
+func (a *MemberUsecase[TUser, TAccount]) aclMember(accountID, userID uint64) *account.Member[TUser, TAccount] {
+	return account.MemberStub[TUser, TAccount](0, accountID, userID)
+}
+
+// EmptyObject returns a new empty member object of type Member[TUser, TAccount].
+func (a *MemberUsecase[TUser, TAccount]) EmptyObject() *account.Member[TUser, TAccount] {
+	return a.memberRepo.EmptyObject()
+}
+
 // FetchListMembers returns the list of members from account
-func (a *MemberUsecase) FetchListMembers(ctx context.Context, opts ...account.QOption) (_ []*account.AccountMember, err error) {
-	if !acl.HaveAccessList(ctx, &accountModels.AccountMember{}) {
+func (a *MemberUsecase[TUser, TAccount]) FetchListMembers(ctx context.Context, opts ...account.QOption) (_ []*account.Member[TUser, TAccount], err error) {
+	if !acl.HaveAccessList(ctx, a.EmptyObject()) {
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.MemberFilter{}); err != nil {
 			return nil, errors.Wrap(acl.ErrNoPermissions, err.Error())
 		}
@@ -38,8 +50,9 @@ func (a *MemberUsecase) FetchListMembers(ctx context.Context, opts ...account.QO
 }
 
 // CountMembers returns the count of members from account
-func (a *MemberUsecase) CountMembers(ctx context.Context, opts ...account.QOption) (_ int64, err error) {
-	if !acl.HaveAccessCount(ctx, &accountModels.AccountMember{}) {
+func (a *MemberUsecase[TUser, TAccount]) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
+	if !acl.HaveAccessCount(ctx, a.EmptyObject()) {
+		var err error
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.MemberFilter{}); err != nil {
 			return 0, errors.Wrap(acl.ErrNoPermissions, err.Error())
 		}
@@ -48,23 +61,23 @@ func (a *MemberUsecase) CountMembers(ctx context.Context, opts ...account.QOptio
 }
 
 // LinkMember into account
-func (a *MemberUsecase) LinkMember(ctx context.Context, accountObj *account.Account, isAdmin bool, members ...*user.User) error {
+func (a *MemberUsecase[TUser, TAccount]) LinkMember(ctx context.Context, accountObj TAccount, isAdmin bool, members ...TUser) error {
 	if !acl.HaveAccessView(ctx, accountObj) {
 		return errors.Wrap(acl.ErrNoPermissions, "view account")
 	}
-	if !acl.HaveAccessCreate(ctx, &account.AccountMember{}) {
+	if !acl.HaveAccessCreate(ctx, a.EmptyObject()) {
 		return errors.Wrap(acl.ErrNoPermissions, "create member account")
 	}
 	return a.memberRepo.LinkMember(ctx, accountObj, isAdmin, members...)
 }
 
 // UnlinkMember from the account
-func (a *MemberUsecase) UnlinkMember(ctx context.Context, accountObj *account.Account, members ...*user.User) error {
+func (a *MemberUsecase[TUser, TAccount]) UnlinkMember(ctx context.Context, accountObj TAccount, members ...TUser) error {
 	if len(members) == 0 {
 		return nil
 	}
 	for _, member := range members {
-		if !acl.HaveAccessDelete(ctx, &account.AccountMember{AccountID: accountObj.ID, UserID: member.ID}) {
+		if !acl.HaveAccessDelete(ctx, a.aclMember(accountObj.GetID(), member.GetID())) {
 			return errors.Wrap(acl.ErrNoPermissions, "delete member account")
 		}
 	}
@@ -72,7 +85,7 @@ func (a *MemberUsecase) UnlinkMember(ctx context.Context, accountObj *account.Ac
 }
 
 // UnlinkAccountMember from the account
-func (a *MemberUsecase) UnlinkAccountMember(ctx context.Context, memberID uint64) error {
+func (a *MemberUsecase[TUser, TAccount]) UnlinkAccountMember(ctx context.Context, memberID uint64) error {
 	member, err := a.memberRepo.MemberByID(ctx, memberID)
 	if err != nil {
 		return err
@@ -80,62 +93,60 @@ func (a *MemberUsecase) UnlinkAccountMember(ctx context.Context, memberID uint64
 	return a.memberRepo.UnlinkMember(ctx, member.Account, member.User)
 }
 
-// InviteMember into account by email
-func (a *MemberUsecase) InviteMember(ctx context.Context, accountID uint64, email string, roles ...string) (*account.AccountMember, error) {
-	// Check permissions for the account object `invite`
-	if !acl.HaveObjectPermissions(ctx, &account.AccountMember{AccountID: accountID}, `invite`) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "invite member account")
+// InviteMember into account by email (requires email repository on userRepo).
+func (a *MemberUsecase[TUser, TAccount]) InviteMember(ctx context.Context, accountID, userID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
+	// Check if user has permission to invite members
+	if !acl.HaveObjectPermissions(ctx, a.aclMember(accountID, 0), `invite`) {
+		return nil, acl.ErrNoPermissions.WithMessage("invite member account")
 	}
-	// Get account by ID
-	account, err := a.accountRepo.Get(ctx, accountID)
+
+	// Fetch account and user by email
+	accountObj, err := a.accountRepo.Get(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
-	// Get user by email
-	usr, err := a.userRepo.GetByEmail(ctx, email)
+	usr, err := a.userRepo.Get(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	// Link the user to the account as member
-	if err = a.memberRepo.LinkMember(ctx, account, slices.Contains(roles, "admin"), usr); err != nil {
+
+	// Link member to account and set roles
+	if err = a.memberRepo.LinkMember(ctx, accountObj, slices.Contains(roles, "admin"), usr); err != nil {
 		return nil, err
 	}
-	// Set roles for the member
-	if err = a.memberRepo.SetMemberRoles(ctx, account, usr, roles...); err != nil {
+	if err = a.memberRepo.SetMemberRoles(ctx, accountObj, usr, roles...); err != nil {
 		return nil, err
 	}
-	// Return the member object
-	member, err := a.memberRepo.Member(ctx, usr.ID, account.ID)
+	member, err := a.memberRepo.Member(ctx, usr.GetID(), accountObj.GetID())
 	if err != nil {
 		return nil, err
 	}
-	// Check permissions for the member object `view`
 	if !acl.HaveAccessView(ctx, member) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view member account")
+		return nil, acl.ErrNoPermissions.WithMessage("view member account")
 	}
 	return member, nil
 }
 
 // SetAccountMemeberRoles into account
-func (a *MemberUsecase) SetAccountMemeberRoles(ctx context.Context, accountID, userID uint64, roles ...string) (*account.AccountMember, error) {
-	memeber, err := a.memberRepo.Member(ctx, userID, accountID)
+func (a *MemberUsecase[TUser, TAccount]) SetAccountMemeberRoles(ctx context.Context, accountID, userID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
+	member, err := a.memberRepo.Member(ctx, userID, accountID)
 	if err != nil {
 		return nil, err
 	}
-	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set.*`) {
+	if !acl.HaveObjectPermissions(ctx, member, `roles.set.*`) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
 	}
-	return memeber, a.memberRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
+	return member, a.memberRepo.SetMemberRoles(ctx, member.Account, member.User, roles...)
 }
 
 // SetMemberRoles into account
-func (a *MemberUsecase) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*account.AccountMember, error) {
-	memeber, err := a.memberRepo.MemberByID(ctx, memberID)
+func (a *MemberUsecase[TUser, TAccount]) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
+	member, err := a.memberRepo.MemberByID(ctx, memberID)
 	if err != nil {
 		return nil, err
 	}
-	if !acl.HaveObjectPermissions(ctx, memeber, `roles.set.*`) {
+	if !acl.HaveObjectPermissions(ctx, member, `roles.set.*`) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
 	}
-	return memeber, a.memberRepo.SetMemberRoles(ctx, memeber.Account, memeber.User, roles...)
+	return member, a.memberRepo.SetMemberRoles(ctx, member.Account, member.User, roles...)
 }

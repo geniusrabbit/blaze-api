@@ -40,7 +40,7 @@ type (
 type TokenData struct {
 	UserID          uint64
 	AccountID       uint64
-	SocealAccountID uint64 // Note: typo - consider renaming to SocialAccountID
+	SocialAccountID uint64
 	ExpireAt        int64
 }
 
@@ -129,7 +129,7 @@ func (provider *Provider) ExtractTokenData(token *Token) (*TokenData, error) {
 	data := &TokenData{
 		UserID:          gocast.Uint64(claims[claimUserID]),
 		AccountID:       gocast.Uint64(claims[claimAccountID]),
-		SocealAccountID: gocast.Uint64(claims[claimSocialAccountID]),
+		SocialAccountID: gocast.Uint64(claims[claimSocialAccountID]),
 		ExpireAt:        gocast.Int64(claims[claimExpiredAt]),
 	}
 

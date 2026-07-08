@@ -15,16 +15,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
+	"github.com/geniusrabbit/blaze-api/example/api/internal/domain"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/middleware"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
-	"github.com/geniusrabbit/blaze-api/repository/account"
 	accAuth "github.com/geniusrabbit/blaze-api/repository/account/auth"
 	"github.com/geniusrabbit/blaze-api/repository/option/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
-	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 type (
@@ -37,10 +36,12 @@ type HTTPServer struct {
 	RequestTimeout time.Duration
 	ContextWrap    contextWrapper
 	InitWrap       muxInitWrapper
-	Authorizers    []auth.Authorizer[*user.User, *account.Account]
+	Authorizers    []auth.Authorizer[*domain.User, *domain.Account]
 	JWTProvider    *jwt.Provider
 	SessionManager *scs.SessionManager
+	AuthLoader     *accAuth.Loader[*domain.User, *domain.Account]
 	Logger         *zap.Logger
+	GraphqlOptions graphql.Options
 }
 
 // Run starts a HTTP server and blocks while running if successful.
@@ -50,11 +51,11 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 
 	mux := chi.NewRouter()
 	mux.With(basicauth.NewFromEnv("Graph", "GRAPHQL_USERS_")).
-		Handle("/", playground.Handler("Query console", "/graphql"))
+		Handle("/playground", playground.Handler("Query console", "/graphql"))
 	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,
-		usecase.NewUsecase(repository.NewOptionRepository(nil))))
+		usecase.NewUsecase(repository.NewOptionRepository(nil)), s.GraphqlOptions...))
 
 	if s.InitWrap != nil {
 		s.InitWrap(mux)
@@ -63,7 +64,7 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	h := http.Handler(mux)
 
 	// Add middleware's
-	h = accAuth.Middleware(h, s.Authorizers...)
+	h = accAuth.Middleware(h, s.AuthLoader, s.Authorizers...)
 	h = middleware.HTTPContextWrapper(h, s.ContextWrap)
 	h = middleware.HTTPSession(h, s.SessionManager)
 	h = middleware.RealIP(h)

@@ -108,17 +108,32 @@ func (m *MockuserAccessor) EXPECT() *MockuserAccessorMockRecorder {
 	return m.recorder
 }
 
-// GetByPassword mocks base method.
-func (m *MockuserAccessor) GetByPassword(ctx context.Context, email, password string) (*user.User, error) {
+// GetByEmail mocks base method.
+func (m *MockuserAccessor) GetByEmail(ctx context.Context, email string) (user.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByPassword", ctx, email, password)
-	ret0, _ := ret[0].(*user.User)
+	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
+	ret0, _ := ret[0].(user.Model)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByEmail indicates an expected call of GetByEmail.
+func (mr *MockuserAccessorMockRecorder) GetByEmail(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockuserAccessor)(nil).GetByEmail), ctx, email)
+}
+
+// GetByPassword mocks base method.
+func (m *MockuserAccessor) GetByPassword(ctx context.Context, userID uint64, password string) (user.Model, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByPassword", ctx, userID, password)
+	ret0, _ := ret[0].(user.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByPassword indicates an expected call of GetByPassword.
-func (mr *MockuserAccessorMockRecorder) GetByPassword(ctx, email, password any) *gomock.Call {
+func (mr *MockuserAccessorMockRecorder) GetByPassword(ctx, userID, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPassword", reflect.TypeOf((*MockuserAccessor)(nil).GetByPassword), ctx, email, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPassword", reflect.TypeOf((*MockuserAccessor)(nil).GetByPassword), ctx, userID, password)
 }

@@ -1,0 +1,148 @@
+"""
+User represents a user object of the system.
+Core fields only — extend in consumer schema via `extend type User`.
+"""
+type User {
+  """
+  The primary key of the user
+  """
+  ID: ID64!
+
+  """
+  Status of user active
+  """
+  status: ApproveStatus!
+
+  """
+  Message which defined during user approve/rejection process
+  """
+  statusMessage: String
+
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+"""
+UserConnection implements collection accessor interface with pagination.
+"""
+type UserConnection {
+  """
+  The total number of campaigns
+  """
+  totalCount: Int!
+
+  """
+  A list of the users, as a convenience when edges are not needed.
+  """
+  list: [User!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+UserPayload wrapper to access of user oprtation results
+"""
+type UserPayload {
+  """
+  A unique identifier for the client performing the mutation.
+  """
+  clientMutationID: String!
+
+  """
+  User ID operation result
+  """
+  userID: ID64!
+
+  """
+  User object accessor
+  """
+  user: User
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+"""
+UserListFilter implements filter for user list query
+"""
+input UserListFilter {
+  ID: [ID64!]
+}
+
+"""
+UserListOrder implements order for user list query
+"""
+input UserListOrder {
+  ID: Ordering
+  status: Ordering
+  createdAt: Ordering
+  updatedAt: Ordering
+}
+
+###############################################################################
+# Mutations
+###############################################################################
+
+input UserCreateInput {
+  status: ApproveStatus
+}
+
+input UserUpdateInput {
+  status: ApproveStatus
+}
+
+###############################################################################
+# Query
+###############################################################################
+
+extend type Query {
+  """
+  Current user from the session
+  """
+  currentUser: UserPayload! @hasPermissions(permissions: ["user.view.*"])
+
+  """
+  Get user object by ID or username
+  """
+  user(id: ID64! = 0, username: String! = ""): UserPayload!
+    @hasPermissions(permissions: ["user.view.*"])
+
+  """
+  List of the user objects which can be filtered and ordered by some fields
+  """
+  listUsers(
+    filter: UserListFilter = null
+    order: [UserListOrder!] = null
+    page: Page = null
+  ): UserConnection @hasPermissions(permissions: ["user.list.*"])
+}
+
+extend type Mutation {
+  """
+  Create the new user
+  """
+  createUser(input: UserCreateInput!): UserPayload!
+    @hasPermissions(permissions: ["user.create.*"])
+
+  """
+  Update user info
+  """
+  updateUser(id: ID64!, input: UserUpdateInput!): UserPayload!
+    @hasPermissions(permissions: ["user.update.*"])
+
+  """
+  Approve user and leave the comment
+  """
+  approveUser(id: ID64!, msg: String): UserPayload!
+    @hasPermissions(permissions: ["user.approve.*"])
+
+  """
+  Reject user and leave the comment
+  """
+  rejectUser(id: ID64!, msg: String): UserPayload!
+    @hasPermissions(permissions: ["user.reject.*"])
+}

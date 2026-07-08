@@ -90,9 +90,9 @@ ON CONFLICT (name) DO UPDATE
       access_level = EXCLUDED.access_level,
       permissions  = EXCLUDED.permissions;
 
-INSERT INTO m2m_account_member_role(member_id, role_id)
-  SELECT m.id as member_id, (SELECT id FROM rbac_role WHERE name = 'system:admin') AS role_id
-    FROM account_member AS m
-    INNER JOIN account_user AS u ON u.email = 'super@project.com'
-    WHERE m.user_id = u.id
-    ON CONFLICT DO NOTHING;
+-- INSERT INTO m2m_account_member_role(member_id, role_id)
+--   SELECT m.id as member_id, (SELECT id FROM rbac_role WHERE name = 'system:admin') AS role_id
+--     FROM account_member AS m
+--     INNER JOIN account_user AS u ON u.email = 'super@project.com'
+--     WHERE m.user_id = u.id
+--     ON CONFLICT DO NOTHING;

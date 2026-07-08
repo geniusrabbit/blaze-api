@@ -8,28 +8,11 @@ type DirectAccessToken {
   expiresAt: Time!
 }
 
-type DirectAccessTokenEdge {
-  """
-  Cursor for pagination
-  """
-  cursor: String!
-
-  """
-  Node for the edge
-  """
-  node: DirectAccessToken
-}
-
 type DirectAccessTokenConnection {
   """
   Total count of DirectAccessToken objects
   """
   totalCount: Int!
-
-  """
-  Edges for the DirectAccessTokenConnection
-  """
-  edges: [DirectAccessTokenEdge!]
 
   """
   List of DirectAccessToken objects

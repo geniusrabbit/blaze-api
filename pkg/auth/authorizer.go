@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 )
 
@@ -45,7 +46,7 @@ func (a *AuthorizeWrapper[User, Account]) Authorize(w http.ResponseWriter, r *ht
 		if err != nil {
 			return token, zeroUser, zeroAccount, err
 		}
-		if !user.IsNil() || !account.IsNil() {
+		if (!gocast.IsNil(user) && !user.IsNil()) || (!gocast.IsNil(account) && !account.IsNil()) {
 			return token, user, account, nil
 		}
 	}

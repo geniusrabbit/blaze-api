@@ -5,15 +5,12 @@ import (
 
 	"github.com/geniusrabbit/gosql/v2"
 	"gorm.io/gorm"
-
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 // AccountSocial represents a user's social network account connection.
 type AccountSocial struct {
-	ID     uint64           `db:"id" gorm:"primaryKey"`
-	UserID uint64           `db:"user_id"`
-	User   *userModels.User `db:"-" gorm:"foreignKey:UserID"`
+	ID     uint64 `db:"id" gorm:"primaryKey"`
+	UserID uint64 `db:"user_id"`
 
 	// Social network credentials and profile information
 	SocialID  string `db:"social_id"` // unique identifier from the social provider

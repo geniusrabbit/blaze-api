@@ -5,16 +5,16 @@
 --
 
 -- ----------------------------------------------------------------------------
--- Account / User / Profile
+-- Account / User (base only)
+-- Optional trait columns: see deploy/migrations/traits/
+--   - user_email.up.sql    → email column
+--   - user_password.up.sql → password + required_password_reset columns
+--   - user_username.up.sql → username column
 -- ----------------------------------------------------------------------------
 
-CREATE TABLE account_user
+CREATE TABLE IF NOT EXISTS account_user
 ( id                      BIGSERIAL                   PRIMARY KEY
 , approve_status          INTEGER                     NOT NULL        DEFAULT 0
-
-, email                   VARCHAR(128)                NOT NULL        CHECK (email ~* '^[^\s]+$')  UNIQUE
-, password                VARCHAR(128)                NOT NULL        CHECK (LENGTH(password) = 0 OR LENGTH(password) > 5)
-, required_password_reset BOOL                        NOT NULL        DEFAULT FALSE
 
 , created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
@@ -56,18 +56,12 @@ CREATE TRIGGER keep_for_one_week
 -- Account this is the general entity which links all objects with one account
 -- Account can be linked with planty of accounts with different access permissions
 -- Account have to have atleast one user who is the admin of the account
-CREATE TABLE account_base
+CREATE TABLE IF NOT EXISTS account_base
 ( id                      BIGSERIAL                   PRIMARY KEY
 , approve_status          INTEGER                     NOT NULL        DEFAULT 0
 
 , title                   VARCHAR(128)                NOT NULL        CHECK (title ~* '^[^\s]+')
 , description             TEXT
-
-, logo_uri                VARCHAR(1024)               NOT NULL        DEFAULT ''
-, policy_uri              VARCHAR(1024)               NOT NULL        DEFAULT ''
-, tos_uri                 VARCHAR(1024)               NOT NULL        DEFAULT ''
-, client_uri              VARCHAR(1024)               NOT NULL        DEFAULT ''
-, contacts                TEXT[]
 
 , created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
@@ -85,7 +79,7 @@ AFTER INSERT OR UPDATE OR DELETE ON account_base
 -- Roles and permissions
 -- ----------------------------------------------------------------------------
 
-CREATE TABLE rbac_role
+CREATE TABLE IF NOT EXISTS rbac_role
 ( id                  BIGSERIAL                   PRIMARY KEY
 
 -- Name of the permission to matching
@@ -109,7 +103,7 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON rbac_role FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 -- Role link child permissions
-CREATE TABLE m2m_rbac_role
+CREATE TABLE IF NOT EXISTS m2m_rbac_role
 ( parent_role_id      BIGINT                      NOT NULL      REFERENCES rbac_role (id) MATCH SIMPLE
                                                                       ON UPDATE NO ACTION
                                                                       ON DELETE RESTRICT
@@ -126,7 +120,7 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
     ON m2m_rbac_role FOR EACH ROW EXECUTE PROCEDURE updated_at_column();
 
 
-CREATE TABLE account_member
+CREATE TABLE IF NOT EXISTS account_member
 ( id                  BIGSERIAL                   PRIMARY KEY
 , approve_status      INTEGER                     NOT NULL        DEFAULT 0
 
@@ -160,7 +154,7 @@ CREATE TRIGGER updated_at_triger BEFORE UPDATE
 
 
 -- Link account member with user
-CREATE TABLE m2m_account_member_role
+CREATE TABLE IF NOT EXISTS m2m_account_member_role
 ( member_id           BIGINT                                    REFERENCES account_member (id) MATCH SIMPLE
                                                                       ON UPDATE NO ACTION
                                                                       ON DELETE RESTRICT

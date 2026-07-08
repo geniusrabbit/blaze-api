@@ -1,0 +1,7 @@
+extend type Mutation {
+  """
+  Login with email and password.
+  accountID is optional — omit to use the user's default account.
+  """
+  login(email: String!, password: String!, accountID: ID64): SessionToken!
+}

@@ -18,31 +18,31 @@ import (
 )
 
 // MockRepository is a mock of Repository interface.
-type MockRepository struct {
+type MockRepository[T user.Model] struct {
 	ctrl     *gomock.Controller
-	recorder *MockRepositoryMockRecorder
+	recorder *MockRepositoryMockRecorder[T]
 	isgomock struct{}
 }
 
 // MockRepositoryMockRecorder is the mock recorder for MockRepository.
-type MockRepositoryMockRecorder struct {
-	mock *MockRepository
+type MockRepositoryMockRecorder[T user.Model] struct {
+	mock *MockRepository[T]
 }
 
 // NewMockRepository creates a new mock instance.
-func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
-	mock := &MockRepository{ctrl: ctrl}
-	mock.recorder = &MockRepositoryMockRecorder{mock}
+func NewMockRepository[T user.Model](ctrl *gomock.Controller) *MockRepository[T] {
+	mock := &MockRepository[T]{ctrl: ctrl}
+	mock.recorder = &MockRepositoryMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
+func (m *MockRepository[T]) EXPECT() *MockRepositoryMockRecorder[T] {
 	return m.recorder
 }
 
 // Count mocks base method.
-func (m *MockRepository) Count(ctx context.Context, opts ...user.QOption) (int64, error) {
+func (m *MockRepository[T]) Count(ctx context.Context, opts ...user.QOption) (int64, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
@@ -55,29 +55,169 @@ func (m *MockRepository) Count(ctx context.Context, opts ...user.QOption) (int64
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository[T])(nil).Count), varargs...)
 }
 
 // Create mocks base method.
-func (m *MockRepository) Create(ctx context.Context, arg1 *user.User, password string) (uint64, error) {
+func (m *MockRepository[T]) Create(ctx context.Context, arg1 T) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, arg1, password)
+	ret := m.ctrl.Call(m, "Create", ctx, arg1)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockRepositoryMockRecorder) Create(ctx, arg1, password any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Create(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), ctx, arg1, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository[T])(nil).Create), ctx, arg1)
+}
+
+// Delete mocks base method.
+func (m *MockRepository[T]) Delete(ctx context.Context, id uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockRepositoryMockRecorder[T]) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository[T])(nil).Delete), ctx, id)
+}
+
+// EmptyObject mocks base method.
+func (m *MockRepository[T]) EmptyObject() T {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(T)
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockRepositoryMockRecorder[T]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockRepository[T])(nil).EmptyObject))
+}
+
+// FetchList mocks base method.
+func (m *MockRepository[T]) FetchList(ctx context.Context, opts ...user.QOption) ([]T, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchList", varargs...)
+	ret0, _ := ret[0].([]T)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchList indicates an expected call of FetchList.
+func (mr *MockRepositoryMockRecorder[T]) FetchList(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository[T])(nil).FetchList), varargs...)
+}
+
+// Get mocks base method.
+func (m *MockRepository[T]) Get(ctx context.Context, id uint64) (T, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(T)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockRepositoryMockRecorder[T]) Get(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository[T])(nil).Get), ctx, id)
+}
+
+// Update mocks base method.
+func (m *MockRepository[T]) Update(ctx context.Context, arg1 T) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockRepositoryMockRecorder[T]) Update(ctx, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository[T])(nil).Update), ctx, arg1)
+}
+
+// MockEmailRepository is a mock of EmailRepository interface.
+type MockEmailRepository[T user.EmailCapableModel] struct {
+	ctrl     *gomock.Controller
+	recorder *MockEmailRepositoryMockRecorder[T]
+	isgomock struct{}
+}
+
+// MockEmailRepositoryMockRecorder is the mock recorder for MockEmailRepository.
+type MockEmailRepositoryMockRecorder[T user.EmailCapableModel] struct {
+	mock *MockEmailRepository[T]
+}
+
+// NewMockEmailRepository creates a new mock instance.
+func NewMockEmailRepository[T user.EmailCapableModel](ctrl *gomock.Controller) *MockEmailRepository[T] {
+	mock := &MockEmailRepository[T]{ctrl: ctrl}
+	mock.recorder = &MockEmailRepositoryMockRecorder[T]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEmailRepository[T]) EXPECT() *MockEmailRepositoryMockRecorder[T] {
+	return m.recorder
+}
+
+// GetByEmail mocks base method.
+func (m *MockEmailRepository[T]) GetByEmail(ctx context.Context, email string) (T, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
+	ret0, _ := ret[0].(T)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByEmail indicates an expected call of GetByEmail.
+func (mr *MockEmailRepositoryMockRecorder[T]) GetByEmail(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockEmailRepository[T])(nil).GetByEmail), ctx, email)
+}
+
+// MockPasswordRepository is a mock of PasswordRepository interface.
+type MockPasswordRepository[T user.PasswordCapableModel] struct {
+	ctrl     *gomock.Controller
+	recorder *MockPasswordRepositoryMockRecorder[T]
+	isgomock struct{}
+}
+
+// MockPasswordRepositoryMockRecorder is the mock recorder for MockPasswordRepository.
+type MockPasswordRepositoryMockRecorder[T user.PasswordCapableModel] struct {
+	mock *MockPasswordRepository[T]
+}
+
+// NewMockPasswordRepository creates a new mock instance.
+func NewMockPasswordRepository[T user.PasswordCapableModel](ctrl *gomock.Controller) *MockPasswordRepository[T] {
+	mock := &MockPasswordRepository[T]{ctrl: ctrl}
+	mock.recorder = &MockPasswordRepositoryMockRecorder[T]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPasswordRepository[T]) EXPECT() *MockPasswordRepositoryMockRecorder[T] {
+	return m.recorder
 }
 
 // CreateResetPassword mocks base method.
-func (m *MockRepository) CreateResetPassword(ctx context.Context, userID uint64) (*user.UserPasswordReset, error) {
+func (m *MockPasswordRepository[T]) CreateResetPassword(ctx context.Context, userID uint64) (*user.UserPasswordReset, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateResetPassword", ctx, userID)
 	ret0, _ := ret[0].(*user.UserPasswordReset)
@@ -86,27 +226,28 @@ func (m *MockRepository) CreateResetPassword(ctx context.Context, userID uint64)
 }
 
 // CreateResetPassword indicates an expected call of CreateResetPassword.
-func (mr *MockRepositoryMockRecorder) CreateResetPassword(ctx, userID any) *gomock.Call {
+func (mr *MockPasswordRepositoryMockRecorder[T]) CreateResetPassword(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResetPassword", reflect.TypeOf((*MockRepository)(nil).CreateResetPassword), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResetPassword", reflect.TypeOf((*MockPasswordRepository[T])(nil).CreateResetPassword), ctx, userID)
 }
 
-// Delete mocks base method.
-func (m *MockRepository) Delete(ctx context.Context, id uint64) error {
+// CreateWithPassword mocks base method.
+func (m *MockPasswordRepository[T]) CreateWithPassword(ctx context.Context, arg1 T, password string) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, id)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "CreateWithPassword", ctx, arg1, password)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete.
-func (mr *MockRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
+// CreateWithPassword indicates an expected call of CreateWithPassword.
+func (mr *MockPasswordRepositoryMockRecorder[T]) CreateWithPassword(ctx, arg1, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithPassword", reflect.TypeOf((*MockPasswordRepository[T])(nil).CreateWithPassword), ctx, arg1, password)
 }
 
 // EliminateResetPassword mocks base method.
-func (m *MockRepository) EliminateResetPassword(ctx context.Context, userID uint64) error {
+func (m *MockPasswordRepository[T]) EliminateResetPassword(ctx context.Context, userID uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EliminateResetPassword", ctx, userID)
 	ret0, _ := ret[0].(error)
@@ -114,78 +255,28 @@ func (m *MockRepository) EliminateResetPassword(ctx context.Context, userID uint
 }
 
 // EliminateResetPassword indicates an expected call of EliminateResetPassword.
-func (mr *MockRepositoryMockRecorder) EliminateResetPassword(ctx, userID any) *gomock.Call {
+func (mr *MockPasswordRepositoryMockRecorder[T]) EliminateResetPassword(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EliminateResetPassword", reflect.TypeOf((*MockRepository)(nil).EliminateResetPassword), ctx, userID)
-}
-
-// FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, opts ...user.QOption) ([]*user.User, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "FetchList", varargs...)
-	ret0, _ := ret[0].([]*user.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FetchList indicates an expected call of FetchList.
-func (mr *MockRepositoryMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), varargs...)
-}
-
-// Get mocks base method.
-func (m *MockRepository) Get(ctx context.Context, id uint64) (*user.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*user.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), ctx, id)
-}
-
-// GetByEmail mocks base method.
-func (m *MockRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
-	ret0, _ := ret[0].(*user.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByEmail indicates an expected call of GetByEmail.
-func (mr *MockRepositoryMockRecorder) GetByEmail(ctx, email any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockRepository)(nil).GetByEmail), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EliminateResetPassword", reflect.TypeOf((*MockPasswordRepository[T])(nil).EliminateResetPassword), ctx, userID)
 }
 
 // GetByPassword mocks base method.
-func (m *MockRepository) GetByPassword(ctx context.Context, email, password string) (*user.User, error) {
+func (m *MockPasswordRepository[T]) GetByPassword(ctx context.Context, userID uint64, password string) (T, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByPassword", ctx, email, password)
-	ret0, _ := ret[0].(*user.User)
+	ret := m.ctrl.Call(m, "GetByPassword", ctx, userID, password)
+	ret0, _ := ret[0].(T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByPassword indicates an expected call of GetByPassword.
-func (mr *MockRepositoryMockRecorder) GetByPassword(ctx, email, password any) *gomock.Call {
+func (mr *MockPasswordRepositoryMockRecorder[T]) GetByPassword(ctx, userID, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPassword", reflect.TypeOf((*MockRepository)(nil).GetByPassword), ctx, email, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPassword", reflect.TypeOf((*MockPasswordRepository[T])(nil).GetByPassword), ctx, userID, password)
 }
 
 // GetResetPassword mocks base method.
-func (m *MockRepository) GetResetPassword(ctx context.Context, userID uint64, token string) (*user.UserPasswordReset, error) {
+func (m *MockPasswordRepository[T]) GetResetPassword(ctx context.Context, userID uint64, token string) (*user.UserPasswordReset, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetResetPassword", ctx, userID, token)
 	ret0, _ := ret[0].(*user.UserPasswordReset)
@@ -194,13 +285,13 @@ func (m *MockRepository) GetResetPassword(ctx context.Context, userID uint64, to
 }
 
 // GetResetPassword indicates an expected call of GetResetPassword.
-func (mr *MockRepositoryMockRecorder) GetResetPassword(ctx, userID, token any) *gomock.Call {
+func (mr *MockPasswordRepositoryMockRecorder[T]) GetResetPassword(ctx, userID, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResetPassword", reflect.TypeOf((*MockRepository)(nil).GetResetPassword), ctx, userID, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResetPassword", reflect.TypeOf((*MockPasswordRepository[T])(nil).GetResetPassword), ctx, userID, token)
 }
 
 // SetPassword mocks base method.
-func (m *MockRepository) SetPassword(ctx context.Context, arg1 *user.User, password string) error {
+func (m *MockPasswordRepository[T]) SetPassword(ctx context.Context, arg1 T, password string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPassword", ctx, arg1, password)
 	ret0, _ := ret[0].(error)
@@ -208,21 +299,7 @@ func (m *MockRepository) SetPassword(ctx context.Context, arg1 *user.User, passw
 }
 
 // SetPassword indicates an expected call of SetPassword.
-func (mr *MockRepositoryMockRecorder) SetPassword(ctx, arg1, password any) *gomock.Call {
+func (mr *MockPasswordRepositoryMockRecorder[T]) SetPassword(ctx, arg1, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockRepository)(nil).SetPassword), ctx, arg1, password)
-}
-
-// Update mocks base method.
-func (m *MockRepository) Update(ctx context.Context, arg1 *user.User) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Update indicates an expected call of Update.
-func (mr *MockRepositoryMockRecorder) Update(ctx, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockPasswordRepository[T])(nil).SetPassword), ctx, arg1, password)
 }

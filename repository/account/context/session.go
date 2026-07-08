@@ -1,20 +1,23 @@
 package context
 
-import (
-	"context"
+import "context"
 
-	"github.com/geniusrabbit/blaze-api/repository/account/models"
-)
+// SessionModel is stored in request context for the active account.
+type SessionModel interface {
+	GetID() uint64
+}
 
 var ctxAccountKey = &struct{ s string }{"account:account"}
 
 // WithSessionAccount puts to the context account model
-func WithSessionAccount(ctx context.Context, accountObj *models.Account) context.Context {
+func WithSessionAccount(ctx context.Context, accountObj SessionModel) context.Context {
 	return context.WithValue(ctx, ctxAccountKey, accountObj)
 }
 
 // SessionAccount returns current account model
-// nolint:unused // temporary
-func SessionAccount(ctx context.Context) *models.Account {
-	return ctx.Value(ctxAccountKey).(*models.Account)
+func SessionAccount(ctx context.Context) SessionModel {
+	if acc, ok := ctx.Value(ctxAccountKey).(SessionModel); ok {
+		return acc
+	}
+	return nil
 }

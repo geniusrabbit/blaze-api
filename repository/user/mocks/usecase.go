@@ -18,31 +18,31 @@ import (
 )
 
 // MockUsecase is a mock of Usecase interface.
-type MockUsecase struct {
+type MockUsecase[T user.Model] struct {
 	ctrl     *gomock.Controller
-	recorder *MockUsecaseMockRecorder
+	recorder *MockUsecaseMockRecorder[T]
 	isgomock struct{}
 }
 
 // MockUsecaseMockRecorder is the mock recorder for MockUsecase.
-type MockUsecaseMockRecorder struct {
-	mock *MockUsecase
+type MockUsecaseMockRecorder[T user.Model] struct {
+	mock *MockUsecase[T]
 }
 
 // NewMockUsecase creates a new mock instance.
-func NewMockUsecase(ctrl *gomock.Controller) *MockUsecase {
-	mock := &MockUsecase{ctrl: ctrl}
-	mock.recorder = &MockUsecaseMockRecorder{mock}
+func NewMockUsecase[T user.Model](ctrl *gomock.Controller) *MockUsecase[T] {
+	mock := &MockUsecase[T]{ctrl: ctrl}
+	mock.recorder = &MockUsecaseMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder {
+func (m *MockUsecase[T]) EXPECT() *MockUsecaseMockRecorder[T] {
 	return m.recorder
 }
 
 // Count mocks base method.
-func (m *MockUsecase) Count(ctx context.Context, opts ...user.QOption) (int64, error) {
+func (m *MockUsecase[T]) Count(ctx context.Context, opts ...user.QOption) (int64, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
@@ -55,29 +55,29 @@ func (m *MockUsecase) Count(ctx context.Context, opts ...user.QOption) (int64, e
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockUsecaseMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[T]) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase[T])(nil).Count), varargs...)
 }
 
 // Create mocks base method.
-func (m *MockUsecase) Create(ctx context.Context, arg1 *user.User, password string) (uint64, error) {
+func (m *MockUsecase[T]) Create(ctx context.Context, arg1 T) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, arg1, password)
+	ret := m.ctrl.Call(m, "Create", ctx, arg1)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockUsecaseMockRecorder) Create(ctx, arg1, password any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[T]) Create(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUsecase)(nil).Create), ctx, arg1, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUsecase[T])(nil).Create), ctx, arg1)
 }
 
 // Delete mocks base method.
-func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
+func (m *MockUsecase[T]) Delete(ctx context.Context, id uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -85,108 +85,62 @@ func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockUsecaseMockRecorder) Delete(ctx, id any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[T]) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase)(nil).Delete), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase[T])(nil).Delete), ctx, id)
+}
+
+// EmptyObject mocks base method.
+func (m *MockUsecase[T]) EmptyObject() T {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(T)
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockUsecaseMockRecorder[T]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockUsecase[T])(nil).EmptyObject))
 }
 
 // FetchList mocks base method.
-func (m *MockUsecase) FetchList(ctx context.Context, opts ...user.QOption) ([]*user.User, error) {
+func (m *MockUsecase[T]) FetchList(ctx context.Context, opts ...user.QOption) ([]T, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchList", varargs...)
-	ret0, _ := ret[0].([]*user.User)
+	ret0, _ := ret[0].([]T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockUsecaseMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[T]) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase[T])(nil).FetchList), varargs...)
 }
 
 // Get mocks base method.
-func (m *MockUsecase) Get(ctx context.Context, id uint64) (*user.User, error) {
+func (m *MockUsecase[T]) Get(ctx context.Context, id uint64) (T, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*user.User)
+	ret0, _ := ret[0].(T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockUsecaseMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[T]) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUsecase)(nil).Get), ctx, id)
-}
-
-// GetByEmail mocks base method.
-func (m *MockUsecase) GetByEmail(ctx context.Context, email string) (*user.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
-	ret0, _ := ret[0].(*user.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByEmail indicates an expected call of GetByEmail.
-func (mr *MockUsecaseMockRecorder) GetByEmail(ctx, email any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockUsecase)(nil).GetByEmail), ctx, email)
-}
-
-// GetByPassword mocks base method.
-func (m *MockUsecase) GetByPassword(ctx context.Context, email, password string) (*user.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByPassword", ctx, email, password)
-	ret0, _ := ret[0].(*user.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByPassword indicates an expected call of GetByPassword.
-func (mr *MockUsecaseMockRecorder) GetByPassword(ctx, email, password any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPassword", reflect.TypeOf((*MockUsecase)(nil).GetByPassword), ctx, email, password)
-}
-
-// ResetPassword mocks base method.
-func (m *MockUsecase) ResetPassword(ctx context.Context, email string) (*user.UserPasswordReset, *user.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPassword", ctx, email)
-	ret0, _ := ret[0].(*user.UserPasswordReset)
-	ret1, _ := ret[1].(*user.User)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// ResetPassword indicates an expected call of ResetPassword.
-func (mr *MockUsecaseMockRecorder) ResetPassword(ctx, email any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockUsecase)(nil).ResetPassword), ctx, email)
-}
-
-// SetPassword mocks base method.
-func (m *MockUsecase) SetPassword(ctx context.Context, arg1 *user.User, password string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetPassword", ctx, arg1, password)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetPassword indicates an expected call of SetPassword.
-func (mr *MockUsecaseMockRecorder) SetPassword(ctx, arg1, password any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockUsecase)(nil).SetPassword), ctx, arg1, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUsecase[T])(nil).Get), ctx, id)
 }
 
 // Update mocks base method.
-func (m *MockUsecase) Update(ctx context.Context, arg1 *user.User) error {
+func (m *MockUsecase[T]) Update(ctx context.Context, arg1 T) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, arg1)
 	ret0, _ := ret[0].(error)
@@ -194,21 +148,142 @@ func (m *MockUsecase) Update(ctx context.Context, arg1 *user.User) error {
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUsecaseMockRecorder) Update(ctx, arg1 any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[T]) Update(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsecase)(nil).Update), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsecase[T])(nil).Update), ctx, arg1)
+}
+
+// MockEmailUsecase is a mock of EmailUsecase interface.
+type MockEmailUsecase[T user.EmailCapableModel] struct {
+	ctrl     *gomock.Controller
+	recorder *MockEmailUsecaseMockRecorder[T]
+	isgomock struct{}
+}
+
+// MockEmailUsecaseMockRecorder is the mock recorder for MockEmailUsecase.
+type MockEmailUsecaseMockRecorder[T user.EmailCapableModel] struct {
+	mock *MockEmailUsecase[T]
+}
+
+// NewMockEmailUsecase creates a new mock instance.
+func NewMockEmailUsecase[T user.EmailCapableModel](ctrl *gomock.Controller) *MockEmailUsecase[T] {
+	mock := &MockEmailUsecase[T]{ctrl: ctrl}
+	mock.recorder = &MockEmailUsecaseMockRecorder[T]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEmailUsecase[T]) EXPECT() *MockEmailUsecaseMockRecorder[T] {
+	return m.recorder
+}
+
+// GetByEmail mocks base method.
+func (m *MockEmailUsecase[T]) GetByEmail(ctx context.Context, email string) (T, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
+	ret0, _ := ret[0].(T)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByEmail indicates an expected call of GetByEmail.
+func (mr *MockEmailUsecaseMockRecorder[T]) GetByEmail(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockEmailUsecase[T])(nil).GetByEmail), ctx, email)
+}
+
+// MockPasswordUsecase is a mock of PasswordUsecase interface.
+type MockPasswordUsecase[T user.PasswordCapableModel] struct {
+	ctrl     *gomock.Controller
+	recorder *MockPasswordUsecaseMockRecorder[T]
+	isgomock struct{}
+}
+
+// MockPasswordUsecaseMockRecorder is the mock recorder for MockPasswordUsecase.
+type MockPasswordUsecaseMockRecorder[T user.PasswordCapableModel] struct {
+	mock *MockPasswordUsecase[T]
+}
+
+// NewMockPasswordUsecase creates a new mock instance.
+func NewMockPasswordUsecase[T user.PasswordCapableModel](ctrl *gomock.Controller) *MockPasswordUsecase[T] {
+	mock := &MockPasswordUsecase[T]{ctrl: ctrl}
+	mock.recorder = &MockPasswordUsecaseMockRecorder[T]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPasswordUsecase[T]) EXPECT() *MockPasswordUsecaseMockRecorder[T] {
+	return m.recorder
+}
+
+// ChangePassword mocks base method.
+func (m *MockPasswordUsecase[T]) ChangePassword(ctx context.Context, currentPassword, newPassword string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ChangePassword", ctx, currentPassword, newPassword)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ChangePassword indicates an expected call of ChangePassword.
+func (mr *MockPasswordUsecaseMockRecorder[T]) ChangePassword(ctx, currentPassword, newPassword any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangePassword", reflect.TypeOf((*MockPasswordUsecase[T])(nil).ChangePassword), ctx, currentPassword, newPassword)
+}
+
+// Repo mocks base method.
+func (m *MockPasswordUsecase[T]) Repo() user.PasswordRepository[T] {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Repo")
+	ret0, _ := ret[0].(user.PasswordRepository[T])
+	return ret0
+}
+
+// Repo indicates an expected call of Repo.
+func (mr *MockPasswordUsecaseMockRecorder[T]) Repo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Repo", reflect.TypeOf((*MockPasswordUsecase[T])(nil).Repo))
+}
+
+// ResetPassword mocks base method.
+func (m *MockPasswordUsecase[T]) ResetPassword(ctx context.Context, userID uint64) (*user.UserPasswordReset, T, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, userID)
+	ret0, _ := ret[0].(*user.UserPasswordReset)
+	ret1, _ := ret[1].(T)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockPasswordUsecaseMockRecorder[T]) ResetPassword(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockPasswordUsecase[T])(nil).ResetPassword), ctx, userID)
+}
+
+// SetPassword mocks base method.
+func (m *MockPasswordUsecase[T]) SetPassword(ctx context.Context, arg1 T, password string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetPassword", ctx, arg1, password)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetPassword indicates an expected call of SetPassword.
+func (mr *MockPasswordUsecaseMockRecorder[T]) SetPassword(ctx, arg1, password any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockPasswordUsecase[T])(nil).SetPassword), ctx, arg1, password)
 }
 
 // UpdatePassword mocks base method.
-func (m *MockUsecase) UpdatePassword(ctx context.Context, token, email, password string) error {
+func (m *MockPasswordUsecase[T]) UpdatePassword(ctx context.Context, userID uint64, token, password string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePassword", ctx, token, email, password)
+	ret := m.ctrl.Call(m, "UpdatePassword", ctx, userID, token, password)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdatePassword indicates an expected call of UpdatePassword.
-func (mr *MockUsecaseMockRecorder) UpdatePassword(ctx, token, email, password any) *gomock.Call {
+func (mr *MockPasswordUsecaseMockRecorder[T]) UpdatePassword(ctx, userID, token, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePassword", reflect.TypeOf((*MockUsecase)(nil).UpdatePassword), ctx, token, email, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePassword", reflect.TypeOf((*MockPasswordUsecase[T])(nil).UpdatePassword), ctx, userID, token, password)
 }

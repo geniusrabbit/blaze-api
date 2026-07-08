@@ -13,14 +13,14 @@ type Member {
   status: ApproveStatus!
 
   """
-  User object accessor
+  User ID of the member
   """
-  user: User!
+  userID: ID64!
 
   """
-  Account object accessor
+  Account ID of the member
   """
-  account: Account!
+  accountID: ID64!
 
   """
   Is the user an admin of the account
@@ -37,28 +37,11 @@ type Member {
   deletedAt: Time
 }
 
-type MemberEdge {
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-
-  """
-  The item at the end of the edge.
-  """
-  node: Member
-}
-
 type MemberConnection {
   """
   The total number of campaigns
   """
   totalCount: Int!
-
-  """
-  The edges for each of the members's lists
-  """
-  edges: [MemberEdge!]
 
   """
   A list of the members, as a convenience when edges are not needed.
@@ -112,9 +95,9 @@ input MemberListOrder {
 
 input InviteMemberInput {
   """
-  The email of the member to invite
+  The ID of the member to invite
   """
-  email: String!
+  userID: ID64!
 
   """
   The roles to assign to the member

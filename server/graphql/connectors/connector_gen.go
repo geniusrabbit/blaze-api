@@ -11,65 +11,52 @@ import (
 )
 
 // DataAccessor is a generic interface for data accessors
-type DataAccessor[M any, EdgeT any] interface {
-	FetchDataList(ctx context.Context) ([]*M, error)
+type DataAccessor[M any] interface {
+	FetchDataList(ctx context.Context) ([]M, error)
 	CountData(ctx context.Context) (int64, error)
-	ConvertToEdge(obj *M) *EdgeT
 }
 
 // DataAccessorFunc provides a generic implementation of DataAccessor as a function
-type DataAccessorFunc[M any, EdgeT any] struct {
-	FetchDataListFunc func(ctx context.Context) ([]*M, error)
+type DataAccessorFunc[M any] struct {
+	FetchDataListFunc func(ctx context.Context) ([]M, error)
 	CountDataFunc     func(ctx context.Context) (int64, error)
-	ConvertToEdgeFunc func(obj *M) *EdgeT
 }
 
-func (d *DataAccessorFunc[M, EdgeT]) FetchDataList(ctx context.Context) ([]*M, error) {
+func (d *DataAccessorFunc[M]) FetchDataList(ctx context.Context) ([]M, error) {
 	return d.FetchDataListFunc(ctx)
 }
 
-func (d *DataAccessorFunc[M, EdgeT]) CountData(ctx context.Context) (int64, error) {
+func (d *DataAccessorFunc[M]) CountData(ctx context.Context) (int64, error) {
 	return d.CountDataFunc(ctx)
 }
 
-func (d *DataAccessorFunc[M, EdgeT]) ConvertToEdge(obj *M) *EdgeT {
-	if d.ConvertToEdgeFunc == nil {
-		return nil
-	}
-	return d.ConvertToEdgeFunc(obj)
-}
-
 // CollectionConnection implements collection accessor interface with pagination
-type CollectionConnection[GQLM any, EdgeT any] struct {
+type CollectionConnection[GQLM any] struct {
 	ctx          context.Context
-	dataAccessor DataAccessor[GQLM, EdgeT]
+	dataAccessor DataAccessor[GQLM]
 
 	totalCount int64
 	page       *gqlmodels.Page
-	list       []*GQLM
-
-	// The edges for each of the accounts's lists
-	edges []*EdgeT
+	list       []GQLM
 
 	// Information for paginating this connection
 	pageInfo *gqlmodels.PageInfo
 }
 
 // NewCollectionConnection based on query object
-func NewCollectionConnection[GQLM any, EdgeT any](ctx context.Context, dataAccessor DataAccessor[GQLM, EdgeT], page *gqlmodels.Page) *CollectionConnection[GQLM, EdgeT] {
-	return &CollectionConnection[GQLM, EdgeT]{
+func NewCollectionConnection[GQLM any](ctx context.Context, dataAccessor DataAccessor[GQLM], page *gqlmodels.Page) *CollectionConnection[GQLM] {
+	return &CollectionConnection[GQLM]{
 		ctx:          ctx,
 		dataAccessor: dataAccessor,
 		totalCount:   -1,
 		page:         page,
 		list:         nil,
-		edges:        nil,
 		pageInfo:     nil,
 	}
 }
 
 // TotalCount returns number of campaigns
-func (c *CollectionConnection[GQLM, EdgeT]) TotalCount() int {
+func (c *CollectionConnection[GQLM]) TotalCount() int {
 	if c.totalCount < 0 {
 		var err error
 		c.totalCount, err = c.dataAccessor.CountData(c.ctx)
@@ -82,20 +69,8 @@ func (c *CollectionConnection[GQLM, EdgeT]) TotalCount() int {
 	return int(c.totalCount)
 }
 
-// The edges for each of the campaigs's lists
-func (c *CollectionConnection[GQLM, EdgeT]) Edges() []*EdgeT {
-	if c.edges == nil {
-		for _, obj := range c.List() {
-			if edge := c.dataAccessor.ConvertToEdge(obj); edge != nil {
-				c.edges = append(c.edges, edge)
-			}
-		}
-	}
-	return c.edges
-}
-
 // PageInfo returns information about pages
-func (c *CollectionConnection[GQLM, EdgeT]) PageInfo() *gqlmodels.PageInfo {
+func (c *CollectionConnection[GQLM]) PageInfo() *gqlmodels.PageInfo {
 	if c.pageInfo == nil {
 		c.pageInfo = &gqlmodels.PageInfo{
 			StartCursor:     "",
@@ -105,12 +80,6 @@ func (c *CollectionConnection[GQLM, EdgeT]) PageInfo() *gqlmodels.PageInfo {
 			Total:           c.TotalCount(),
 			Page:            1,
 			Count:           0,
-		}
-		if edges := c.Edges(); len(edges) > 0 {
-			cur1, _ := gocast.StructFieldValue(edges[0], "Cursor")
-			cur2, _ := gocast.StructFieldValue(edges[len(edges)-1], "Cursor")
-			c.pageInfo.StartCursor = gocast.Str(cur1)
-			c.pageInfo.EndCursor = gocast.Str(cur2)
 		}
 		if c.page != nil && c.page.Size != nil {
 			c.pageInfo.Page = max(1, gocast.PtrAsValue(c.page.StartPage, 1))
@@ -123,7 +92,7 @@ func (c *CollectionConnection[GQLM, EdgeT]) PageInfo() *gqlmodels.PageInfo {
 }
 
 // List returns list of the accounts, as a convenience when edges are not needed.
-func (c *CollectionConnection[GQLM, EdgeT]) List() []*GQLM {
+func (c *CollectionConnection[GQLM]) List() []GQLM {
 	if c.list == nil {
 		var err error
 		c.list, err = c.dataAccessor.FetchDataList(c.ctx)
@@ -135,11 +104,11 @@ func (c *CollectionConnection[GQLM, EdgeT]) List() []*GQLM {
 type _cacheValue[GQLM any] struct {
 	TotalCount int64               `json:"totalCount"`
 	PageInfo   *gqlmodels.PageInfo `json:"pageInfo"`
-	List       []*GQLM             `json:"list"`
+	List       []GQLM              `json:"list"`
 }
 
 // EncodableCacheValue encodes the collection connection to a byte slice for caching
-func (c *CollectionConnection[GQLM, EdgeT]) EncodableCacheValue() ([]byte, error) {
+func (c *CollectionConnection[GQLM]) EncodableCacheValue() ([]byte, error) {
 	return json.Marshal(&_cacheValue[GQLM]{
 		TotalCount: int64(c.TotalCount()),
 		PageInfo:   c.PageInfo(),
@@ -148,7 +117,7 @@ func (c *CollectionConnection[GQLM, EdgeT]) EncodableCacheValue() ([]byte, error
 }
 
 // DecodableCacheValue decodes the byte slice from cache back into the collection connection
-func (c *CollectionConnection[GQLM, EdgeT]) DecodableCacheValue(data []byte) error {
+func (c *CollectionConnection[GQLM]) DecodableCacheValue(data []byte) error {
 	var cacheValue _cacheValue[GQLM]
 	if err := json.Unmarshal(data, &cacheValue); err != nil {
 		return err

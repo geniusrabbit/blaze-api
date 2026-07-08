@@ -4,7 +4,8 @@
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
   - ./schemas/*.graphql
-  - ../../repository/**/*.graphql
+  - ../../repository/**/graphql/*.graphql
+  - ../../repository/**/graphql/user_base/*.graphql
 
 skip_mod_tidy: true
 
@@ -76,12 +77,6 @@ models:
   ID64:
     model: github.com/geniusrabbit/blaze-api/server/graphql/types.ID64
   # Connectors
-  UserConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql.UserConnection
-  AccountConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql.AccountConnection
-  MemberConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql.MemberConnection
   SocialAccountConnection:
     model: github.com/geniusrabbit/blaze-api/repository/socialaccount/delivery/graphql.SocialAccountConnection
   RBACRoleConnection:

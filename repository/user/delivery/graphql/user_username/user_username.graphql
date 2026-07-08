@@ -1,0 +1,17 @@
+# Username trait — adds a separate username field to User and related input/filter types.
+# Include this module when your user struct embeds user.Username.
+
+extend type User {
+  """
+  Unique username (separate from email, optional trait).
+  """
+  username: String!
+}
+
+extend input UserCreateInput {
+  username: String
+}
+
+extend input UserListOrder {
+  username: Ordering
+}

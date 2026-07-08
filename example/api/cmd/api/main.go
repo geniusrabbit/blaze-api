@@ -15,7 +15,11 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appcontext"
 	"github.com/geniusrabbit/blaze-api/example/api/cmd/api/appinit"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/domain"
 	"github.com/geniusrabbit/blaze-api/example/api/internal/server"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql"
+	exmodels "github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models"
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/wiring"
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin/facebook"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
@@ -29,9 +33,13 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/zlogger"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/authorizer"
+	accountgraphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
+	accountlogin "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql/account_login"
 	"github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
+	rbacrepo "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/delivery/rest"
-	"github.com/geniusrabbit/blaze-api/repository/user"
+	socautherepo "github.com/geniusrabbit/blaze-api/repository/socialauth/repository"
+	socautheuse "github.com/geniusrabbit/blaze-api/repository/socialauth/usecase"
 )
 
 var (
@@ -52,11 +60,15 @@ func init() {
 	fatalError(migratedb.Migrate(context.Background(), conf.System.Storage.MasterConnect, []migratedb.MigrateSource{
 		{
 			URI:                   []string{"file:///data/migrations/initial"},
-			SchemaMigrationsTable: "schema_migrations_prod",
+			SchemaMigrationsTable: "schema_migrations_initial",
 		},
 		{
 			URI:                   []string{"file:///data/migrations/fixtures"},
-			SchemaMigrationsTable: "schema_migrations_dev",
+			SchemaMigrationsTable: "schema_migrations_fixtures",
+		},
+		{
+			URI:                   []string{"file:///data/migrations/traits"},
+			SchemaMigrationsTable: "schema_migrations_traits",
 		},
 	}), "migrate database")
 }
@@ -104,30 +116,68 @@ func main() {
 	// Register callback for history log (only for modifications)
 	fatalError(gormlog.Register(masterDatabase), "register history log")
 
+	deps := appinit.NewDeps()
+
 	// Init permission manager
 	permissionManager := permissions.NewManager(masterDatabase, conf.Permissions.RoleCacheLifetime)
-	appinit.InitModelPermissions(permissionManager)
+	appinit.InitModelPermissions(permissionManager, deps)
 
 	// Init OAuth2 provider
-	oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDatabase)
+	oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDatabase, deps)
 
 	// Prepare context
 	ctx = ctxlogger.WithLogger(ctx, loggerObj)
 	ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)
 	ctx = permissions.WithManager(ctx, permissionManager)
 
+	fatalError(
+		appinit.EnsureSuperuser(ctx, conf.Superuser.Email, conf.Superuser.Password, deps),
+		"init superuser")
+
 	httpServer := server.HTTPServer{
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
 		SessionManager: appinit.SessionManager(conf.Session.CookieName, conf.Session.Lifetime),
-		Authorizers: []auth.Authorizer[*user.User, *account.Account]{
-			jwt.NewAuthorizer(jwtProvider),
-			oauth2.NewAuthorizer(oauth2provider),
+		AuthLoader:     deps.AuthLoader,
+		Authorizers: []auth.Authorizer[*domain.User, *domain.Account]{
+			jwt.NewAuthorizer(jwtProvider, deps.AuthLoader),
+			oauth2.NewAuthorizer(oauth2provider, deps.AccountRepo),
 			authorizer.NewDevTokenAuthorizer(gocast.IfThen(conf.IsDebug(), &authorizer.AuthOption{
 				DevToken:     conf.Session.DevToken,
 				DevUserID:    conf.Session.DevUserID,
 				DevAccountID: conf.Session.DevAccountID,
-			}, nil)),
+			}, nil), deps.AuthLoader),
+		},
+		GraphqlOptions: graphql.Options{
+			graphql.WithUserAccountResolvers(
+				jwtProvider,
+				wiring.NewExampleUserQueryResolver(deps.UserModule),
+				accountgraphql.NewAuthResolver(
+					jwtProvider,
+					deps.AccountRepo,
+					deps.AccountUC,
+					rbacrepo.New(),
+				),
+				wiring.NewExampleAccountQueryResolver(
+					wiring.ExampleAccountQueryResolverConfig{
+						Users:    deps.UserModule.Core,
+						Accounts: deps.AccountUC,
+						Members:  deps.MemberUC,
+					},
+				),
+				accountgraphql.NewMemberQueryResolver(
+					accountgraphql.MemberQueryResolverConfig[*domain.User, *domain.Account, *exmodels.Account]{
+						Accounts: deps.AccountUC,
+						Members:  deps.MemberUC,
+						UserRepo: deps.GraphQL.UserRepo,
+					},
+				),
+			),
+			graphql.WithUserLoginHandler(
+				jwtProvider,
+				accountlogin.NewEmailPasswordLogin(deps.UserModule.Repo, deps.UserModule.Repo),
+				deps.AccountRepo,
+			),
 		},
 		ContextWrap: func(ctx context.Context) context.Context {
 			ctx = ctxlogger.WithLogger(ctx, loggerObj)
@@ -139,8 +189,16 @@ func main() {
 			if conf.SocialAuth.Facebook.IsValid() {
 				oa2conf := conf.SocialAuth.Facebook.OAuth2Config("facebook")
 				mux.Handle("/auth/facebook/*",
-					rest.NewWrapper(facebook.NewFacebookConfig(oa2conf), rest.WithSessionProvider(jwtProvider)).
-						HandleWrapper("/auth/facebook"),
+					rest.NewWrapper(facebook.NewFacebookConfig(oa2conf),
+						rest.WithSessionProvider(jwtProvider),
+						rest.WithAccountResolver(func(ctx context.Context, filter *account.Filter) ([]*domain.Account, error) {
+							return deps.AccountRepo.FetchList(ctx, filter)
+						}),
+						rest.WithSocialAuthUsecase(socautheuse.New(
+							socautherepo.New(),
+							deps.UserModule.Repo,
+						)),
+					).HandleWrapper("/auth/facebook"),
 				)
 			}
 		},

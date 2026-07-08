@@ -14,35 +14,36 @@ import (
 	reflect "reflect"
 
 	account "github.com/geniusrabbit/blaze-api/repository/account"
+	user "github.com/geniusrabbit/blaze-api/repository/user"
 	gomock "go.uber.org/mock/gomock"
 )
 
 // MockRepository is a mock of Repository interface.
-type MockRepository struct {
+type MockRepository[T account.Model] struct {
 	ctrl     *gomock.Controller
-	recorder *MockRepositoryMockRecorder
+	recorder *MockRepositoryMockRecorder[T]
 	isgomock struct{}
 }
 
 // MockRepositoryMockRecorder is the mock recorder for MockRepository.
-type MockRepositoryMockRecorder struct {
-	mock *MockRepository
+type MockRepositoryMockRecorder[T account.Model] struct {
+	mock *MockRepository[T]
 }
 
 // NewMockRepository creates a new mock instance.
-func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
-	mock := &MockRepository{ctrl: ctrl}
-	mock.recorder = &MockRepositoryMockRecorder{mock}
+func NewMockRepository[T account.Model](ctrl *gomock.Controller) *MockRepository[T] {
+	mock := &MockRepository[T]{ctrl: ctrl}
+	mock.recorder = &MockRepositoryMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
+func (m *MockRepository[T]) EXPECT() *MockRepositoryMockRecorder[T] {
 	return m.recorder
 }
 
 // Count mocks base method.
-func (m *MockRepository) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
+func (m *MockRepository[T]) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
@@ -55,14 +56,14 @@ func (m *MockRepository) Count(ctx context.Context, opts ...account.QOption) (in
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockRepositoryMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository)(nil).Count), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockRepository[T])(nil).Count), varargs...)
 }
 
 // Create mocks base method.
-func (m *MockRepository) Create(ctx context.Context, arg1 *account.Account) (uint64, error) {
+func (m *MockRepository[T]) Create(ctx context.Context, arg1 T) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, arg1)
 	ret0, _ := ret[0].(uint64)
@@ -71,13 +72,13 @@ func (m *MockRepository) Create(ctx context.Context, arg1 *account.Account) (uin
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockRepositoryMockRecorder) Create(ctx, arg1 any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Create(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository[T])(nil).Create), ctx, arg1)
 }
 
 // Delete mocks base method.
-func (m *MockRepository) Delete(ctx context.Context, id uint64) error {
+func (m *MockRepository[T]) Delete(ctx context.Context, id uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -85,78 +86,62 @@ func (m *MockRepository) Delete(ctx context.Context, id uint64) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository[T])(nil).Delete), ctx, id)
+}
+
+// EmptyObject mocks base method.
+func (m *MockRepository[T]) EmptyObject() T {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(T)
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockRepositoryMockRecorder[T]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockRepository[T])(nil).EmptyObject))
 }
 
 // FetchList mocks base method.
-func (m *MockRepository) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
+func (m *MockRepository[T]) FetchList(ctx context.Context, opts ...account.QOption) ([]T, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchList", varargs...)
-	ret0, _ := ret[0].([]*account.Account)
+	ret0, _ := ret[0].([]T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockRepositoryMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository)(nil).FetchList), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockRepository[T])(nil).FetchList), varargs...)
 }
 
 // Get mocks base method.
-func (m *MockRepository) Get(ctx context.Context, id uint64) (*account.Account, error) {
+func (m *MockRepository[T]) Get(ctx context.Context, id uint64) (T, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*account.Account)
+	ret0, _ := ret[0].(T)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockRepositoryMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), ctx, id)
-}
-
-// GetByToken mocks base method.
-func (m *MockRepository) GetByToken(ctx context.Context, token string) (*account.User, *account.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByToken", ctx, token)
-	ret0, _ := ret[0].(*account.User)
-	ret1, _ := ret[1].(*account.Account)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetByToken indicates an expected call of GetByToken.
-func (mr *MockRepositoryMockRecorder) GetByToken(ctx, token any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByToken", reflect.TypeOf((*MockRepository)(nil).GetByToken), ctx, token)
-}
-
-// LoadPermissions mocks base method.
-func (m *MockRepository) LoadPermissions(ctx context.Context, arg1 *account.Account, user *account.User) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadPermissions", ctx, arg1, user)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LoadPermissions indicates an expected call of LoadPermissions.
-func (mr *MockRepositoryMockRecorder) LoadPermissions(ctx, arg1, user any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPermissions", reflect.TypeOf((*MockRepository)(nil).LoadPermissions), ctx, arg1, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository[T])(nil).Get), ctx, id)
 }
 
 // Update mocks base method.
-func (m *MockRepository) Update(ctx context.Context, id uint64, arg2 *account.Account) error {
+func (m *MockRepository[T]) Update(ctx context.Context, id uint64, arg2 T) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, id, arg2)
 	ret0, _ := ret[0].(error)
@@ -164,37 +149,203 @@ func (m *MockRepository) Update(ctx context.Context, id uint64, arg2 *account.Ac
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockRepositoryMockRecorder) Update(ctx, id, arg2 any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder[T]) Update(ctx, id, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), ctx, id, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository[T])(nil).Update), ctx, id, arg2)
 }
 
-// MockMemberRepository is a mock of MemberRepository interface.
-type MockMemberRepository struct {
+// MockSessionRepository is a mock of SessionRepository interface.
+type MockSessionRepository[TUser user.Model, TAccount account.Model] struct {
 	ctrl     *gomock.Controller
-	recorder *MockMemberRepositoryMockRecorder
+	recorder *MockSessionRepositoryMockRecorder[TUser, TAccount]
 	isgomock struct{}
 }
 
-// MockMemberRepositoryMockRecorder is the mock recorder for MockMemberRepository.
-type MockMemberRepositoryMockRecorder struct {
-	mock *MockMemberRepository
+// MockSessionRepositoryMockRecorder is the mock recorder for MockSessionRepository.
+type MockSessionRepositoryMockRecorder[TUser user.Model, TAccount account.Model] struct {
+	mock *MockSessionRepository[TUser, TAccount]
 }
 
-// NewMockMemberRepository creates a new mock instance.
-func NewMockMemberRepository(ctrl *gomock.Controller) *MockMemberRepository {
-	mock := &MockMemberRepository{ctrl: ctrl}
-	mock.recorder = &MockMemberRepositoryMockRecorder{mock}
+// NewMockSessionRepository creates a new mock instance.
+func NewMockSessionRepository[TUser user.Model, TAccount account.Model](ctrl *gomock.Controller) *MockSessionRepository[TUser, TAccount] {
+	mock := &MockSessionRepository[TUser, TAccount]{ctrl: ctrl}
+	mock.recorder = &MockSessionRepositoryMockRecorder[TUser, TAccount]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockMemberRepository) EXPECT() *MockMemberRepositoryMockRecorder {
+func (m *MockSessionRepository[TUser, TAccount]) EXPECT() *MockSessionRepositoryMockRecorder[TUser, TAccount] {
+	return m.recorder
+}
+
+// Count mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Count", varargs...)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Count indicates an expected call of Count.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) Count(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).Count), varargs...)
+}
+
+// Create mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) Create(ctx context.Context, arg1 TAccount) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, arg1)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) Create(ctx, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).Create), ctx, arg1)
+}
+
+// Delete mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) Delete(ctx context.Context, id uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).Delete), ctx, id)
+}
+
+// EmptyObject mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) EmptyObject() TAccount {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(TAccount)
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).EmptyObject))
+}
+
+// FetchList mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) FetchList(ctx context.Context, opts ...account.QOption) ([]TAccount, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FetchList", varargs...)
+	ret0, _ := ret[0].([]TAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchList indicates an expected call of FetchList.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) FetchList(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).FetchList), varargs...)
+}
+
+// Get mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) Get(ctx context.Context, id uint64) (TAccount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(TAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) Get(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).Get), ctx, id)
+}
+
+// GetByToken mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) GetByToken(ctx context.Context, token string) (TUser, TAccount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByToken", ctx, token)
+	ret0, _ := ret[0].(TUser)
+	ret1, _ := ret[1].(TAccount)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetByToken indicates an expected call of GetByToken.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) GetByToken(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByToken", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).GetByToken), ctx, token)
+}
+
+// LoadPermissions mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) LoadPermissions(ctx context.Context, arg1 TAccount, userObj TUser) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadPermissions", ctx, arg1, userObj)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LoadPermissions indicates an expected call of LoadPermissions.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) LoadPermissions(ctx, arg1, userObj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPermissions", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).LoadPermissions), ctx, arg1, userObj)
+}
+
+// Update mocks base method.
+func (m *MockSessionRepository[TUser, TAccount]) Update(ctx context.Context, id uint64, arg2 TAccount) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockSessionRepositoryMockRecorder[TUser, TAccount]) Update(ctx, id, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockSessionRepository[TUser, TAccount])(nil).Update), ctx, id, arg2)
+}
+
+// MockMemberRepository is a mock of MemberRepository interface.
+type MockMemberRepository[TUser user.Model, TAccount account.Model] struct {
+	ctrl     *gomock.Controller
+	recorder *MockMemberRepositoryMockRecorder[TUser, TAccount]
+	isgomock struct{}
+}
+
+// MockMemberRepositoryMockRecorder is the mock recorder for MockMemberRepository.
+type MockMemberRepositoryMockRecorder[TUser user.Model, TAccount account.Model] struct {
+	mock *MockMemberRepository[TUser, TAccount]
+}
+
+// NewMockMemberRepository creates a new mock instance.
+func NewMockMemberRepository[TUser user.Model, TAccount account.Model](ctrl *gomock.Controller) *MockMemberRepository[TUser, TAccount] {
+	mock := &MockMemberRepository[TUser, TAccount]{ctrl: ctrl}
+	mock.recorder = &MockMemberRepositoryMockRecorder[TUser, TAccount]{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMemberRepository[TUser, TAccount]) EXPECT() *MockMemberRepositoryMockRecorder[TUser, TAccount] {
 	return m.recorder
 }
 
 // CountMembers mocks base method.
-func (m *MockMemberRepository) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
+func (m *MockMemberRepository[TUser, TAccount]) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
@@ -207,34 +358,48 @@ func (m *MockMemberRepository) CountMembers(ctx context.Context, opts ...account
 }
 
 // CountMembers indicates an expected call of CountMembers.
-func (mr *MockMemberRepositoryMockRecorder) CountMembers(ctx any, opts ...any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) CountMembers(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockMemberRepository)(nil).CountMembers), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).CountMembers), varargs...)
+}
+
+// EmptyObject mocks base method.
+func (m *MockMemberRepository[TUser, TAccount]) EmptyObject() *account.Member[TUser, TAccount] {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).EmptyObject))
 }
 
 // FetchListMembers mocks base method.
-func (m *MockMemberRepository) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*account.AccountMember, error) {
+func (m *MockMemberRepository[TUser, TAccount]) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchListMembers", varargs...)
-	ret0, _ := ret[0].([]*account.AccountMember)
+	ret0, _ := ret[0].([]*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchListMembers indicates an expected call of FetchListMembers.
-func (mr *MockMemberRepositoryMockRecorder) FetchListMembers(ctx any, opts ...any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) FetchListMembers(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockMemberRepository)(nil).FetchListMembers), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).FetchListMembers), varargs...)
 }
 
 // IsAdmin mocks base method.
-func (m *MockMemberRepository) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
+func (m *MockMemberRepository[TUser, TAccount]) IsAdmin(ctx context.Context, userID, accountID uint64) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsAdmin", ctx, userID, accountID)
 	ret0, _ := ret[0].(bool)
@@ -242,13 +407,13 @@ func (m *MockMemberRepository) IsAdmin(ctx context.Context, userID, accountID ui
 }
 
 // IsAdmin indicates an expected call of IsAdmin.
-func (mr *MockMemberRepositoryMockRecorder) IsAdmin(ctx, userID, accountID any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) IsAdmin(ctx, userID, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAdmin", reflect.TypeOf((*MockMemberRepository)(nil).IsAdmin), ctx, userID, accountID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAdmin", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).IsAdmin), ctx, userID, accountID)
 }
 
 // IsMember mocks base method.
-func (m *MockMemberRepository) IsMember(ctx context.Context, userID, accountID uint64) bool {
+func (m *MockMemberRepository[TUser, TAccount]) IsMember(ctx context.Context, userID, accountID uint64) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsMember", ctx, userID, accountID)
 	ret0, _ := ret[0].(bool)
@@ -256,13 +421,13 @@ func (m *MockMemberRepository) IsMember(ctx context.Context, userID, accountID u
 }
 
 // IsMember indicates an expected call of IsMember.
-func (mr *MockMemberRepositoryMockRecorder) IsMember(ctx, userID, accountID any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) IsMember(ctx, userID, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMember", reflect.TypeOf((*MockMemberRepository)(nil).IsMember), ctx, userID, accountID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMember", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).IsMember), ctx, userID, accountID)
 }
 
 // LinkMember mocks base method.
-func (m *MockMemberRepository) LinkMember(ctx context.Context, arg1 *account.Account, isAdmin bool, members ...*account.User) error {
+func (m *MockMemberRepository[TUser, TAccount]) LinkMember(ctx context.Context, arg1 TAccount, isAdmin bool, members ...TUser) error {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, arg1, isAdmin}
 	for _, a := range members {
@@ -274,44 +439,44 @@ func (m *MockMemberRepository) LinkMember(ctx context.Context, arg1 *account.Acc
 }
 
 // LinkMember indicates an expected call of LinkMember.
-func (mr *MockMemberRepositoryMockRecorder) LinkMember(ctx, arg1, isAdmin any, members ...any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) LinkMember(ctx, arg1, isAdmin any, members ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, arg1, isAdmin}, members...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkMember", reflect.TypeOf((*MockMemberRepository)(nil).LinkMember), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkMember", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).LinkMember), varargs...)
 }
 
 // Member mocks base method.
-func (m *MockMemberRepository) Member(ctx context.Context, userID, accountID uint64) (*account.AccountMember, error) {
+func (m *MockMemberRepository[TUser, TAccount]) Member(ctx context.Context, userID, accountID uint64) (*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Member", ctx, userID, accountID)
-	ret0, _ := ret[0].(*account.AccountMember)
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Member indicates an expected call of Member.
-func (mr *MockMemberRepositoryMockRecorder) Member(ctx, userID, accountID any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) Member(ctx, userID, accountID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Member", reflect.TypeOf((*MockMemberRepository)(nil).Member), ctx, userID, accountID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Member", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).Member), ctx, userID, accountID)
 }
 
 // MemberByID mocks base method.
-func (m *MockMemberRepository) MemberByID(ctx context.Context, id uint64) (*account.AccountMember, error) {
+func (m *MockMemberRepository[TUser, TAccount]) MemberByID(ctx context.Context, id uint64) (*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MemberByID", ctx, id)
-	ret0, _ := ret[0].(*account.AccountMember)
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // MemberByID indicates an expected call of MemberByID.
-func (mr *MockMemberRepositoryMockRecorder) MemberByID(ctx, id any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) MemberByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MemberByID", reflect.TypeOf((*MockMemberRepository)(nil).MemberByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MemberByID", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).MemberByID), ctx, id)
 }
 
 // SetMemberRoles mocks base method.
-func (m *MockMemberRepository) SetMemberRoles(ctx context.Context, arg1 *account.Account, member *account.User, roles ...string) error {
+func (m *MockMemberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, arg1 TAccount, member TUser, roles ...string) error {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, arg1, member}
 	for _, a := range roles {
@@ -323,14 +488,14 @@ func (m *MockMemberRepository) SetMemberRoles(ctx context.Context, arg1 *account
 }
 
 // SetMemberRoles indicates an expected call of SetMemberRoles.
-func (mr *MockMemberRepositoryMockRecorder) SetMemberRoles(ctx, arg1, member any, roles ...any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) SetMemberRoles(ctx, arg1, member any, roles ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, arg1, member}, roles...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMemberRoles", reflect.TypeOf((*MockMemberRepository)(nil).SetMemberRoles), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMemberRoles", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).SetMemberRoles), varargs...)
 }
 
 // UnlinkMember mocks base method.
-func (m *MockMemberRepository) UnlinkMember(ctx context.Context, arg1 *account.Account, members ...*account.User) error {
+func (m *MockMemberRepository[TUser, TAccount]) UnlinkMember(ctx context.Context, arg1 TAccount, members ...TUser) error {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, arg1}
 	for _, a := range members {
@@ -342,8 +507,8 @@ func (m *MockMemberRepository) UnlinkMember(ctx context.Context, arg1 *account.A
 }
 
 // UnlinkMember indicates an expected call of UnlinkMember.
-func (mr *MockMemberRepositoryMockRecorder) UnlinkMember(ctx, arg1 any, members ...any) *gomock.Call {
+func (mr *MockMemberRepositoryMockRecorder[TUser, TAccount]) UnlinkMember(ctx, arg1 any, members ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, arg1}, members...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkMember", reflect.TypeOf((*MockMemberRepository)(nil).UnlinkMember), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkMember", reflect.TypeOf((*MockMemberRepository[TUser, TAccount])(nil).UnlinkMember), varargs...)
 }

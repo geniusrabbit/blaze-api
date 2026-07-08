@@ -21,7 +21,7 @@ type UserExtFilter struct {
 
 // AdjustPermissions adjusts the filter based on the current user's permissions.
 func (fl *UserExtFilter) AdjustPermissions(ctx context.Context) error {
-	fl.AccountID = []uint64{session.Account(ctx).ID}
+	fl.AccountID = []uint64{session.AccountID(ctx)}
 	return nil
 }
 
@@ -34,15 +34,15 @@ func (fl *UserExtFilter) PrepareQuery(q *gorm.DB) *gorm.DB {
 		qstr := `SELECT member_id FROM ` +
 			(*models.M2MAccountMemberRole)(nil).TableName() + ` WHERE role_id IN (?)`
 		if len(fl.AccountID) > 0 {
-			q = q.Where(`id IN (SELECT user_id FROM `+(*models.AccountMember)(nil).TableName()+
+			q = q.Where(`id IN (SELECT user_id FROM `+models.MemberTableName()+
 				` WHERE account_id IN (?) OR id IN (`+qstr+`))`, fl.AccountID, fl.Roles)
 		} else {
-			q = q.Where(`id IN (SELECT user_id FROM `+(*models.AccountMember)(nil).TableName()+
+			q = q.Where(`id IN (SELECT user_id FROM `+models.MemberTableName()+
 				` WHERE id IN (`+qstr+`))`, fl.Roles)
 		}
 	} else if len(fl.AccountID) > 0 {
 		q = q.Where(`id IN (SELECT user_id FROM `+
-			(*models.AccountMember)(nil).TableName()+` WHERE account_id IN (?))`, fl.AccountID)
+			models.MemberTableName()+` WHERE account_id IN (?))`, fl.AccountID)
 	}
 	if len(fl.UserID) > 0 {
 		q = q.Where(`id IN (?)`, fl.UserID)

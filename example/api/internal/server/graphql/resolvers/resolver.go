@@ -1,21 +1,56 @@
 package resolvers
 
 import (
+	"github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/wiring"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	accountgraphql "github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql"
+	authclientgraphql "github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql"
+	datokengraphql "github.com/geniusrabbit/blaze-api/repository/directaccesstoken/delivery/graphql"
+	historyloggraphql "github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql"
 	"github.com/geniusrabbit/blaze-api/repository/option"
-	baseResolver "github.com/geniusrabbit/blaze-api/server/graphql/resolvers"
+	optiongraphql "github.com/geniusrabbit/blaze-api/repository/option/delivery/graphql"
+	rbacgraphql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
+	socialaccountgraphql "github.com/geniusrabbit/blaze-api/repository/socialaccount/delivery/graphql"
 )
 
-// This file will not be regenerated automatically.
-//
-// It serves as dependency injection for your app, add any dependencies you require here.
-
+// Resolver is example/api GraphQL root with extended Account schema types.
 type Resolver struct {
-	*baseResolver.Resolver
+	users             wiring.UserQueryResolver
+	accAuth           accountgraphql.AuthQueryHandler
+	loginHandler      wiring.EmailPasswordLoginHandler
+	accounts          wiring.AccountQueryHandler
+	members           accountgraphql.MemberQueryHandler
+	socAccounts       *socialaccountgraphql.QueryResolver
+	roles             *rbacgraphql.QueryResolver
+	authclients       *authclientgraphql.QueryResolver
+	historylogs       *historyloggraphql.QueryResolver
+	options           *optiongraphql.QueryResolver
+	directaccesstoken *datokengraphql.QueryResolver
 }
 
-func NewResolver(provider *jwt.Provider, options option.Usecase) *Resolver {
+// NewResolver wires the example/api GraphQL handler from explicit resolver handles.
+// All custom logic (user, auth, accounts, members) must be provided by the caller.
+// Standard resolvers (rbac, authclient, historylog, option, DAT) are initialized internally.
+func NewResolver(
+	provider *jwt.Provider,
+	options option.Usecase,
+	userHandler wiring.UserQueryResolver,
+	authHandler accountgraphql.AuthQueryHandler,
+	loginHandler wiring.EmailPasswordLoginHandler,
+	accountHandler wiring.AccountQueryHandler,
+	memberHandler accountgraphql.MemberQueryHandler,
+) *Resolver {
 	return &Resolver{
-		Resolver: baseResolver.NewResolver(provider, options),
+		users:             userHandler,
+		accAuth:           authHandler,
+		loginHandler:      loginHandler,
+		accounts:          accountHandler,
+		members:           memberHandler,
+		socAccounts:       socialaccountgraphql.NewDefaultQueryResolver(),
+		roles:             rbacgraphql.NewDefaultQueryResolver(),
+		authclients:       authclientgraphql.NewDefaultQueryResolver(),
+		historylogs:       historyloggraphql.NewDefaultQueryResolver(),
+		options:           optiongraphql.NewQueryResolver(options),
+		directaccesstoken: datokengraphql.NewDefaultQueryResolver(),
 	}
 }

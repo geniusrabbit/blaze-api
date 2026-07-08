@@ -3,8 +3,6 @@ package graphql
 import (
 	"context"
 
-	"github.com/demdxx/gocast/v2"
-
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken"
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
@@ -12,7 +10,7 @@ import (
 )
 
 // DirectAccessTokenConnection is a GraphQL collection connection for direct access tokens with pagination support.
-type DirectAccessTokenConnection = connectors.CollectionConnection[gqlmodels.DirectAccessToken, gqlmodels.DirectAccessTokenEdge]
+type DirectAccessTokenConnection = connectors.CollectionConnection[*gqlmodels.DirectAccessToken]
 
 // NewDirectAccessTokenConnection creates a new collection connection for direct access tokens based on the provided query parameters.
 //
@@ -33,12 +31,12 @@ func NewDirectAccessTokenConnection(
 ) *DirectAccessTokenConnection {
 	return connectors.NewCollectionConnection(
 		ctx,
-		&connectors.DataAccessorFunc[gqlmodels.DirectAccessToken, gqlmodels.DirectAccessTokenEdge]{
+		&connectors.DataAccessorFunc[*gqlmodels.DirectAccessToken]{
 			// FetchDataListFunc retrieves the list of direct access tokens with applied filters, ordering, and pagination.
 			FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.DirectAccessToken, error) {
-				opts := []directaccesstoken.QOption{filter.Filter(), page.Pagination()}
+				opts := []directaccesstoken.QOption{FromFilterGraphQL(filter), page.Pagination()}
 				for _, o := range order {
-					if ord := o.Order(); ord != nil {
+					if ord := FromOrderGraphQL(o); ord != nil {
 						opts = append(opts, ord)
 					}
 				}
@@ -48,18 +46,11 @@ func NewDirectAccessTokenConnection(
 						directAccessTokens[i] = fnPrep(token)
 					}
 				}
-				return gqlmodels.FromDirectAccessTokenModelList(directAccessTokens), err
+				return FromDirectAccessTokenModelList(directAccessTokens), err
 			},
 			// CountDataFunc returns the total count of direct access tokens matching the filter criteria.
 			CountDataFunc: func(ctx context.Context) (int64, error) {
-				return directAccessTokenAccessor.Count(ctx, filter.Filter())
-			},
-			// ConvertToEdgeFunc transforms a token into a GraphQL edge with cursor and node information.
-			ConvertToEdgeFunc: func(obj *gqlmodels.DirectAccessToken) *gqlmodels.DirectAccessTokenEdge {
-				return &gqlmodels.DirectAccessTokenEdge{
-					Cursor: gocast.Str(obj.ID),
-					Node:   obj,
-				}
+				return directAccessTokenAccessor.Count(ctx, FromFilterGraphQL(filter))
 			},
 		},
 		page,

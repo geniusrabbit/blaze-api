@@ -50,7 +50,7 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			rv    = cdb.Statement.ReflectValue
 			data  = make(map[string]any, len(cdb.Statement.Schema.Fields))
 		)
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			rv = reflect.Indirect(rv)
 		}
 		if rv.Kind() == reflect.Struct {
@@ -92,8 +92,8 @@ func Log(db *gorm.DB, name string) func(*gorm.DB) {
 			RequestID:  requestid.Get(ctx),
 			Name:       gocast.Or(historylog.ActionFromContext(ctx), name),
 			Message:    historylog.MessageFromContext(ctx),
-			UserID:     user.ID,
-			AccountID:  acc.ID,
+			UserID:     user.GetID(),
+			AccountID:  acc.GetID(),
 			ObjectType: cdb.Statement.Schema.Name,
 			ObjectID:   gocast.Uint64(pkVal),
 			ObjectIDs:  gocast.Str(pkVal),

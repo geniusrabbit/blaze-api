@@ -8,7 +8,9 @@ import (
 	mrbac "github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
 
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
+	"github.com/geniusrabbit/blaze-api/repository/rbac"
 	"github.com/geniusrabbit/blaze-api/repository/rbac/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -84,4 +86,27 @@ func FromRBACRoleModelList(ctx context.Context, list []*models.Role) []*gqlmodel
 	return xtypes.SliceApply(list, func(val *models.Role) *gqlmodels.RBACRole {
 		return FromRBACRoleModel(ctx, val)
 	})
+}
+
+// FromGQLFilter converts local graphql model to filter (core fields only).
+func FromGQLFilter(fl *gqlmodels.RBACRoleListFilter) *rbac.Filter {
+	if fl == nil {
+		return nil
+	}
+	return &rbac.Filter{
+		ID:    fl.ID,
+		Names: fl.Name,
+	}
+}
+
+// FromGQLOrder converts local graphql model to order (core fields only).
+func FromGQLOrder(ol *gqlmodels.RBACRoleListOrder) *rbac.Order {
+	if ol == nil {
+		return nil
+	}
+	return &rbac.Order{
+		ID:    pkgModels.Order(ol.ID.AsOrder()),
+		Name:  pkgModels.Order(ol.Name.AsOrder()),
+		Title: pkgModels.Order(ol.Title.AsOrder()),
+	}
 }

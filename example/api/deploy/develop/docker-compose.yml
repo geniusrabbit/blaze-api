@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   tracer:
@@ -37,6 +35,7 @@ services:
 
   api:
     image: github.com/geniusrabbit/blaze-api:latest
+    # command: ["--migrate"]
     depends_on:
       - api-template-db
     ports:

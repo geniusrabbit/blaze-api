@@ -39,21 +39,6 @@ type RBACRole {
 }
 
 """
-RBACRoleEdge is a connection edge type for RBACRole.
-"""
-type RBACRoleEdge {
-  """
-  A cursor for use in pagination.
-  """
-  cursor: String!
-
-  """
-  The item at the end of the edge.
-  """
-  node: RBACRole
-}
-
-"""
 RBACRoleConnection implements collection accessor interface with pagination.
 """
 type RBACRoleConnection {
@@ -61,11 +46,6 @@ type RBACRoleConnection {
   The total number of campaigns
   """
   totalCount: Int!
-
-  """
-  The edges for each of the RBACRoles's lists
-  """
-  edges: [RBACRoleEdge!]
 
   """
   A list of the RBACRoles, as a convenience when edges are not needed.

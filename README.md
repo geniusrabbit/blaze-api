@@ -166,6 +166,104 @@ func InitModelPermissions(pm *permissions.Manager) {
 }
 ```
 
+## User / Account / Member templates
+
+User, Account, and Member are **composable embeddable bases + optional traits**, not monolithic structs. User remains bundled in the library; Account and Member are wired by the consumer (see `example/api/internal/domain/account.go`).
+
+| Layer | Bundled / reference type | Compose from |
+| ----- | ------------------------ | ------------ |
+| User | `example/api/internal/domain.User` | `UserBase` + `UserEmail` + `UserPassword` |
+| Account | `example/api/internal/domain.Account` | `AccountBase` + consumer `AccountProfile` (see `domain/account_profile.go`) |
+| Member | `account.Member[TUser, TAccount]` | `MemberBase` + preload `User`/`Account` |
+
+**`account.Model`** covers core tenant fields only (`GetID`, permissions, `GetApprove`, `GetCreatedAt`, `GetUpdatedAt`). Profile fields (title, logo, …) live in the **consumer GraphQL schema** via `extend type` / `extend input`, not in the base library schema.
+
+Base GraphQL types in `repository/account/delivery/graphql/account_base.graphql` and `repository/user/delivery/graphql/user.graphql` contain **minimal core fields only**. Consumer apps add profile/filter fields in separate extension files (see `example/api/protocol/graphql/extensions/`).
+
+Account and User **QueryResolver** implementations are **generics** parameterized by consumer GraphQL types:
+
+```go
+// repository/account/delivery/graphql/base_resolver.go
+type QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountInput, ...] struct { ... }
+
+// Base wiring (library default types):
+accountgraphql.NewBaseQueryResolver(cfg)   // TGQLAccount = *gqlmodels.Account
+
+// Example consumer (extended Account):
+wiring.NewExampleAccountQueryResolver(cfg) // TGQLAccount = exmodels.Account
+```
+
+Wire extended resolvers in `example/api/internal/server/graphql/wiring/` and map domain → GraphQL in `example/api/internal/domain/graphql.go`:
+
+```go
+// example/api/internal/domain/graphql.go
+func AccountToGraphQL(acc *Account) exmodels.Account { /* core + profile fields */ }
+func FillAccountFromInput(dest *Account, input *exmodels.AccountInput, ...) *Account { /* ... */ }
+
+// example/api/cmd/api/appinit/deps.go
+ExampleResolverDeps = resolvers.Deps[*UserType, *AccountType, exmodels.Account, *exmodels.AccountInput]
+```
+
+`RBACResourceName()` / `TableName()` stay on concrete structs (ACL/GORM), not on `account.Model`.
+
+**Reference consumer wiring** — see [`example/api/cmd/api/appinit/deps.go`](example/api/cmd/api/appinit/deps.go) and [`example/api/internal/user/stack.go`](example/api/internal/user/stack.go):
+
+```go
+deps := appinit.NewDeps()
+// deps.UserModule  — composite Repository + Core/Email/Password usecases (example-only helper)
+// deps.Resolver    — passed to server/graphql/resolvers
+```
+
+The framework exposes **separate** interfaces only: `user.Repository`, `user.EmailRepository`, `user.PasswordRepository`, and matching usecases. Compose them in the consumer (example uses `userstack.NewModule`).
+
+`Deps[TUser, TAccount]` is parameterized by **your** user/account types. GraphQL wiring uses `UserModuleDeps` (core + email + password + repos) and `BaseDeps` (account/member). Auth resolvers take `EmailRepository` + `PasswordRepository` separately — not a bundled repo type.
+
+```go
+baseResolver.UserModuleDeps[*MyUser]{
+    NewUser:      func() *MyUser { return new(MyUser) },
+    Core:         userCoreUC,
+    Email:        userEmailUC,
+    Password:     userPasswordUC,
+    EmailRepo:    userEmailRepo,
+    PasswordRepo: userPasswordRepo,
+}
+```
+
+### Custom User type (consumer)
+
+```go
+type User struct {
+    userModels.UserBase
+    userModels.UserEmail
+    userModels.UserPassword
+    Country string `gorm:"column:country"`
+}
+
+func (u *User) TableName() string       { return "adnet_user" }
+func (u *User) RBACResourceName() string { return "adnet.user" }
+```
+
+Wire once at startup (example pattern):
+
+```go
+newModel := func() *User { return new(User) }
+userModule := userstack.NewModule(newModel) // example/api only
+userRepo := userModule.Repo                 // satisfies Repository + Email + Password
+userCoreUC := userModule.Core
+```
+
+**Minimal UserBase-only** deployments (no email/password) require a custom migration and must not use `PasswordRepository` / password GraphQL modules — compile-time generic constraints enforce this.
+
+### Adnetapi migration
+
+When migrating an existing consumer (e.g. adnetapi):
+
+1. Replace `type User = blzuser.User` with a local struct embedding `UserBase` + traits + custom fields.
+2. Replace legacy user repository wiring with `NewDefaultUserRepository()` or `NewBundledRepository(newModel)`.
+3. Pass `server/graphql/resolvers.Deps` (or legacy interfaces) into resolvers — do not construct repos inside resolver packages.
+4. Update struct literals: promoted embed fields cannot be set in composite literals — use stubs (`UserStub(id)`) or assign after `&User{}`.
+5. ACL registration stays the same — register your concrete `&User{}` / `&Account{}` types.
+
 ## Architecture
 
 ### Repository / Usecase layer (`repository/generated`)
@@ -296,6 +394,53 @@ Each mock package carries the directive:
 
 ## Extending the GraphQL API
 
+### Minimal base schema + `extend type` (recommended)
+
+Base types ship with core fields only. Extend them in your app without forking library schemas:
+
+```graphql
+# example/api/protocol/graphql/extensions/account.graphql
+extend type Account {
+  title: String!
+  description: String!
+  logoURI: String!
+  # ...
+}
+
+extend input AccountInput { title: String }
+extend input AccountListFilter { title: [String!] }
+extend input AccountListOrder { title: Ordering }
+```
+
+Point gqlgen at base schemas **and** your extensions:
+
+```yaml
+# example/api/protocol/graphql/gqlgen.yml
+schema:
+  - ../../../../protocol/graphql/schemas/*.graphql
+  - ../../../../repository/**/*.graphql
+  - ./extensions/*.graphql
+```
+
+**Model binding rules:**
+
+| Type | Bind to | Why |
+| ---- | ------- | --- |
+| Extended `Account`, `AccountInput`, filters | Generate in `example/.../models/` | Merged type from base + extend |
+| Shared `User`, `SessionToken`, RBAC, … | `blaze-api/server/graphql/models` | Unchanged across consumers |
+| `AccountConnection`, `UserConnection`, `MemberConnection` | `example/.../models/connections.go` | Uses extended node types |
+
+Regenerate and wire generic resolvers:
+
+```bash
+cd example/api/protocol/graphql && go run github.com/99designs/gqlgen
+cd example/api && make build-api
+```
+
+Resolver wiring lives in `example/api/internal/server/graphql/wiring/` (`NewExampleAccountQueryResolver`, `NewExampleUserQueryResolver`, `NewExampleMemberQueryResolver`).
+
+### Adding new domain types
+
 1. Add a `.graphql` schema file to `protocol/graphql/schemas/` (or your app's `schemas/` folder).
 2. Point `gqlgen.yml` at the schemas — the example app uses:
 
@@ -314,75 +459,24 @@ cd example/api && make build-gql   # runs: go run github.com/99designs/gqlgen
 
 1. Implement the generated resolver stubs in `internal/server/graphql/resolvers/`.
 
-A complete `gqlgen.yml` that maps blaze-api connection types:
-
 ```yaml
+# example/api/protocol/graphql/gqlgen.yml (excerpt — see repo for full file)
 schema:
   - ../../../../protocol/graphql/schemas/*.graphql
   - ../../../../repository/**/*.graphql
-
-skip_mod_tidy: true
-
-exec:
-  filename: ../../internal/server/graphql/generated/exec.go
-  package: generated
-
-model:
-  filename: ../../internal/server/graphql/models/generated.go
-  package: models
-
-resolver:
-  layout: follow-schema
-  dir: ../../internal/server/graphql/resolvers
-  package: resolvers
-
-omit_slice_element_pointers: false
-skip_validation: true
-
-autobind:
-  - github.com/geniusrabbit/blaze-api/server/graphql/models
+  - ./extensions/*.graphql
 
 models:
-  ID:
-    model:
-      - github.com/99designs/gqlgen/graphql.ID
-      - github.com/99designs/gqlgen/graphql.Int
-      - github.com/99designs/gqlgen/graphql.Int64
-      - github.com/99designs/gqlgen/graphql.Int32
-  Int64:
-    model:
-      - github.com/99designs/gqlgen/graphql.Int64
-  Time:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.Time
-  TimeDuration:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.TimeDuration
-  DateTime:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.DateTime
-  JSON:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.JSON
-  NullableJSON:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.NullableJSON
-  UUID:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.UUID
-  ID64:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.ID64
-  # Connection types — use blaze-api's built-in implementations
-  UserConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql.UserConnection
+  User:
+    model: github.com/geniusrabbit/blaze-api/server/graphql/models.User
   AccountConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql.AccountConnection
+    model: github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models.AccountConnection
+  UserConnection:
+    model: github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models.UserConnection
   MemberConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/account/delivery/graphql.MemberConnection
-  RBACRoleConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql.RBACRoleConnection
-  AuthClientConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql.AuthClientConnection
-  HistoryActionConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql.HistoryActionConnection
-  OptionConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/option/delivery/graphql.OptionConnection
-  DirectAccessTokenConnection:
-    model: github.com/geniusrabbit/blaze-api/repository/directaccesstoken/delivery/graphql.DirectAccessTokenConnection
+    model: github.com/geniusrabbit/blaze-api/example/api/internal/server/graphql/models.MemberConnection
+  # ... other shared types bind to blaze-api/server/graphql/models
+  # Account / AccountInput / filters: NOT bound — generated with extensions in example/models
 ```
 
 ## Development

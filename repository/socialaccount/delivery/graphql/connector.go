@@ -3,15 +3,13 @@ package graphql
 import (
 	"context"
 
-	"github.com/demdxx/gocast/v2"
-
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/server/graphql/connectors"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
 // SocialAccountConnection is a GraphQL connection type for paginated social account collections.
-type SocialAccountConnection = connectors.CollectionConnection[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]
+type SocialAccountConnection = connectors.CollectionConnection[*gqlmodels.SocialAccount]
 
 // NewSocialAccountConnection creates a new paginated connection for social accounts.
 // It configures data fetching, counting, and edge conversion based on the provided filter, order, and page parameters.
@@ -22,12 +20,12 @@ func NewSocialAccountConnection(
 	order []*gqlmodels.SocialAccountListOrder,
 	page *gqlmodels.Page,
 ) *SocialAccountConnection {
-	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[gqlmodels.SocialAccount, gqlmodels.SocialAccountEdge]{
+	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[*gqlmodels.SocialAccount]{
 		// FetchDataListFunc retrieves the paginated list of social accounts.
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.SocialAccount, error) {
-			opts := []socialaccount.QOption{filter.Filter(), page.Pagination()}
+			opts := []socialaccount.QOption{FromGQLFilter(filter), page.Pagination()}
 			for _, o := range order {
-				if ord := o.Order(); ord != nil {
+				if ord := FromGQLOrder(o); ord != nil {
 					opts = append(opts, ord)
 				}
 			}
@@ -36,14 +34,7 @@ func NewSocialAccountConnection(
 		},
 		// CountDataFunc returns the total count of social accounts matching the filter.
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return accountsAccessor.Count(ctx, filter.Filter())
-		},
-		// ConvertToEdgeFunc transforms a social account into a GraphQL edge with cursor.
-		ConvertToEdgeFunc: func(obj *gqlmodels.SocialAccount) *gqlmodels.SocialAccountEdge {
-			return &gqlmodels.SocialAccountEdge{
-				Cursor: gocast.Str(obj.ID),
-				Node:   obj,
-			}
+			return accountsAccessor.Count(ctx, FromGQLFilter(filter))
 		},
 	}, page)
 }

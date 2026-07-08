@@ -29,9 +29,9 @@ func NewUsecase(repo option.Repository) *Usecase {
 func (a *Usecase) Get(ctx context.Context, name string, otype models.OptionType, targetID uint64) (*models.Option, error) {
 	switch {
 	case otype == models.UserOptionType && targetID == 0:
-		targetID = session.User(ctx).ID
+		targetID = session.User(ctx).GetID()
 	case otype == models.AccountOptionType && targetID == 0:
-		targetID = session.Account(ctx).ID
+		targetID = session.AccountID(ctx)
 	}
 	targetObj, err := a.baseRepo.Get(ctx, name, otype, targetID)
 	if err != nil {
@@ -69,9 +69,9 @@ func (a *Usecase) Count(ctx context.Context, opts ...option.QOption) (int64, err
 func (a *Usecase) Set(ctx context.Context, targetObj *models.Option) error {
 	switch {
 	case targetObj.Type == models.UserOptionType && targetObj.TargetID == 0:
-		targetObj.TargetID = session.User(ctx).ID
+		targetObj.TargetID = session.User(ctx).GetID()
 	case targetObj.Type == models.AccountOptionType && targetObj.TargetID == 0:
-		targetObj.TargetID = session.Account(ctx).ID
+		targetObj.TargetID = session.AccountID(ctx)
 	}
 	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermSet+`.*`) {
 		return acl.ErrNoPermissions.WithMessage("set")

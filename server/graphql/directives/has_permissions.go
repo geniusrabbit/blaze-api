@@ -30,14 +30,11 @@ type (
 )
 
 // HasPermissions for this user to the particular permission of the object
-// Every module have the list of permissions ["list", "view", "create", "update", "delete", etc]
-// This method checks, first of all, that object belongs to the user or have manager access and secondly
-// that the user has the requested permissions of the module or several modules
-func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms []string) (any, error) {
-	user, account := session.UserAccount(ctx)
+func HasPermissions[T user.Model, A account.Model](ctx context.Context, obj any, next graphql.Resolver, perms []string) (any, error) {
+	user, accountObj := session.UserAccount(ctx)
 	pm := permissions.FromContext(ctx)
 
-	if account == nil {
+	if accountObj == nil {
 		return nil, errors.Wrap(errAuthorizationRequired, `no correct account`)
 	}
 
@@ -47,8 +44,8 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 
 	for _, perm := range perms {
 		objName, obj := objectByPermissionName(pm, perm)
-		newObj := ownedObject(ctx, obj, user, account)
-		if !account.CheckPermissions(ctx, newObj, perm) {
+		newObj := ownedObject(ctx, obj, user, accountObj, objName)
+		if !accountObj.CheckPermissions(ctx, newObj, perm) {
 			if user.IsAnonymous() {
 				return nil, errAuthorizationRequired
 			}
@@ -59,45 +56,39 @@ func HasPermissions(ctx context.Context, obj any, next graphql.Resolver, perms [
 	return next(ctx)
 }
 
-// here we need to check that object belongs to the user or have manager access
-// as it's the basic level of access to any object
-func ownedObject(ctx context.Context, obj any, usr *user.User, acc *account.Account) any {
-	switch obj.(type) {
-	case nil:
+func ownedObject(ctx context.Context, obj any, usr user.Model, acc account.Model, objName string) any {
+	switch {
+	case obj == nil:
 		return nil
-	case *account.Account, account.Account:
-		return &account.Account{ID: acc.ID, Admins: []uint64{usr.ID}}
-	case *user.User, user.User:
-		return &user.User{ID: usr.ID}
+	case objName == "account":
+		return acc.NewWithIDs(acc.GetID(), usr.GetID())
+	case objName == "user":
+		return usr.NewWithID(usr.GetID())
 	}
 
-	// Get object struct type value
 	tp := reflect.TypeOf(obj).Elem()
-	for tp.Kind() == reflect.Ptr || tp.Kind() == reflect.Interface {
+	for tp.Kind() == reflect.Pointer || tp.Kind() == reflect.Interface {
 		tp = tp.Elem()
 	}
 	if tp.Kind() != reflect.Struct {
 		return obj
 	}
 
-	// Create new object with the same type
 	newObj := reflect.New(tp).Interface()
 
-	// Set account and user owner IDs
 	if setter, ok := newObj.(accountOwnerSetter); ok {
-		setter.SetAccountOwnerID(acc.ID)
+		setter.SetAccountOwnerID(acc.GetID())
 	} else {
-		_ = gocast.SetStructFieldValue(ctx, newObj, `AccountID`, acc.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerAccountID`, acc.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `AccountID`, acc.GetID())
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerAccountID`, acc.GetID())
 	}
 
-	// Set user owner ID
 	if setter, ok := newObj.(userOwnerSetter); ok {
-		setter.SetUserOwnerID(usr.ID)
+		setter.SetUserOwnerID(usr.GetID())
 	} else {
-		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, usr.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, usr.ID)
-		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, usr.ID)
+		_ = gocast.SetStructFieldValue(ctx, newObj, `UserID`, usr.GetID())
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerID`, usr.GetID())
+		_ = gocast.SetStructFieldValue(ctx, newObj, `OwnerUserID`, usr.GetID())
 	}
 	return newObj
 }

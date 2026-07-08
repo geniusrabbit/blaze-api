@@ -15,6 +15,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	"github.com/geniusrabbit/blaze-api/repository/rbac"
+	rbacrepo "github.com/geniusrabbit/blaze-api/repository/rbac/repository"
+	rbacusecase "github.com/geniusrabbit/blaze-api/repository/rbac/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -31,6 +33,11 @@ type QueryResolver struct {
 // NewQueryResolver returns new API resolver
 func NewQueryResolver(uc rbac.Usecase) *QueryResolver {
 	return &QueryResolver{roles: uc}
+}
+
+// NewDefaultQueryResolver returns new API resolver with default usecase
+func NewDefaultQueryResolver() *QueryResolver {
+	return &QueryResolver{roles: rbacusecase.New(rbacrepo.New())}
 }
 
 // Role is the resolver for the Role field.

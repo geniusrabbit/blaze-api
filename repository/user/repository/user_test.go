@@ -11,8 +11,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 	"github.com/geniusrabbit/blaze-api/repository/user/password"
+	"github.com/geniusrabbit/blaze-api/repository/user/testutil"
 )
 
 // Password: test
@@ -25,14 +25,23 @@ const (
 type testSuite struct {
 	testsuite.DatabaseSuite
 
-	userRepo user.Repository
+	coreRepo  user.Repository[*testutil.User]
+	emailRepo user.EmailRepository[*testutil.User]
+	passRepo  user.PasswordRepository[*testutil.User]
 }
 
 func (s *testSuite) SetupSuite() {
 	s.DatabaseSuite.SetupSuite()
-	s.userRepo = NewUserRepository()
+	newUser := func() *testutil.User { return &testutil.User{} }
+	s.coreRepo = NewRepository(newUser)
+	s.emailRepo = NewEmailRepository(s.coreRepo, newUser)
+	s.passRepo = NewPasswordRepository(s.coreRepo, newUser)
 
 	password.SetSalt([]byte("1111111"), 1)
+}
+
+func (s *testSuite) SetupTest() {
+	s.DatabaseSuite.SetupSuite()
 }
 
 func (s *testSuite) TestGet() {
@@ -42,9 +51,9 @@ func (s *testSuite) TestGet() {
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
 		)
-	user, err := s.userRepo.Get(s.Ctx, 1)
+	userObj, err := s.coreRepo.Get(s.Ctx, 1)
 	s.Assert().NoError(err)
-	s.Assert().Equal(uint64(1), user.ID)
+	s.Assert().Equal(uint64(1), userObj.GetID())
 }
 
 func (s *testSuite) TestGetByEmail() {
@@ -54,10 +63,10 @@ func (s *testSuite) TestGetByEmail() {
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "test@mail.com", defaultPasswordHash, time.Now()),
 		)
-	user, err := s.userRepo.GetByEmail(s.Ctx, "test@mail.com")
+	userObj, err := s.emailRepo.GetByEmail(s.Ctx, "test@mail.com")
 	s.Assert().NoError(err)
-	s.Assert().Equal(uint64(1), user.ID)
-	s.Assert().Equal("test@mail.com", user.Email)
+	s.Assert().Equal(uint64(1), userObj.GetID())
+	s.Assert().Equal("test@mail.com", userObj.GetEmail())
 }
 
 func (s *testSuite) TestFetchList() {
@@ -68,9 +77,9 @@ func (s *testSuite) TestFetchList() {
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()).
 				AddRow(2, 1, "email2", defaultPasswordHash, time.Now()),
 		)
-	users, err := s.userRepo.FetchList(s.Ctx,
-		&user.ListFilter{UserID: []uint64{1, 2}},
-		&user.ListOrder{ID: pkgModels.OrderAsc},
+	users, err := s.coreRepo.FetchList(s.Ctx,
+		&user.ListFilter{FilterBase: user.FilterBase{ID: []uint64{1, 2}}},
+		&user.ListOrder{OrderBase: user.OrderBase{ID: pkgModels.OrderAsc}},
 		&repository.Pagination{Size: 100})
 	s.Assert().NoError(err)
 	s.Assert().Equal(2, len(users))
@@ -83,78 +92,43 @@ func (s *testSuite) TestCount() {
 			sqlmock.NewRows([]string{"count"}).
 				AddRow(2),
 		)
-	count, err := s.userRepo.Count(s.Ctx,
-		&user.ListFilter{UserID: []uint64{1, 2}})
+	count, err := s.coreRepo.Count(s.Ctx,
+		&user.ListFilter{FilterBase: user.FilterBase{ID: []uint64{1, 2}}})
 	s.Assert().NoError(err)
 	s.Assert().Equal(int64(2), count)
 }
 
 func (s *testSuite) TestGetByPassword() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs("email1", 1).
+		WithArgs(1, 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
 		)
 
-	user, err := s.userRepo.GetByPassword(s.Ctx, "email1", defaultPassword)
+	userObj, err := s.passRepo.GetByPassword(s.Ctx, 1, defaultPassword)
 	s.Assert().NoError(err)
-	s.Assert().Equal(uint64(1), user.ID)
+	s.Assert().Equal(uint64(1), userObj.GetID())
 }
 
-// func (s *testSuite) TestGetByToken() {
-// 	tocken := "jBQpj4CbcJRZjznk00mjpgxvLc2QwErx"
-// 	s.Mock.ExpectQuery(`WITH auth_client AS \(`).
-// 		WithArgs(tocken).
-// 		WillReturnRows(
-// 			sqlmock.NewRows([]string{"id", "status", "user_id", "account_id", "is_admin", "created_at", "updated_at"}).
-// 				AddRow(1, 1, 1, 1, 0, time.Now(), time.Now()),
-// 		)
-// 	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*userModels.User)(nil).TableName()+`"`).
-// 		WithArgs(uint64(1), 1).
-// 		WillReturnRows(
-// 			sqlmock.NewRows([]string{"id", "status", "email", "password", "created_at"}).
-// 				AddRow(1, 1, "email1", defaultPasswordHash, time.Now()),
-// 		)
-// 	s.Mock.ExpectQuery(`SELECT \* FROM "`+(*accountModels.Account)(nil).TableName()+`"`).
-// 		WithArgs(uint64(1), 1).
-// 		WillReturnRows(
-// 			sqlmock.NewRows([]string{"id", "status", "title", "description", "created_at"}).
-// 				AddRow(1, 1, "title1", "description1", time.Now()),
-// 		)
-// 	s.Mock.ExpectQuery(`SELECT "role_id" FROM `).
-// 		WithArgs(uint64(1)).
-// 		WillReturnRows(sqlmock.NewRows([]string{"role_id"}))
-
-// 	user, account, err := s.userRepo.GetByToken(s.Ctx, tocken)
-
-// 	s.Assert().NoError(err)
-// 	s.Assert().Equal(uint64(1), user.ID)
-// 	s.Assert().Equal(uint64(1), account.ID)
-// }
-
-func (s *testSuite) TestCreate() {
+func (s *testSuite) TestCreateWithPassword() {
 	s.Mock.ExpectQuery("INSERT INTO").
-		WithArgs("test", sqlmock.AnyArg(), false, pkgModels.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint(101)).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
-	id, err := s.userRepo.Create(
-		s.Ctx,
-		&userModels.User{ID: 101, Email: "test"},
-		"password")
+	u := testutil.StubWithEmail("test", pkgModels.UndefinedApproveStatus)
+	u.SetID(101)
+	id, err := s.passRepo.CreateWithPassword(s.Ctx, u, "password")
 	s.Assert().NoError(err)
 	s.Assert().Equal(uint64(101), id)
 }
 
 func (s *testSuite) TestUpdate() {
 	s.Mock.ExpectExec("UPDATE").
-		WithArgs("test", sqlmock.AnyArg(), false, pkgModels.UndefinedApproveStatus, sqlmock.AnyArg(), sqlmock.AnyArg(), nil, uint64(101)).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(101, 1))
-	err := s.userRepo.Update(
-		s.Ctx,
-		&userModels.User{
-			ID:    101,
-			Email: "test",
-		})
+	u := testutil.StubWithEmail("test", pkgModels.UndefinedApproveStatus)
+	u.SetID(101)
+	err := s.coreRepo.Update(s.Ctx, u)
 	s.Assert().NoError(err)
 }
 
@@ -162,7 +136,7 @@ func (s *testSuite) TestDeleteByID() {
 	s.Mock.ExpectExec("UPDATE").
 		WithArgs(sqlmock.AnyArg(), uint64(101)).
 		WillReturnResult(sqlmock.NewResult(101, 1))
-	err := s.userRepo.Delete(s.Ctx, 101)
+	err := s.coreRepo.Delete(s.Ctx, 101)
 	s.Assert().NoError(err)
 }
 

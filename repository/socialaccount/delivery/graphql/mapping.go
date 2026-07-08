@@ -4,6 +4,7 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 
+	"github.com/geniusrabbit/blaze-api/repository/socialaccount"
 	"github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -59,4 +60,32 @@ func FromSocialAccountSessionModel(sess *models.AccountSocialSession) *gqlmodels
 // FromSocialAccountSessionModelList converts a slice of session models to GraphQL models.
 func FromSocialAccountSessionModelList(list []*models.AccountSocialSession) []*gqlmodels.SocialAccountSession {
 	return xtypes.SliceApply(list, FromSocialAccountSessionModel)
+}
+
+func FromGQLFilter(fl *gqlmodels.SocialAccountListFilter) *socialaccount.Filter {
+	if fl == nil {
+		return nil
+	}
+	return &socialaccount.Filter{
+		ID:       fl.ID,
+		UserID:   fl.UserID,
+		Provider: fl.Provider,
+		Username: fl.Username,
+		Email:    fl.Email,
+	}
+}
+
+func FromGQLOrder(ord *gqlmodels.SocialAccountListOrder) *socialaccount.Order {
+	if ord == nil {
+		return nil
+	}
+	return &socialaccount.Order{
+		ID:        ord.ID.AsOrder(),
+		UserID:    ord.UserID.AsOrder(),
+		Provider:  ord.Provider.AsOrder(),
+		Email:     ord.Email.AsOrder(),
+		Username:  ord.Username.AsOrder(),
+		FirstName: ord.FirstName.AsOrder(),
+		LastName:  ord.LastName.AsOrder(),
+	}
 }

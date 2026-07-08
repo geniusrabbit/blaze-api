@@ -29,7 +29,8 @@ type cacher interface {
 }
 
 type userAccessor interface {
-	GetByPassword(ctx context.Context, email, password string) (*user.User, error)
+	GetByEmail(ctx context.Context, email string) (user.Model, error)
+	GetByPassword(ctx context.Context, userID uint64, password string) (user.Model, error)
 }
 
 // DatabaseStorage implements fosite.Storage interface to control Oauth2 and OpenID access
@@ -275,14 +276,30 @@ func (s *DatabaseStorage) RevokeAccessToken(ctx context.Context, requestID strin
 // Authenticate user by login and secret (:password)
 func (s *DatabaseStorage) Authenticate(ctx context.Context, email string, secret string) error {
 	ctxlogger.Get(ctx).Debug("Authenticate")
-	user, err := s.userAccessor.GetByPassword(ctx, email, secret)
+
+	userObj, err := s.userAccessor.GetByEmail(ctx, email)
 	if err == sql.ErrNoRows {
 		return fosite.ErrNotFound
 	}
-	if user == nil {
+
+	if err != nil {
+		return err
+	}
+
+	if userObj == nil || userObj.GetID() == 0 {
+		return fosite.ErrNotFound
+	}
+
+	user, err := s.userAccessor.GetByPassword(ctx, userObj.GetID(), secret)
+	if err == sql.ErrNoRows {
+		return fosite.ErrNotFound
+	}
+
+	if user == nil || user.GetID() == 0 {
 		return nil
 	}
-	SetContextTargetUserID(ctx, user.ID)
+
+	SetContextTargetUserID(ctx, user.GetID())
 	return errors.New("Invalid credentials")
 }
 

@@ -14,35 +14,36 @@ import (
 	reflect "reflect"
 
 	account "github.com/geniusrabbit/blaze-api/repository/account"
+	user "github.com/geniusrabbit/blaze-api/repository/user"
 	gomock "go.uber.org/mock/gomock"
 )
 
 // MockUsecase is a mock of Usecase interface.
-type MockUsecase struct {
+type MockUsecase[TUser user.Model, TAccount account.Model] struct {
 	ctrl     *gomock.Controller
-	recorder *MockUsecaseMockRecorder
+	recorder *MockUsecaseMockRecorder[TUser, TAccount]
 	isgomock struct{}
 }
 
 // MockUsecaseMockRecorder is the mock recorder for MockUsecase.
-type MockUsecaseMockRecorder struct {
-	mock *MockUsecase
+type MockUsecaseMockRecorder[TUser user.Model, TAccount account.Model] struct {
+	mock *MockUsecase[TUser, TAccount]
 }
 
 // NewMockUsecase creates a new mock instance.
-func NewMockUsecase(ctrl *gomock.Controller) *MockUsecase {
-	mock := &MockUsecase{ctrl: ctrl}
-	mock.recorder = &MockUsecaseMockRecorder{mock}
+func NewMockUsecase[TUser user.Model, TAccount account.Model](ctrl *gomock.Controller) *MockUsecase[TUser, TAccount] {
+	mock := &MockUsecase[TUser, TAccount]{ctrl: ctrl}
+	mock.recorder = &MockUsecaseMockRecorder[TUser, TAccount]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder {
+func (m *MockUsecase[TUser, TAccount]) EXPECT() *MockUsecaseMockRecorder[TUser, TAccount] {
 	return m.recorder
 }
 
 // Count mocks base method.
-func (m *MockUsecase) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
+func (m *MockUsecase[TUser, TAccount]) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
@@ -55,14 +56,14 @@ func (m *MockUsecase) Count(ctx context.Context, opts ...account.QOption) (int64
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockUsecaseMockRecorder) Count(ctx any, opts ...any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) Count(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase)(nil).Count), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).Count), varargs...)
 }
 
 // Delete mocks base method.
-func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
+func (m *MockUsecase[TUser, TAccount]) Delete(ctx context.Context, id uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -70,102 +71,116 @@ func (m *MockUsecase) Delete(ctx context.Context, id uint64) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockUsecaseMockRecorder) Delete(ctx, id any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase)(nil).Delete), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).Delete), ctx, id)
+}
+
+// EmptyObject mocks base method.
+func (m *MockUsecase[TUser, TAccount]) EmptyObject() TAccount {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(TAccount)
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).EmptyObject))
 }
 
 // FetchList mocks base method.
-func (m *MockUsecase) FetchList(ctx context.Context, opts ...account.QOption) ([]*account.Account, error) {
+func (m *MockUsecase[TUser, TAccount]) FetchList(ctx context.Context, opts ...account.QOption) ([]TAccount, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchList", varargs...)
-	ret0, _ := ret[0].([]*account.Account)
+	ret0, _ := ret[0].([]TAccount)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchList indicates an expected call of FetchList.
-func (mr *MockUsecaseMockRecorder) FetchList(ctx any, opts ...any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) FetchList(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase)(nil).FetchList), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchList", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).FetchList), varargs...)
 }
 
 // Get mocks base method.
-func (m *MockUsecase) Get(ctx context.Context, id uint64) (*account.Account, error) {
+func (m *MockUsecase[TUser, TAccount]) Get(ctx context.Context, id uint64) (TAccount, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*account.Account)
+	ret0, _ := ret[0].(TAccount)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockUsecaseMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUsecase)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).Get), ctx, id)
 }
 
 // Register mocks base method.
-func (m *MockUsecase) Register(ctx context.Context, ownerObj *account.User, accountObj *account.Account, password string) (uint64, error) {
+func (m *MockUsecase[TUser, TAccount]) Register(ctx context.Context, ownerObj TUser, accountObj TAccount) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register", ctx, ownerObj, accountObj, password)
+	ret := m.ctrl.Call(m, "Register", ctx, ownerObj, accountObj)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockUsecaseMockRecorder) Register(ctx, ownerObj, accountObj, password any) *gomock.Call {
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) Register(ctx, ownerObj, accountObj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockUsecase)(nil).Register), ctx, ownerObj, accountObj, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).Register), ctx, ownerObj, accountObj)
 }
 
-// Store mocks base method.
-func (m *MockUsecase) Store(ctx context.Context, arg1 *account.Account) (uint64, error) {
+// Update mocks base method.
+func (m *MockUsecase[TUser, TAccount]) Update(ctx context.Context, arg1 TAccount) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Store", ctx, arg1)
+	ret := m.ctrl.Call(m, "Update", ctx, arg1)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Store indicates an expected call of Store.
-func (mr *MockUsecaseMockRecorder) Store(ctx, arg1 any) *gomock.Call {
+// Update indicates an expected call of Update.
+func (mr *MockUsecaseMockRecorder[TUser, TAccount]) Update(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockUsecase)(nil).Store), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsecase[TUser, TAccount])(nil).Update), ctx, arg1)
 }
 
 // MockMemberUsecase is a mock of MemberUsecase interface.
-type MockMemberUsecase struct {
+type MockMemberUsecase[TUser user.Model, TAccount account.Model] struct {
 	ctrl     *gomock.Controller
-	recorder *MockMemberUsecaseMockRecorder
+	recorder *MockMemberUsecaseMockRecorder[TUser, TAccount]
 	isgomock struct{}
 }
 
 // MockMemberUsecaseMockRecorder is the mock recorder for MockMemberUsecase.
-type MockMemberUsecaseMockRecorder struct {
-	mock *MockMemberUsecase
+type MockMemberUsecaseMockRecorder[TUser user.Model, TAccount account.Model] struct {
+	mock *MockMemberUsecase[TUser, TAccount]
 }
 
 // NewMockMemberUsecase creates a new mock instance.
-func NewMockMemberUsecase(ctrl *gomock.Controller) *MockMemberUsecase {
-	mock := &MockMemberUsecase{ctrl: ctrl}
-	mock.recorder = &MockMemberUsecaseMockRecorder{mock}
+func NewMockMemberUsecase[TUser user.Model, TAccount account.Model](ctrl *gomock.Controller) *MockMemberUsecase[TUser, TAccount] {
+	mock := &MockMemberUsecase[TUser, TAccount]{ctrl: ctrl}
+	mock.recorder = &MockMemberUsecaseMockRecorder[TUser, TAccount]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockMemberUsecase) EXPECT() *MockMemberUsecaseMockRecorder {
+func (m *MockMemberUsecase[TUser, TAccount]) EXPECT() *MockMemberUsecaseMockRecorder[TUser, TAccount] {
 	return m.recorder
 }
 
 // CountMembers mocks base method.
-func (m *MockMemberUsecase) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
+func (m *MockMemberUsecase[TUser, TAccount]) CountMembers(ctx context.Context, opts ...account.QOption) (int64, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
@@ -178,54 +193,68 @@ func (m *MockMemberUsecase) CountMembers(ctx context.Context, opts ...account.QO
 }
 
 // CountMembers indicates an expected call of CountMembers.
-func (mr *MockMemberUsecaseMockRecorder) CountMembers(ctx any, opts ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) CountMembers(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockMemberUsecase)(nil).CountMembers), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountMembers", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).CountMembers), varargs...)
+}
+
+// EmptyObject mocks base method.
+func (m *MockMemberUsecase[TUser, TAccount]) EmptyObject() *account.Member[TUser, TAccount] {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmptyObject")
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
+	return ret0
+}
+
+// EmptyObject indicates an expected call of EmptyObject.
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) EmptyObject() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmptyObject", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).EmptyObject))
 }
 
 // FetchListMembers mocks base method.
-func (m *MockMemberUsecase) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*account.AccountMember, error) {
+func (m *MockMemberUsecase[TUser, TAccount]) FetchListMembers(ctx context.Context, opts ...account.QOption) ([]*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "FetchListMembers", varargs...)
-	ret0, _ := ret[0].([]*account.AccountMember)
+	ret0, _ := ret[0].([]*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchListMembers indicates an expected call of FetchListMembers.
-func (mr *MockMemberUsecaseMockRecorder) FetchListMembers(ctx any, opts ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) FetchListMembers(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockMemberUsecase)(nil).FetchListMembers), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchListMembers", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).FetchListMembers), varargs...)
 }
 
 // InviteMember mocks base method.
-func (m *MockMemberUsecase) InviteMember(ctx context.Context, accountID uint64, email string, roles ...string) (*account.AccountMember, error) {
+func (m *MockMemberUsecase[TUser, TAccount]) InviteMember(ctx context.Context, accountID, userID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, accountID, email}
+	varargs := []any{ctx, accountID, userID}
 	for _, a := range roles {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "InviteMember", varargs...)
-	ret0, _ := ret[0].(*account.AccountMember)
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // InviteMember indicates an expected call of InviteMember.
-func (mr *MockMemberUsecaseMockRecorder) InviteMember(ctx, accountID, email any, roles ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) InviteMember(ctx, accountID, userID any, roles ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, accountID, email}, roles...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteMember", reflect.TypeOf((*MockMemberUsecase)(nil).InviteMember), varargs...)
+	varargs := append([]any{ctx, accountID, userID}, roles...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteMember", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).InviteMember), varargs...)
 }
 
 // LinkMember mocks base method.
-func (m *MockMemberUsecase) LinkMember(ctx context.Context, arg1 *account.Account, isAdmin bool, members ...*account.User) error {
+func (m *MockMemberUsecase[TUser, TAccount]) LinkMember(ctx context.Context, arg1 TAccount, isAdmin bool, members ...TUser) error {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, arg1, isAdmin}
 	for _, a := range members {
@@ -237,54 +266,54 @@ func (m *MockMemberUsecase) LinkMember(ctx context.Context, arg1 *account.Accoun
 }
 
 // LinkMember indicates an expected call of LinkMember.
-func (mr *MockMemberUsecaseMockRecorder) LinkMember(ctx, arg1, isAdmin any, members ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) LinkMember(ctx, arg1, isAdmin any, members ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, arg1, isAdmin}, members...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkMember", reflect.TypeOf((*MockMemberUsecase)(nil).LinkMember), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkMember", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).LinkMember), varargs...)
 }
 
 // SetAccountMemeberRoles mocks base method.
-func (m *MockMemberUsecase) SetAccountMemeberRoles(ctx context.Context, accountID, userID uint64, roles ...string) (*account.AccountMember, error) {
+func (m *MockMemberUsecase[TUser, TAccount]) SetAccountMemeberRoles(ctx context.Context, accountID, userID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, accountID, userID}
 	for _, a := range roles {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SetAccountMemeberRoles", varargs...)
-	ret0, _ := ret[0].(*account.AccountMember)
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SetAccountMemeberRoles indicates an expected call of SetAccountMemeberRoles.
-func (mr *MockMemberUsecaseMockRecorder) SetAccountMemeberRoles(ctx, accountID, userID any, roles ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) SetAccountMemeberRoles(ctx, accountID, userID any, roles ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, accountID, userID}, roles...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAccountMemeberRoles", reflect.TypeOf((*MockMemberUsecase)(nil).SetAccountMemeberRoles), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAccountMemeberRoles", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).SetAccountMemeberRoles), varargs...)
 }
 
 // SetMemberRoles mocks base method.
-func (m *MockMemberUsecase) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*account.AccountMember, error) {
+func (m *MockMemberUsecase[TUser, TAccount]) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, memberID}
 	for _, a := range roles {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SetMemberRoles", varargs...)
-	ret0, _ := ret[0].(*account.AccountMember)
+	ret0, _ := ret[0].(*account.Member[TUser, TAccount])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SetMemberRoles indicates an expected call of SetMemberRoles.
-func (mr *MockMemberUsecaseMockRecorder) SetMemberRoles(ctx, memberID any, roles ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) SetMemberRoles(ctx, memberID any, roles ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, memberID}, roles...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMemberRoles", reflect.TypeOf((*MockMemberUsecase)(nil).SetMemberRoles), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMemberRoles", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).SetMemberRoles), varargs...)
 }
 
 // UnlinkAccountMember mocks base method.
-func (m *MockMemberUsecase) UnlinkAccountMember(ctx context.Context, memberID uint64) error {
+func (m *MockMemberUsecase[TUser, TAccount]) UnlinkAccountMember(ctx context.Context, memberID uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnlinkAccountMember", ctx, memberID)
 	ret0, _ := ret[0].(error)
@@ -292,13 +321,13 @@ func (m *MockMemberUsecase) UnlinkAccountMember(ctx context.Context, memberID ui
 }
 
 // UnlinkAccountMember indicates an expected call of UnlinkAccountMember.
-func (mr *MockMemberUsecaseMockRecorder) UnlinkAccountMember(ctx, memberID any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) UnlinkAccountMember(ctx, memberID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkAccountMember", reflect.TypeOf((*MockMemberUsecase)(nil).UnlinkAccountMember), ctx, memberID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkAccountMember", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).UnlinkAccountMember), ctx, memberID)
 }
 
 // UnlinkMember mocks base method.
-func (m *MockMemberUsecase) UnlinkMember(ctx context.Context, arg1 *account.Account, members ...*account.User) error {
+func (m *MockMemberUsecase[TUser, TAccount]) UnlinkMember(ctx context.Context, arg1 TAccount, members ...TUser) error {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, arg1}
 	for _, a := range members {
@@ -310,8 +339,8 @@ func (m *MockMemberUsecase) UnlinkMember(ctx context.Context, arg1 *account.Acco
 }
 
 // UnlinkMember indicates an expected call of UnlinkMember.
-func (mr *MockMemberUsecaseMockRecorder) UnlinkMember(ctx, arg1 any, members ...any) *gomock.Call {
+func (mr *MockMemberUsecaseMockRecorder[TUser, TAccount]) UnlinkMember(ctx, arg1 any, members ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, arg1}, members...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkMember", reflect.TypeOf((*MockMemberUsecase)(nil).UnlinkMember), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkMember", reflect.TypeOf((*MockMemberUsecase[TUser, TAccount])(nil).UnlinkMember), varargs...)
 }

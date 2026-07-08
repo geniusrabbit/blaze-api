@@ -6,6 +6,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
+	authclientrepo "github.com/geniusrabbit/blaze-api/repository/authclient/repository"
+	authclientusecase "github.com/geniusrabbit/blaze-api/repository/authclient/usecase"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
@@ -18,6 +20,15 @@ type QueryResolver struct {
 // NewQueryResolver returns new API resolver
 func NewQueryResolver(uc authclient.Usecase) *QueryResolver {
 	return &QueryResolver{authClients: uc}
+}
+
+// NewDefaultQueryResolver returns new API resolver with default usecase
+func NewDefaultQueryResolver() *QueryResolver {
+	return &QueryResolver{
+		authClients: authclientusecase.NewAuthclientUsecase(
+			authclientrepo.NewAuthclientRepository(),
+		),
+	}
 }
 
 // AuthClient is the resolver for the authClient field.
