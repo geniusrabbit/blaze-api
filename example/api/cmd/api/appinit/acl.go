@@ -2,6 +2,7 @@ package appinit
 
 import (
 	"context"
+	"strings"
 
 	"github.com/demdxx/rbac"
 
@@ -92,13 +93,19 @@ func InitModelPermissions(pm *permissions.Manager, deps *Deps) {
 }
 
 func accountCustomCheck(ctx context.Context, resource any, perm rbac.Permission, deps *Deps) bool {
+	if strings.HasSuffix(perm.Name(), `.system`) || strings.HasSuffix(perm.Name(), `.all`) {
+		return true
+	}
 	acc, _ := resource.(*domain.Account)
 	userObj := session.User(ctx)
 	if acc.IsOwnerUser(userObj.GetID()) {
 		return true
 	}
-	if perm.MatchPermissionPattern(`*.{view|list|count}.*`) {
-		return deps.MemberRepo.IsMember(ctx, userObj.GetID(), acc.ID)
+	if acc.ID > 0 {
+		if perm.MatchPermissionPattern(`*.{view|list|count}.*`) {
+			return deps.MemberRepo.IsMember(ctx, userObj.GetID(), acc.ID)
+		}
+		return deps.MemberRepo.IsAdmin(ctx, userObj.GetID(), acc.ID)
 	}
-	return deps.MemberRepo.IsAdmin(ctx, userObj.GetID(), acc.ID)
+	return false
 }
