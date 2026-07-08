@@ -36,6 +36,7 @@ func (s *testMemberSuite) SetupSuite() {
 }
 
 func (s *testMemberSuite) TestFetchListMembers() {
+	s.memberRepo.EXPECT().EmptyObject().Return(&account.Member[*testutil.User, *testAccount]{})
 	s.memberRepo.EXPECT().
 		FetchListMembers(s.ctx, gomock.AssignableToTypeOf((*account.MemberFilter)(nil))).
 		Return([]*account.Member[*testutil.User, *testAccount]{
@@ -52,6 +53,7 @@ func (s *testMemberSuite) TestFetchListMembers() {
 }
 
 func (s *testMemberSuite) TestLinkMember() {
+	s.memberRepo.EXPECT().EmptyObject().Return(&account.Member[*testutil.User, *testAccount]{})
 	s.memberRepo.EXPECT().
 		LinkMember(s.ctx, gomock.AssignableToTypeOf(&testAccount{}),
 			true, gomock.AssignableToTypeOf(&testutil.User{})).

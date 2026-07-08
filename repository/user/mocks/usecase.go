@@ -230,6 +230,20 @@ func (mr *MockPasswordUsecaseMockRecorder[T]) ChangePassword(ctx, currentPasswor
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangePassword", reflect.TypeOf((*MockPasswordUsecase[T])(nil).ChangePassword), ctx, currentPassword, newPassword)
 }
 
+// Repo mocks base method.
+func (m *MockPasswordUsecase[T]) Repo() user.PasswordRepository[T] {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Repo")
+	ret0, _ := ret[0].(user.PasswordRepository[T])
+	return ret0
+}
+
+// Repo indicates an expected call of Repo.
+func (mr *MockPasswordUsecaseMockRecorder[T]) Repo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Repo", reflect.TypeOf((*MockPasswordUsecase[T])(nil).Repo))
+}
+
 // ResetPassword mocks base method.
 func (m *MockPasswordUsecase[T]) ResetPassword(ctx context.Context, userID uint64) (*user.UserPasswordReset, T, error) {
 	m.ctrl.T.Helper()

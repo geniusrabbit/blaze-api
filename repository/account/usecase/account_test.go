@@ -65,6 +65,7 @@ func (s *testSuite) TestGetGetError() {
 }
 
 func (s *testSuite) TestFetchList() {
+	s.accountRepo.EXPECT().EmptyObject().Return(&testAccount{})
 	s.accountRepo.EXPECT().
 		FetchList(s.ctx, gomock.AssignableToTypeOf(&account.Filter{})).
 		Return([]*testAccount{testAccountStub(1), testAccountStub(2)}, nil)
@@ -76,6 +77,7 @@ func (s *testSuite) TestFetchList() {
 }
 
 func (s *testSuite) TestCount() {
+	s.accountRepo.EXPECT().EmptyObject().Return(&testAccount{})
 	s.accountRepo.EXPECT().
 		Count(s.ctx, gomock.AssignableToTypeOf(&account.Filter{})).
 		Return(int64(2), nil)
