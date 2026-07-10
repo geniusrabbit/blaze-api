@@ -5,8 +5,8 @@ package migratedb
 import (
 	"database/sql"
 
-	mdatabase "github.com/golang-migrate/migrate/database"
-	"github.com/golang-migrate/migrate/database/postgres"
+	mdatabase "github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/lib/pq"
 )
 

@@ -10,9 +10,9 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/database"
-	"github.com/golang-migrate/migrate"
-	mdatabase "github.com/golang-migrate/migrate/database"
-	_ "github.com/golang-migrate/migrate/source/file"
+	"github.com/golang-migrate/migrate/v4"
+	mdatabase "github.com/golang-migrate/migrate/v4/database"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 // Migrate database schema from many source directories and one target database
@@ -28,10 +28,10 @@ func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) er
 	if err != nil {
 		return err
 	}
-	if conn, _ := db.DB(); conn != nil {
+	conn, _ := db.DB()
+	if conn != nil {
 		defer conn.Close()
 	}
-	conn, _ := db.DB()
 
 	// Process all data sources
 	for _, source := range dataSources {
@@ -67,8 +67,10 @@ func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) er
 			}
 
 			// Init migration instance
+			fmt.Println("Migrate source:", uri, "to", migrateTable)
 			migInst, err := migrate.NewWithDatabaseInstance(uri, connURL.Path[1:], driver)
 			if err != nil {
+				fmt.Println("Migrate source:", uri, "to", migrateTable, "failed:", err)
 				return err
 			}
 
@@ -77,6 +79,8 @@ func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) er
 				return err
 			}
 		}
+
+		fmt.Println("Migrate source:", source.URI, "to", migrateTable, "done")
 	}
 	return nil
 }

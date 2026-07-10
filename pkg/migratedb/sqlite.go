@@ -5,8 +5,8 @@ package migratedb
 import (
 	"database/sql"
 
-	mdatabase "github.com/golang-migrate/migrate/database"
-	"github.com/golang-migrate/migrate/database/sqlite3"
+	mdatabase "github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 )
 
 func init() {

@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	mdatabase "github.com/golang-migrate/migrate/database"
+	mdatabase "github.com/golang-migrate/migrate/v4/database"
 )
 
 type migrateDriverFunc func(conn *sql.DB, migrateTable string) (mdatabase.Driver, error)
