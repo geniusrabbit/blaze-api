@@ -60,9 +60,6 @@ CREATE TABLE IF NOT EXISTS account_base
 ( id                      BIGSERIAL                   PRIMARY KEY
 , approve_status          INTEGER                     NOT NULL        DEFAULT 0
 
-, title                   VARCHAR(128)                NOT NULL        CHECK (title ~* '^[^\s]+')
-, description             TEXT
-
 , created_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , updated_at              TIMESTAMP                   NOT NULL        DEFAULT NOW()
 , deleted_at              TIMESTAMP
