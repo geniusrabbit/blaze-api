@@ -85,6 +85,10 @@ func (l *Loader[TUser, TAccount]) UserAccountByID(ctx context.Context, uID, accI
 }
 
 // CrossAccountConnect validates and connects to a cross-account context if specified via header.
+// Example:
+//
+//	CrossAuthHeader: "X-Cross-Auth"
+//	Header value: "userID:accountID" (e.g., "123:456")
 func (l *Loader[TUser, TAccount]) CrossAccountConnect(ctx context.Context, crossAccountID string, userObj TUser, accountObj TAccount) (TUser, TAccount, error) {
 	if crossAccountID != "" {
 		userID, accountID := session.ParseCrossAuthHeader(crossAccountID)

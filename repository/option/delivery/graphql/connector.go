@@ -15,9 +15,9 @@ type OptionConnection = connectors.CollectionConnection[*gqlmodels.Option]
 func NewOptionConnection(ctx context.Context, optionsAccessor option.Usecase, filter *gqlmodels.OptionListFilter, order []*gqlmodels.OptionListOrder, page *gqlmodels.Page) *OptionConnection {
 	return connectors.NewCollectionConnection(ctx, &connectors.DataAccessorFunc[*gqlmodels.Option]{
 		FetchDataListFunc: func(ctx context.Context) ([]*gqlmodels.Option, error) {
-			opts := []option.QOption{filter.Filter(), page.Pagination()}
+			opts := []option.QOption{FromGQLFilter(filter), page.Pagination()}
 			for _, o := range order {
-				if ord := o.Order(); ord != nil {
+				if ord := FromGQLOrder(o); ord != nil {
 					opts = append(opts, ord)
 				}
 			}
@@ -25,7 +25,7 @@ func NewOptionConnection(ctx context.Context, optionsAccessor option.Usecase, fi
 			return FromOptionModelList(options), err
 		},
 		CountDataFunc: func(ctx context.Context) (int64, error) {
-			return optionsAccessor.Count(ctx, filter.Filter())
+			return optionsAccessor.Count(ctx, FromGQLFilter(filter))
 		},
 	}, page)
 }

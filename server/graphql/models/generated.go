@@ -93,13 +93,6 @@ type AuthClientCreateInput struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
-type AuthClientEdge struct {
-	// A cursor for use in pagination.
-	Cursor string `json:"cursor"`
-	// The item at the end of the edge.
-	Node *AuthClient `json:"node,omitempty"`
-}
-
 type AuthClientListFilter struct {
 	ID        []string `json:"ID,omitempty"`
 	UserID    []uint64 `json:"userID,omitempty"`
@@ -166,13 +159,6 @@ type DirectAccessToken struct {
 	ExpiresAt   time.Time `json:"expiresAt"`
 }
 
-type DirectAccessTokenEdge struct {
-	// Cursor for pagination
-	Cursor string `json:"cursor"`
-	// Node for the edge
-	Node *DirectAccessToken `json:"node,omitempty"`
-}
-
 type DirectAccessTokenListFilter struct {
 	ID           []uint64   `json:"ID,omitempty"`
 	Token        []string   `json:"token,omitempty"`
@@ -211,14 +197,6 @@ type HistoryAction struct {
 	ObjectIDs  string             `json:"objectIDs"`
 	Data       types.NullableJSON `json:"data"`
 	ActionAt   time.Time          `json:"actionAt"`
-}
-
-// Edge of action history object.
-type HistoryActionEdge struct {
-	// The item at the end of the edge.
-	Node *HistoryAction `json:"node"`
-	// A cursor for use in pagination.
-	Cursor string `json:"cursor"`
 }
 
 type HistoryActionListFilter struct {
@@ -290,11 +268,13 @@ type Member struct {
 	DeletedAt *time.Time  `json:"deletedAt,omitempty"`
 }
 
-type MemberEdge struct {
-	// A cursor for use in pagination.
-	Cursor string `json:"cursor"`
-	// The item at the end of the edge.
-	Node *Member `json:"node,omitempty"`
+type MemberConnection struct {
+	// The total number of campaigns
+	TotalCount int `json:"totalCount"`
+	// A list of the members, as a convenience when edges are not needed.
+	List []*Member `json:"list,omitempty"`
+	// Information for paginating this connection
+	PageInfo *PageInfo `json:"pageInfo"`
 }
 
 type MemberInput struct {
@@ -342,12 +322,6 @@ type Option struct {
 	Value    *types.NullableJSON `json:"value,omitempty"`
 }
 
-// The edge type for Option.
-type OptionEdge struct {
-	Cursor string  `json:"cursor"`
-	Node   *Option `json:"node"`
-}
-
 type OptionListFilter struct {
 	Type        []OptionType `json:"type,omitempty"`
 	TargetID    []uint64     `json:"targetID,omitempty"`
@@ -369,36 +343,6 @@ type OptionPayload struct {
 	Name string `json:"name"`
 	// Option value
 	Option *Option `json:"option,omitempty"`
-}
-
-// Information for paginating
-type Page struct {
-	// Start after the cursor ID
-	After *string `json:"after,omitempty"`
-	// Start after some records
-	Offset *int `json:"offset,omitempty"`
-	// Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
-	StartPage *int `json:"startPage,omitempty"`
-	// Maximum number of items to return
-	Size *int `json:"size,omitempty"`
-}
-
-// Information for paginating
-type PageInfo struct {
-	// When paginating backwards, the cursor to continue.
-	StartCursor string `json:"startCursor"`
-	// When paginating forwards, the cursor to continue.
-	EndCursor string `json:"endCursor"`
-	// When paginating backwards, are there more items?
-	HasPreviousPage bool `json:"hasPreviousPage"`
-	// When paginating forwards, are there more items?
-	HasNextPage bool `json:"hasNextPage"`
-	// Total number of pages available
-	Total int `json:"total"`
-	// Current page number
-	Page int `json:"page"`
-	// Number of pages
-	Count int `json:"count"`
 }
 
 type Query struct {
@@ -434,14 +378,6 @@ type RBACRole struct {
 	CreatedAt          time.Time           `json:"createdAt"`
 	UpdatedAt          time.Time           `json:"updatedAt"`
 	DeletedAt          *time.Time          `json:"deletedAt,omitempty"`
-}
-
-// RBACRoleEdge is a connection edge type for RBACRole.
-type RBACRoleEdge struct {
-	// A cursor for use in pagination.
-	Cursor string `json:"cursor"`
-	// The item at the end of the edge.
-	Node *RBACRole `json:"node,omitempty"`
 }
 
 type RBACRoleInput struct {
@@ -499,13 +435,6 @@ type SocialAccount struct {
 	DeletedAt *time.Time              `json:"deletedAt,omitempty"`
 }
 
-type SocialAccountEdge struct {
-	// A cursor for use in pagination.
-	Cursor string `json:"cursor"`
-	// The item at the end of the edge.
-	Node *SocialAccount `json:"node,omitempty"`
-}
-
 type SocialAccountListFilter struct {
 	ID       []uint64 `json:"ID,omitempty"`
 	UserID   []uint64 `json:"userID,omitempty"`
@@ -556,65 +485,6 @@ type StatusResponse struct {
 	Status ResponseStatus `json:"status"`
 	// The message of the response
 	Message *string `json:"message,omitempty"`
-}
-
-type OptionType string
-
-const (
-	OptionTypeUndefined OptionType = "UNDEFINED"
-	OptionTypeUser      OptionType = "USER"
-	OptionTypeAccount   OptionType = "ACCOUNT"
-	OptionTypeSystem    OptionType = "SYSTEM"
-)
-
-var AllOptionType = []OptionType{
-	OptionTypeUndefined,
-	OptionTypeUser,
-	OptionTypeAccount,
-	OptionTypeSystem,
-}
-
-func (e OptionType) IsValid() bool {
-	switch e {
-	case OptionTypeUndefined, OptionTypeUser, OptionTypeAccount, OptionTypeSystem:
-		return true
-	}
-	return false
-}
-
-func (e OptionType) String() string {
-	return string(e)
-}
-
-func (e *OptionType) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = OptionType(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid OptionType", str)
-	}
-	return nil
-}
-
-func (e OptionType) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *OptionType) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e OptionType) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
 }
 
 // Constants of the response status

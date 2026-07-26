@@ -35,6 +35,8 @@ func Middleware[TUser user.Model, TAccount account.Model](
 		if any(user) == any(zeroUser) && any(acc) == any(zeroAcc) {
 			ctx = session.WithAnonymousUserAccount(ctx)
 		} else {
+			// Example:
+			// Header: auth.cross.account = AccountID[:UserID]
 			user, acc, err = loader.CrossAccountConnect(ctx, r.Header.Get(session.CrossAuthHeader), user, acc)
 			if err != nil {
 				ctxlogger.Get(ctx).Error("cross account connect", zap.Error(err))

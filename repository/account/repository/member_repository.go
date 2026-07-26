@@ -171,7 +171,8 @@ func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, 
 
 	wasAdmin := member.IsAdmin
 	member.Roles = listRoles
-	member.IsAdmin = xtypes.Slice[string](roles).Has(func(v string) bool { return v == "admin" || v == "account:admin" })
+	member.IsAdmin = xtypes.Slice[string](roles).Has(
+		func(v string) bool { return v == "admin" || v == "account:admin" || v == "system:admin" })
 
 	if wasAdmin != member.IsAdmin && !member.IsAdmin {
 		cnt, err := r.CountMembers(ctx, &account.MemberFilter{
@@ -189,7 +190,7 @@ func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, 
 	}
 
 	return r.TransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
-		err := tx.Omit(clause.Associations).Save(member).Error
+		err := tx.Omit(clause.Associations).Save(&member.MemberBase).Error
 		if err != nil {
 			return err
 		}

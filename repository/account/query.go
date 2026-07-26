@@ -10,7 +10,7 @@ import (
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository"
 	accountCtx "github.com/geniusrabbit/blaze-api/repository/account/context"
-	accountModels "github.com/geniusrabbit/blaze-api/repository/account/models"
+	"github.com/geniusrabbit/blaze-api/repository/account/models"
 	userCtx "github.com/geniusrabbit/blaze-api/repository/user/context"
 )
 
@@ -38,7 +38,7 @@ func (fl *Filter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	}
 	if len(fl.UserID) > 0 {
 		query = query.Where(`id IN (SELECT account_id FROM `+
-			accountModels.MemberTableName()+` WHERE user_id IN (?))`, fl.UserID)
+			(*models.MemberBase)(nil).TableName()+` WHERE user_id IN (?))`, fl.UserID)
 	}
 	if len(fl.Title) > 0 {
 		query = query.Where(`title IN (?)`, fl.Title)

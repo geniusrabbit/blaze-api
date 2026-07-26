@@ -3,6 +3,7 @@ package graphql
 import (
 	"github.com/demdxx/xtypes"
 
+	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/repository/option/models"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 	"github.com/geniusrabbit/blaze-api/server/graphql/types"
@@ -51,4 +52,28 @@ func FromOption(opt *models.Option) *gqlmodels.Option {
 // FromOptionModelList converts a slice of models.Option to a slice of gqlmodels.Option.
 func FromOptionModelList(opts []*models.Option) []*gqlmodels.Option {
 	return xtypes.SliceApply(opts, FromOption)
+}
+
+// FromGQLFilter converts a GraphQL OptionListFilter to a repository Filter.
+func FromGQLFilter(fl *gqlmodels.OptionListFilter) *option.Filter {
+	if fl == nil {
+		return nil
+	}
+	return &option.Filter{
+		Type:        xtypes.SliceApply(fl.Type, ModelOptionType),
+		TargetID:    fl.TargetID,
+		Name:        fl.Name,
+		NamePattern: fl.NamePattern,
+	}
+}
+
+// FromGQLOrder converts a GraphQL OptionListOrder to a repository ListOrder.
+func FromGQLOrder(ol *gqlmodels.OptionListOrder) *option.ListOrder {
+	if ol == nil {
+		return nil
+	}
+	return &option.ListOrder{
+		Name:     ol.Name.AsOrder(),
+		TargetID: ol.TargetID.AsOrder(),
+	}
 }

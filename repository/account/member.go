@@ -12,16 +12,6 @@ type Member[TUser user.Model, TAccount Model] struct {
 	User    TUser    `db:"-" gorm:"foreignKey:UserID;references:ID"`
 }
 
-// TableName is nil-safe (used in query builders via (*Member[...])(nil).TableName()).
-func (m *Member[TUser, TAccount]) TableName() string {
-	return models.MemberTableName()
-}
-
-// RBACResourceName is nil-safe.
-func (m *Member[TUser, TAccount]) RBACResourceName() string {
-	return "account.member"
-}
-
 // MemberStub returns member with ID and optional account/user keys (ACL/GraphQL placeholders).
 func MemberStub[TUser user.Model, TAccount Model](id, accountID, userID uint64) *Member[TUser, TAccount] {
 	m := new(Member[TUser, TAccount])

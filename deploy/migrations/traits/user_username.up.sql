@@ -3,7 +3,7 @@
 -- GORM AutoMigrate alternative: db.AutoMigrate(&MyUser{}) if MyUser embeds user.Username.
 
 ALTER TABLE account_user
-  ADD COLUMN IF NOT EXISTS username VARCHAR(64) NOT NULL DEFAULT '';
+  ADD COLUMN IF NOT EXISTS username VARCHAR(64) NOT NULL CHECK (username != '');
 
 CREATE UNIQUE INDEX IF NOT EXISTS account_user_username_uniq
   ON account_user (username)

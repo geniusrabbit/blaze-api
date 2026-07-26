@@ -131,13 +131,12 @@ func (r *sessionRepository[TUser, TAccount]) GetByToken(ctx context.Context, tok
 		zeroUser      TUser
 		zeroAcc       TAccount
 		member        = r.newMember()
-		memberTable   = models.MemberTableName()
 		memberRequest = `WITH auth_client AS (` +
 			`  SELECT user_id, account_id FROM ` + (*authclientModels.AuthClient)(nil).TableName() + ` WHERE id = (` +
 			`    SELECT client_id FROM ` + (*authclientModels.AuthSession)(nil).TableName() + ` WHERE deleted_at IS NULL AND access_token=?` +
 			`  )` +
 			`)` +
-			`SELECT am.* FROM ` + memberTable + ` AS am, auth_client AS ac` +
+			`SELECT am.* FROM ` + member.TableName() + ` AS am, auth_client AS ac` +
 			` WHERE am.deleted_at IS NULL AND am.account_id=ac.account_id AND am.user_id=ac.user_id`
 	)
 

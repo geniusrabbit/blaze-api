@@ -52,20 +52,25 @@ generate-code: ## Run codegeneration procedure
 
 .PHONY: build-gql
 build-gql: ## Build graphql server
-	cd protocol/graphql && go run github.com/99designs/gqlgen
-	# cd protocol/graphql && gqlgen
+	@cd protocol/graphql && go run github.com/99designs/gqlgen
+	@rm -rf server/graphql/generated
+	@rm -rf server/graphql/resolvers
 
 .PHONY: run-test-api
 run-test-api: ## Run test api server
-	cd example/api && make run-api
+	@cd example/api && make run-api
 
 .PHONY: build-test-api
 build-test-api: ## Build test api server
-	cd example/api && make build-docker-dev
+	@cd example/api && make build-docker-dev
+
+.PHONY: build-test-gql
+build-test-gql: ## Build test graphql server
+	@cd example/api && make build-gql
 
 .PHONY: announce-test-api
 announce-test-api: ## Run test api server with announce via tunnelme
-	cd example/api && make -j2 announce-run-api
+	@cd example/api && make -j2 announce-run-api
 
 .PHONY: help
 help:
