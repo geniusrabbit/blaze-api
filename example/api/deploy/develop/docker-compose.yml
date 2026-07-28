@@ -28,6 +28,18 @@ services:
     image: github.com/geniusrabbit/blaze-api:migrate-latest
     command: '-path "/migrations/dev/" -database ${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}&x-migrations-table=schema_migrations_dev up'
     depends_on: [ api-template-db ]
+
+  # Alternative to migration/migration-fixtures above: applies the combined
+  # declarative Atlas "app" schema (see docs/MIGRATIONS.md and
+  # example/api/migrations/atlas-app) directly to api-template-db instead of
+  # running versioned golang-migrate SQL files. Needs the host's Docker
+  # daemon reachable (docker:// dev-database driver) — see
+  # example/api/deploy/develop/atlas-apply.Dockerfile.
+  migration-atlas-app:
+    image: github.com/geniusrabbit/blaze-api:migrate-atlas-latest
+    volumes: [ /var/run/docker.sock:/var/run/docker.sock ]
+    command: 'schema apply --env app --var dialect=postgres --url "${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}" --auto-approve'
+    depends_on: [ api-template-db ]
   
   #############################################################################
   # Services

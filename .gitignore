@@ -25,3 +25,8 @@ _testmain.go
 
 .DS_Store
 .idea
+
+# Combined Atlas "app" schema, regenerated on demand from the individual
+# repository/<domain>/migrations/schema.hcl files (see
+# example/api/migrations/atlas-app/assemble-schema.sh and docs/MIGRATIONS.md).
+/example/api/migrations/atlas-app/.assembled/

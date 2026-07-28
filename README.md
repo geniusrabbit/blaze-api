@@ -50,6 +50,8 @@ make run-api
 
 The `run-api` target builds the Docker image, runs migrations, and starts the full stack via docker-compose.
 
+For an alternative, schema-as-HCL migration workflow based on [Atlas](https://atlasgo.io) (opt-in, additional to the SQL migrations above), see [docs/MIGRATIONS.md](docs/MIGRATIONS.md).
+
 ### Configuration
 
 All settings are read from environment variables (or a `.env` file). The key ones:
