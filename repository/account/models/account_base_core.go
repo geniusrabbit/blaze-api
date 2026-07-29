@@ -13,11 +13,11 @@ import (
 
 // AccountBase is the minimal embeddable account (tenant anchor for Members).
 type AccountBase struct {
-	ID        uint64                `json:"id" gorm:"primaryKey"`
+	ID        uint64                  `json:"id" gorm:"primaryKey"`
 	Approve   pkgModels.ApproveStatus `json:"approved" db:"approve_status" gorm:"column:approve_status"`
-	CreatedAt time.Time             `json:"created_at"`
-	UpdatedAt time.Time             `json:"updated_at"`
-	DeletedAt gorm.DeletedAt        `json:"deleted_at"`
+	CreatedAt time.Time               `json:"created_at"`
+	UpdatedAt time.Time               `json:"updated_at"`
+	DeletedAt gorm.DeletedAt          `json:"deleted_at"`
 
 	Permissions PermissionChecker `json:"-" gorm:"-"`
 	Admins      []uint64          `json:"-" gorm:"-"`
