@@ -15,6 +15,7 @@ func init() {
 
 func migrateClickhouseDriver(conn *sql.DB, migrateTable string) (mdatabase.Driver, error) {
 	return clickhouse.WithInstance(conn, &clickhouse.Config{
-		MigrationsTable: migrateTable,
+		MigrationsTable:       migrateTable,
+		MultiStatementEnabled: true, // dsp_stats 006/010 are multi-CREATE files
 	})
 }
