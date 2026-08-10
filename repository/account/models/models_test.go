@@ -3,19 +3,8 @@ package models_test
 import (
 	"testing"
 
-	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/models"
 )
-
-type testAccount struct {
-	models.AccountBase
-}
-
-func (a *testAccount) TableName() string { return "account_base" }
-
-func (a *testAccount) NewWithIDs(id uint64, adminUserIDs ...uint64) account.Model {
-	return &testAccount{AccountBase: models.AccountBase{ID: id, Admins: adminUserIDs}}
-}
 
 func TestAccountBaseDefaults(t *testing.T) {
 	a := &models.AccountBase{}

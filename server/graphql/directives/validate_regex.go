@@ -34,7 +34,7 @@ func ValidateRegex(ctx context.Context, obj any, next graphql.Resolver, pattern 
 		canBeNil = true
 	default:
 		if gocast.IsEmpty(res) {
-			if ornil && reflect.ValueOf(res).Kind() == reflect.Ptr {
+			if ornil && reflect.ValueOf(res).Kind() == reflect.Pointer {
 				return nil, nil
 			}
 			return nil, ErrValueIsEmpty
