@@ -7,7 +7,6 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	userModels "github.com/geniusrabbit/blaze-api/repository/user/models"
 )
 
 type (
@@ -19,19 +18,15 @@ type (
 	}
 )
 
-type userACLSubject struct {
-	userModels.UserBase
-}
-
-func (userACLSubject) TableName() string        { return "account_user" }
-func (userACLSubject) RBACResourceName() string { return "user" }
-
 func ownedObject(ctx context.Context, obj any, usr user.Model, acc account.Model) any {
+	// Must return the consumer model type registered with RBAC (usr.NewWithID /
+	// acc.NewWithIDs). Local stubs fail ResourcePermission.CheckType, so
+	// checkPermission(key: "user"|"account") always returned null.
 	switch rbacObjectName(obj) {
 	case "account":
-		return account.ACLAccountStub(acc.GetID(), usr.GetID())
+		return acc.NewWithIDs(acc.GetID(), usr.GetID())
 	case "user":
-		return userACLSubject{UserBase: userModels.UserBase{ID: usr.GetID()}}
+		return usr.NewWithID(usr.GetID())
 	}
 
 	tp := reflect.TypeOf(obj).Elem()
