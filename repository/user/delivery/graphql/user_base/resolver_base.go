@@ -81,6 +81,16 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdat
 	return r.mapper.NewPayload(requestid.Get(ctx), userObj.GetID(), r.mapper.ToGQL(userObj)), nil
 }
 
+// GetUser returns the GraphQL user by ID (nested field resolvers; not a payload wrapper).
+func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) GetUser(ctx context.Context, id uint64) (TGQLUser, error) {
+	var zero TGQLUser
+	userObj, err := r.core.Get(ctx, id)
+	if err != nil {
+		return zero, err
+	}
+	return r.mapper.ToGQL(userObj), nil
+}
+
 // UpdateUser is the resolver for the updateUser field.
 func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) UpdateUser(ctx context.Context, id uint64, input TGQLUserUpdateInput) (TGQLUserPayload, error) {
 	var zero TGQLUserPayload

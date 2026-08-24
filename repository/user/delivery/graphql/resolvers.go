@@ -18,6 +18,7 @@ type UserBaseQueryResolver[
 	TGQLUserListOrder any,
 ] interface {
 	CurrentUser(ctx context.Context) (TGQLUserPayload, error)
+	GetUser(ctx context.Context, id uint64) (TGQLUser, error)
 	UpdateUser(ctx context.Context, id uint64, input TGQLUserUpdateInput) (TGQLUserPayload, error)
 	ApproveUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error)
 	RejectUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error)

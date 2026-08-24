@@ -48,7 +48,7 @@ func (r *memberRepository[TUser, TAccount]) FetchListMembers(ctx context.Context
 		bases []models.MemberBase
 		query = r.Slave(ctx).Model(&models.MemberBase{})
 	)
-	query = account.ListOptions(opts).PrepareQuery(query)
+	query = account.ListOptions(opts).PrepareQuery(query).Preload("Roles")
 	if err := query.Find(&bases).Error; err != nil {
 		return nil, err
 	}

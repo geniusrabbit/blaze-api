@@ -50,6 +50,9 @@ func (s *testMemberSuite) TestFetchListMembers() {
 				AddRow(1, 1, 101, 1, false, time.Now(), time.Now(), nil).
 				AddRow(2, 1, 102, 1, false, time.Now(), time.Now(), nil),
 		)
+	s.Mock.ExpectQuery(`SELECT \* FROM "m2m_account_member_role"`).
+		WithArgs(uint64(1), uint64(2)).
+		WillReturnRows(sqlmock.NewRows([]string{"member_id", "role_id"}))
 	members, err := s.memberRepo.FetchListMembers(s.Ctx)
 	s.NoError(err)
 	s.Equal(2, len(members))
