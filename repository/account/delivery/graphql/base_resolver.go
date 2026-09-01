@@ -213,16 +213,20 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 	}
 
 	tmplName := "account." + strings.ToLower(status.String())
-	err = messanger.Get(ctx).Send(ctx, tmplName, recipients, map[string]any{
+	if len(recipients) == 0 {
+		ctxlogger.Get(ctx).Info("Skip approval notification: no admin recipients",
+			zap.Uint64("account_id", id),
+			zap.String("template", tmplName))
+	} else if err = messanger.Get(ctx).Send(ctx, tmplName, recipients, map[string]any{
 		"id":      id,
 		"account": acc,
 		"status":  status,
-	})
-	if err != nil {
+	}); err != nil {
+		// Status is already persisted; notify is best-effort (staff-created
+		// accounts have no members, and sendmsg errors must not fail the mutation).
 		ctxlogger.Get(ctx).Error("Failed to send message",
 			zap.String("template", tmplName),
 			zap.Error(err))
-		return zero, err
 	}
 
 	return r.accountsMapper.NewPayload(requestid.Get(ctx),

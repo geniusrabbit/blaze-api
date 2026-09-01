@@ -71,12 +71,9 @@ func (s *testMemberSuite) TestIsMember() {
 
 func (s *testMemberSuite) TestIsAdmin() {
 	ctx := s.Ctx
-	s.Mock.ExpectQuery(`SELECT \* FROM "account_member"`).
+	s.Mock.ExpectQuery(`SELECT "is_admin" FROM "account_member"`).
 		WithArgs(uint64(202), uint64(101), 1).
-		WillReturnRows(
-			sqlmock.NewRows([]string{"id", "approve_status", "account_id", "user_id", "is_admin", "created_at", "updated_at", "deleted_at"}).
-				AddRow(uint64(1), 1, 202, 101, true, time.Now(), time.Now(), nil),
-		)
+		WillReturnRows(sqlmock.NewRows([]string{"is_admin"}).AddRow(true))
 	accountObj := testAccountStub(202)
 	user := testutil.Stub(101)
 	ok := s.memberRepo.IsAdmin(ctx, user.ID, accountObj.ID)

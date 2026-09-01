@@ -109,15 +109,16 @@ func (r *memberRepository[TUser, TAccount]) IsAdmin(ctx context.Context, userID,
 	if accountID == 0 || userID == 0 {
 		return false
 	}
-	var member models.MemberBase
+	// Scan (not First): missing membership is the common staff-ACL case and
+	// must not log gorm.ErrRecordNotFound.
+	var isAdmin bool
 	err := r.Slave(ctx).
 		Model(&models.MemberBase{}).
+		Select("is_admin").
 		Where(`account_id=? AND user_id=?`, accountID, userID).
-		First(&member).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) || member.ID == 0 {
-		return false
-	}
-	return err == nil && member.IsAdmin
+		Limit(1).
+		Scan(&isAdmin).Error
+	return err == nil && isAdmin
 }
 
 func (r *memberRepository[TUser, TAccount]) LinkMember(ctx context.Context, accountObj TAccount, isAdmin bool, members ...TUser) error {
