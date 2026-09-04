@@ -95,8 +95,8 @@ func (a *MemberUsecase[TUser, TAccount]) UnlinkAccountMember(ctx context.Context
 
 // InviteMember into account by email (requires email repository on userRepo).
 func (a *MemberUsecase[TUser, TAccount]) InviteMember(ctx context.Context, accountID, userID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
-	// Check if user has permission to invite members
-	if !acl.HaveObjectPermissions(ctx, a.aclMember(accountID, 0), `invite`) {
+	// Owning invite.* (invite.owner / invite.account / invite.all) — same as @acl and checkPermission.
+	if !acl.HaveObjectPermissions(ctx, a.aclMember(accountID, 0), `invite.*`) {
 		return nil, acl.ErrNoPermissions.WithMessage("invite member account")
 	}
 
