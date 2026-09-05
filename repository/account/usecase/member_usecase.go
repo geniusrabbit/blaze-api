@@ -34,6 +34,24 @@ func (a *MemberUsecase[TUser, TAccount]) aclMember(accountID, userID uint64) *ac
 	return account.MemberStub[TUser, TAccount](0, accountID, userID)
 }
 
+// hydrateMember loads Account and User onto a MemberBase-only row from Member/MemberByID.
+func (a *MemberUsecase[TUser, TAccount]) hydrateMember(ctx context.Context, member *account.Member[TUser, TAccount]) error {
+	if member == nil {
+		return errors.New("member not found")
+	}
+	accountObj, err := a.accountRepo.Get(ctx, member.AccountID)
+	if err != nil {
+		return err
+	}
+	usr, err := a.userRepo.Get(ctx, member.UserID)
+	if err != nil {
+		return err
+	}
+	member.Account = accountObj
+	member.User = usr
+	return nil
+}
+
 // EmptyObject returns a new empty member object of type Member[TUser, TAccount].
 func (a *MemberUsecase[TUser, TAccount]) EmptyObject() *account.Member[TUser, TAccount] {
 	return a.memberRepo.EmptyObject()
@@ -90,6 +108,9 @@ func (a *MemberUsecase[TUser, TAccount]) UnlinkAccountMember(ctx context.Context
 	if err != nil {
 		return err
 	}
+	if err = a.hydrateMember(ctx, member); err != nil {
+		return err
+	}
 	return a.memberRepo.UnlinkMember(ctx, member.Account, member.User)
 }
 
@@ -121,6 +142,9 @@ func (a *MemberUsecase[TUser, TAccount]) InviteMember(ctx context.Context, accou
 	if err != nil {
 		return nil, err
 	}
+	if member == nil {
+		return nil, errors.New("member not found")
+	}
 	if !acl.HaveAccessView(ctx, member) {
 		return nil, acl.ErrNoPermissions.WithMessage("view member account")
 	}
@@ -133,6 +157,9 @@ func (a *MemberUsecase[TUser, TAccount]) SetAccountMemeberRoles(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
+	if err = a.hydrateMember(ctx, member); err != nil {
+		return nil, err
+	}
 	if !acl.HaveObjectPermissions(ctx, member, `roles.set.*`) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
 	}
@@ -143,6 +170,9 @@ func (a *MemberUsecase[TUser, TAccount]) SetAccountMemeberRoles(ctx context.Cont
 func (a *MemberUsecase[TUser, TAccount]) SetMemberRoles(ctx context.Context, memberID uint64, roles ...string) (*account.Member[TUser, TAccount], error) {
 	member, err := a.memberRepo.MemberByID(ctx, memberID)
 	if err != nil {
+		return nil, err
+	}
+	if err = a.hydrateMember(ctx, member); err != nil {
 		return nil, err
 	}
 	if !acl.HaveObjectPermissions(ctx, member, `roles.set.*`) {

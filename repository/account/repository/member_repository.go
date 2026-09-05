@@ -22,6 +22,7 @@ import (
 var (
 	ErrInvalidRoleList        = errors.New(`invalid role list, check your permissions`)
 	ErrAccountHaveToHaveAdmin = errors.New(`account must have at least one admin`)
+	ErrMemberNotFound         = errors.New(`member not found`)
 )
 
 type memberRepository[TUser user.Model, TAccount account.Model] struct {
@@ -81,7 +82,7 @@ func (r *memberRepository[TUser, TAccount]) MemberByID(ctx context.Context, id u
 
 func (r *memberRepository[TUser, TAccount]) memberByQuery(ctx context.Context, query ...any) (*account.Member[TUser, TAccount], error) {
 	var base models.MemberBase
-	err := r.Slave(ctx).
+	err := r.Master(ctx).
 		Model(&models.MemberBase{}).
 		Preload("Roles").
 		Where(query[0], query[1:]...).
@@ -125,7 +126,7 @@ func (r *memberRepository[TUser, TAccount]) LinkMember(ctx context.Context, acco
 	return r.Master(ctx).Transaction(func(tx *gorm.DB) error {
 		query := tx.Model(&models.MemberBase{}).Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "account_id"}, {Name: "user_id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"approve_status", "is_admin"}),
+			DoUpdates: clause.AssignmentColumns([]string{"approve_status", "is_admin", "deleted_at"}),
 		})
 		for _, userObj := range members {
 			err := query.Create(&models.MemberBase{
@@ -159,6 +160,9 @@ func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, 
 	)
 	if err != nil {
 		return err
+	}
+	if member == nil {
+		return ErrMemberNotFound
 	}
 
 	if len(roles) > 0 {
@@ -195,13 +199,17 @@ func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, 
 		if err != nil {
 			return err
 		}
-		roleIDs := xtypes.SliceApply(listRoles, func(v *prbac.Role) uint64 { return v.ID })
-		err = tx.Model((*models.M2MAccountMemberRole)(nil)).
-			Where(`member_id=?`, member.ID).
-			Where(`role_id NOT IN (?)`, roleIDs).
-			Delete(&models.M2MAccountMemberRole{}).Error
-		if err != nil {
+		del := tx.Model((*models.M2MAccountMemberRole)(nil)).
+			Where(`member_id=?`, member.ID)
+		if len(listRoles) > 0 {
+			roleIDs := xtypes.SliceApply(listRoles, func(v *prbac.Role) uint64 { return v.ID })
+			del = del.Where(`role_id NOT IN (?)`, roleIDs)
+		}
+		if err = del.Delete(&models.M2MAccountMemberRole{}).Error; err != nil {
 			return err
+		}
+		if len(listRoles) == 0 {
+			return nil
 		}
 		return tx.Save(xtypes.SliceApply(listRoles, func(v *prbac.Role) *models.M2MAccountMemberRole {
 			return &models.M2MAccountMemberRole{

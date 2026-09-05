@@ -77,6 +77,64 @@ func (s *testMemberSuite) TestUnlinkMember() {
 	s.NoError(err)
 }
 
+func (s *testMemberSuite) TestSetMemberRolesHydratesUserAndAccount() {
+	member := account.MemberStub[*testutil.User, *testAccount](2, 10, 101)
+	acc := testAccountStub(10)
+	usr := testutil.Stub(101)
+
+	s.memberRepo.EXPECT().MemberByID(s.ctx, uint64(2)).Return(member, nil)
+	s.accountRepo.EXPECT().Get(s.ctx, uint64(10)).Return(acc, nil)
+	s.userRepo.EXPECT().Get(s.ctx, uint64(101)).Return(usr, nil)
+	s.memberRepo.EXPECT().SetMemberRoles(s.ctx, acc, usr, "editor").Return(nil)
+
+	got, err := s.memberUsecase.SetMemberRoles(s.ctx, 2, "editor")
+	s.NoError(err)
+	s.Equal(acc, got.Account)
+	s.Equal(usr, got.User)
+}
+
+func (s *testMemberSuite) TestSetMemberRolesNotFound() {
+	s.memberRepo.EXPECT().MemberByID(s.ctx, uint64(99)).Return(nil, nil)
+
+	got, err := s.memberUsecase.SetMemberRoles(s.ctx, 99, "editor")
+	s.Nil(got)
+	s.ErrorContains(err, "member not found")
+}
+
+func (s *testMemberSuite) TestUnlinkAccountMemberHydratesUserAndAccount() {
+	member := account.MemberStub[*testutil.User, *testAccount](2, 10, 101)
+	acc := testAccountStub(10)
+	usr := testutil.Stub(101)
+
+	s.memberRepo.EXPECT().MemberByID(s.ctx, uint64(2)).Return(member, nil)
+	s.accountRepo.EXPECT().Get(s.ctx, uint64(10)).Return(acc, nil)
+	s.userRepo.EXPECT().Get(s.ctx, uint64(101)).Return(usr, nil)
+	s.memberRepo.EXPECT().UnlinkMember(s.ctx, acc, usr).Return(nil)
+
+	s.NoError(s.memberUsecase.UnlinkAccountMember(s.ctx, 2))
+}
+
+func (s *testMemberSuite) TestUnlinkAccountMemberNotFound() {
+	s.memberRepo.EXPECT().MemberByID(s.ctx, uint64(99)).Return(nil, nil)
+
+	s.ErrorContains(s.memberUsecase.UnlinkAccountMember(s.ctx, 99), "member not found")
+}
+
+func (s *testMemberSuite) TestInviteMemberNotFoundAfterLink() {
+	acc := testAccountStub(10)
+	usr := testutil.Stub(101)
+
+	s.accountRepo.EXPECT().Get(s.ctx, uint64(10)).Return(acc, nil)
+	s.userRepo.EXPECT().Get(s.ctx, uint64(101)).Return(usr, nil)
+	s.memberRepo.EXPECT().LinkMember(s.ctx, acc, false, usr).Return(nil)
+	s.memberRepo.EXPECT().SetMemberRoles(s.ctx, acc, usr).Return(nil)
+	s.memberRepo.EXPECT().Member(s.ctx, uint64(101), uint64(10)).Return(nil, nil)
+
+	got, err := s.memberUsecase.InviteMember(s.ctx, 10, 101)
+	s.Nil(got)
+	s.ErrorContains(err, "member not found")
+}
+
 func TestAccountMemberSuite(t *testing.T) {
 	suite.Run(t, &testMemberSuite{})
 }

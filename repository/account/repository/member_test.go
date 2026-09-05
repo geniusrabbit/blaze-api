@@ -109,6 +109,51 @@ func (s *testMemberSuite) TestUnlinkMember() {
 	s.NoError(err)
 }
 
+func (s *testMemberSuite) TestSetMemberRolesNotFound() {
+	s.Mock.ExpectQuery(`SELECT \* FROM "account_member"`).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "approve_status", "user_id", "account_id", "is_admin",
+			"created_at", "updated_at", "deleted_at",
+		}))
+
+	err := s.memberRepo.SetMemberRoles(s.Ctx, testAccountStub(10), testutil.Stub(101), "editor")
+	s.ErrorIs(err, accountrepo.ErrMemberNotFound)
+}
+
+func (s *testMemberSuite) TestSetMemberRolesEmptyClearsJoins() {
+	now := time.Now()
+	s.Mock.ExpectQuery(`SELECT \* FROM "account_member"`).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "approve_status", "user_id", "account_id", "is_admin",
+			"created_at", "updated_at", "deleted_at",
+		}).AddRow(2, 1, 101, 10, false, now, now, nil))
+	s.Mock.ExpectQuery(`SELECT \* FROM "m2m_account_member_role"`).
+		WithArgs(uint64(2)).
+		WillReturnRows(sqlmock.NewRows([]string{"member_id", "role_id", "created_at"}))
+
+	s.Mock.ExpectBegin()
+	s.Mock.ExpectExec(`UPDATE "account_member"`).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	s.Mock.ExpectExec(`DELETE FROM "m2m_account_member_role" WHERE member_id=\$1$`).
+		WithArgs(uint64(2)).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+	s.Mock.ExpectCommit()
+
+	err := s.memberRepo.SetMemberRoles(s.Ctx, testAccountStub(10), testutil.Stub(101))
+	s.NoError(err)
+}
+
+func (s *testMemberSuite) TestLinkMemberOnConflictClearsDeletedAt() {
+	s.Mock.ExpectBegin()
+	s.Mock.ExpectQuery(`INSERT INTO "account_member".*ON CONFLICT.*"deleted_at"`).
+		WithArgs(pkgModels.ApprovedApproveStatus, uint64(10), uint64(101), false, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
+	s.Mock.ExpectCommit()
+
+	err := s.memberRepo.LinkMember(s.Ctx, testAccountStub(10), false, testutil.Stub(101))
+	s.NoError(err)
+}
+
 func TestMemberSuite(t *testing.T) {
 	suite.Run(t, &testMemberSuite{})
 }

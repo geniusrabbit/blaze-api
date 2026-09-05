@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 
+	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/repository/account"
@@ -111,14 +112,18 @@ func UserAccount(ctx context.Context) (user.Model, account.Model) {
 
 // UserModel returns current user as Model interface.
 func UserModel(ctx context.Context) user.Model {
-	u, _ := UserAccount(ctx)
-	return u
+	if u, _ := UserAccount(ctx); !gocast.IsNil(u) {
+		return u
+	}
+	return nil
 }
 
 // AccountModel returns current account as Model interface.
 func AccountModel(ctx context.Context) account.Model {
-	_, a := UserAccount(ctx)
-	return a
+	if _, a := UserAccount(ctx); !gocast.IsNil(a) {
+		return a
+	}
+	return nil
 }
 
 // Account returns current account model.
