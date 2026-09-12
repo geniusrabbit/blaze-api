@@ -1,5 +1,7 @@
 package acl
 
+import "fmt"
+
 // import (
 // 	"google.golang.org/grpc/codes"
 // 	"google.golang.org/grpc/status"
@@ -42,6 +44,7 @@ type ACLError struct {
 	Message string
 }
 
+// Error returns the error message.
 func (err *ACLError) Error() string {
 	if err.parent != nil {
 		return err.parent.Error() + ": " + err.Message
@@ -49,6 +52,7 @@ func (err *ACLError) Error() string {
 	return err.Message
 }
 
+// WithMessage returns a new error with the message.
 func (err *ACLError) WithMessage(message string) *ACLError {
 	nErr := &ACLError{
 		parent:  err,
@@ -57,6 +61,12 @@ func (err *ACLError) WithMessage(message string) *ACLError {
 	return nErr
 }
 
+// WithMessagef returns a new error with the message formatted.
+func (err *ACLError) WithMessagef(format string, a ...any) *ACLError {
+	return err.WithMessage(fmt.Sprintf(format, a...))
+}
+
+// Unwrap returns the parent error.
 func (err *ACLError) Unwrap() error {
 	return err.parent
 }

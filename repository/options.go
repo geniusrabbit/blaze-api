@@ -66,7 +66,8 @@ func (opt *GroupOption) PrepareQuery(query *gorm.DB) *gorm.DB {
 // ListOptions for query preparation
 type ListOptions []QOption
 
-func (opts ListOptions) With(prep QOption) ListOptions {
+// ReplaceOrAppend replaces the existing option with the new one if it exists, otherwise appends the new option.
+func (opts ListOptions) ReplaceOrAppend(prep QOption) ListOptions {
 	updated := false
 	for i, opt := range opts {
 		if reflect.TypeOf(opt) == reflect.TypeOf(prep) {
@@ -82,6 +83,12 @@ func (opts ListOptions) With(prep QOption) ListOptions {
 	return opts
 }
 
+// Append appends the new option to the list.
+func (opts ListOptions) Append(prep QOption) ListOptions {
+	return append(opts, prep)
+}
+
+// PrepareQuery prepares the query for the list options.
 func (opts ListOptions) PrepareQuery(query *gorm.DB) *gorm.DB {
 	for _, opt := range opts {
 		if opt != nil {

@@ -3,6 +3,7 @@ package generated
 import (
 	"context"
 
+	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/go-faster/errors"
@@ -35,7 +36,14 @@ func (u *Usecase[T, TID]) Get(ctx context.Context, id TID, qops ...Option) (*T, 
 func (u *Usecase[T, TID]) FetchList(ctx context.Context, qops ...Option) ([]*T, error) {
 	// Check if user has general list access permission for this entity type
 	if !acl.HaveAccessList(ctx, new(T)) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list")
+		obj, nqops, err := aclWithOwningObject(ctx, new(T))
+		if err != nil {
+			return nil, err
+		}
+		if !acl.HaveAccessList(ctx, obj) {
+			return nil, acl.ErrNoPermissions.WithMessage("list")
+		}
+		qops = append(qops, nqops...)
 	}
 
 	// Fetch the list from repository
@@ -44,7 +52,11 @@ func (u *Usecase[T, TID]) FetchList(ctx context.Context, qops ...Option) ([]*T, 
 	// Verify access permissions for each individual object in the list
 	for _, obj := range list {
 		if !acl.HaveAccessList(ctx, obj) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list")
+			id := getModelID[TID](obj)
+			if !gocast.IsEmpty(id) {
+				return nil, acl.ErrNoPermissions.WithMessagef("list object: %v", id)
+			}
+			return nil, acl.ErrNoPermissions.WithMessage("list object")
 		}
 	}
 	return list, err
@@ -54,8 +66,15 @@ func (u *Usecase[T, TID]) FetchList(ctx context.Context, qops ...Option) ([]*T, 
 // Only counts entities the user has permission to list.
 func (u *Usecase[T, TID]) Count(ctx context.Context, qops ...Option) (int64, error) {
 	// Check if user has list access permission for this entity type
-	if !acl.HaveAccessList(ctx, new(T)) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "list")
+	if !acl.HaveAccessCount(ctx, new(T)) {
+		obj, nqops, err := aclWithOwningObject(ctx, new(T))
+		if err != nil {
+			return 0, err
+		}
+		if !acl.HaveAccessCount(ctx, obj) {
+			return 0, acl.ErrNoPermissions.WithMessage("count")
+		}
+		qops = append(qops, nqops...)
 	}
 	return u.Repo.Count(ctx, qops...)
 }

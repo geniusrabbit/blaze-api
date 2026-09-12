@@ -1,8 +1,10 @@
 package generated
 
 import (
+	"context"
 	"time"
 
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 )
 
@@ -85,6 +87,19 @@ func setModelApproveStatus(obj any, status pkgModels.ApproveStatus) {
 	if v, ok := obj.(ModelApproveStatusSetter); ok {
 		v.SetApproveStatus(status)
 	}
+}
+
+// ModelWithOwningFilter defines an interface for models that can return an owning object and options.
+type ModelACLWithOwningObject interface {
+	ACLWithOwningObject(ctx context.Context) (any, []Option, error)
+}
+
+// aclWithOwningObject returns the owning object and options for the model.
+func aclWithOwningObject(ctx context.Context, obj any) (any, []Option, error) {
+	if v, ok := obj.(ModelACLWithOwningObject); ok {
+		return v.ACLWithOwningObject(ctx)
+	}
+	return obj, nil, acl.ErrNoPermissions.WithMessage("acl with owning object")
 }
 
 // BaseModel is a convenience embed for domain models used with Repository[T, TID] and Usecase[T, TID].
