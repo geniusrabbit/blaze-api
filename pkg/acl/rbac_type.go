@@ -51,3 +51,13 @@ func (tp *RBACType) WithUserAccountID(userID, accountID uint64) *RBACType {
 	nType.AccountID = accountID
 	return &nType
 }
+
+// OwnerAccountID returns the account ID for the RBAC
+func (tp *RBACType) OwnerAccountID() uint64 {
+	return tp.AccountID
+}
+
+// OwnerUserID returns the user ID for the RBAC
+func (tp *RBACType) OwnerUserID() uint64 {
+	return tp.UserID
+}
