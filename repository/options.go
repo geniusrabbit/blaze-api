@@ -30,6 +30,10 @@ type PreloadOption struct {
 	Fields []string
 }
 
+func Preload(fields ...string) *PreloadOption {
+	return &PreloadOption{Fields: fields}
+}
+
 func (opt *PreloadOption) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if opt == nil {
 		return query
