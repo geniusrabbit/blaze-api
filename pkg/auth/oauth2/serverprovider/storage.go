@@ -131,10 +131,18 @@ func (s *DatabaseStorage) DeleteAuthorizeCodeSession(ctx context.Context, code s
 	return s.invalidateSession(ctx, code, `access_token`)
 }
 
-// CreatePKCERequestSession action
+const pkceRequestIDPrefix = "pkce:"
+
+func pkceRequestID(requestID string) string {
+	return pkceRequestIDPrefix + requestID
+}
+
+// CreatePKCERequestSession stores PKCE challenge data as a separate auth_session
+// row. Fosite reuses the authorize request ID; a distinct request_id keeps the
+// PKCE row from colliding with the authorize-code (and later access-token) row.
 func (s *DatabaseStorage) CreatePKCERequestSession(ctx context.Context, code string, request fosite.Requester) error {
 	ctxlogger.Get(ctx).Debug("CreatePKCERequestSession", zap.String("access_token", code))
-	return s.newSession(ctx, code, request)
+	return s.newSessionWithRequestID(ctx, code, request, pkceRequestID(request.GetID()))
 }
 
 // GetPKCERequestSession action
@@ -308,6 +316,10 @@ func (s *DatabaseStorage) Authenticate(ctx context.Context, email string, secret
 ///////////////////////////////////////////////////////////////////////////////
 
 func (s *DatabaseStorage) newSession(ctx context.Context, token string, request fosite.Requester) error {
+	return s.newSessionWithRequestID(ctx, token, request, request.GetID())
+}
+
+func (s *DatabaseStorage) newSessionWithRequestID(ctx context.Context, token string, request fosite.Requester, requestID string) error {
 	var (
 		userID    = GetContextTargetUserID(ctx)
 		clientObj = GetContextTargetClient(ctx)
@@ -323,7 +335,7 @@ func (s *DatabaseStorage) newSession(ctx context.Context, token string, request 
 			ClientID:              client.GetID(),
 			Username:              session.GetUsername(),
 			Subject:               session.GetSubject(),
-			RequestID:             request.GetID(),
+			RequestID:             requestID,
 			AccessToken:           token,
 			Form:                  request.GetRequestForm().Encode(),
 			RequestedScope:        gosql.NullableStringArray(request.GetRequestedScopes()),
@@ -345,10 +357,8 @@ func (s *DatabaseStorage) newSession(ctx context.Context, token string, request 
 }
 
 func (s *DatabaseStorage) updateSessionCB(requestID string, cb func(auth *authclient.AuthSession)) error {
-	var (
-		sessionObj authclient.AuthSession
-		err        = s.db.Find(&sessionObj, `request_id=?`, requestID).Error
-	)
+	var sessionObj authclient.AuthSession
+	err := s.db.Where(`request_id=?`, requestID).Order(`id DESC`).Take(&sessionObj).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return fosite.ErrNotFound
 	}
@@ -356,7 +366,7 @@ func (s *DatabaseStorage) updateSessionCB(requestID string, cb func(auth *authcl
 		return err
 	}
 	cb(&sessionObj)
-	return s.db.Model(&sessionObj).Where(`request_id=?`, requestID).Updates(&sessionObj).Error
+	return s.db.Model(&sessionObj).Where(`id=?`, sessionObj.ID).Updates(&sessionObj).Error
 }
 
 func (s *DatabaseStorage) getAuthSession(ctx context.Context, code, fieldName string) (*authclient.AuthSession, error) {
