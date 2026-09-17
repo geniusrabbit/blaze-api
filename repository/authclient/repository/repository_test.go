@@ -36,6 +36,18 @@ func (s *testSuite) TestGet() {
 	s.Equal("1", role.ID)
 }
 
+func (s *testSuite) TestGetHyphenatedID() {
+	s.Mock.ExpectQuery(`SELECT .* FROM "auth_client" WHERE id = \$1`).
+		WithArgs("mcp-client").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "account_id", "user_id", "title", "secret", "created_at"}).
+				AddRow("mcp-client", 1, 1, "mcp", "secret", time.Now()),
+		)
+	role, err := s.authclientRepo.Get(s.Ctx, "mcp-client")
+	s.NoError(err)
+	s.Equal("mcp-client", role.ID)
+}
+
 func (s *testSuite) TestFetchList() {
 	s.Mock.ExpectQuery("SELECT *").
 		WithArgs("1", "2").

@@ -21,11 +21,12 @@ func NewAuthclientRepository() *Repository {
 	return &Repository{Repository: *generated.NewRepository[authclient.AuthClient, string]()}
 }
 
-// Get returns AuthClient by ID. Uses Find (not First) to keep the original
-// no-error-on-not-found behavior required by the authclient domain interface.
+// Get returns AuthClient by ID. Uses Find (not First) with a bound `id = ?`
+// condition so string PKs like `mcp-client` are not treated as SQL, while
+// keeping the original no-error-on-not-found behavior.
 func (r *Repository) Get(ctx context.Context, id string) (*authclient.AuthClient, error) {
 	object := new(authclient.AuthClient)
-	if err := r.Slave(ctx).Find(object, id).Error; err != nil {
+	if err := r.Slave(ctx).Find(object, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return object, nil

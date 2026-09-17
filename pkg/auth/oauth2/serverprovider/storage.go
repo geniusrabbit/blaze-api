@@ -58,7 +58,7 @@ func (s *DatabaseStorage) GetClient(ctx context.Context, id string) (fosite.Clie
 	ctxlogger.Get(ctx).Debug("GetClient", zap.String("client_id", id))
 	var (
 		clientObj authclient.AuthClient
-		err       = s.fromCacheOrSelect(ctx, s.clientCacheKey(id), &clientObj, id)
+		err       = s.fromCacheOrSelect(ctx, s.clientCacheKey(id), &clientObj, "id = ?", id)
 	)
 	if err == sql.ErrNoRows {
 		return nil, fosite.ErrNotFound
