@@ -3,6 +3,8 @@ package graphql
 import (
 	"context"
 
+	"github.com/demdxx/gocast/v2"
+
 	rbacgql "github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
@@ -53,6 +55,9 @@ func ModelWithID[T any](newModel func() T, id uint64) T {
 }
 
 func userEmail[T user.Model](u T) string {
+	if gocast.IsNil(u) {
+		return ""
+	}
 	if em, ok := any(u).(user.EmailModel); ok {
 		return em.GetEmail()
 	}

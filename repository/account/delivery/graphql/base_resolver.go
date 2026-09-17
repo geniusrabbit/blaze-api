@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/xtypes"
 	"go.uber.org/zap"
 
@@ -205,10 +206,23 @@ func (r *QueryResolver[TUser, TDomain, TGQLAccount, TGQLAccountPayload, TGQLAcco
 
 	recipients := make([]string, 0, len(members))
 	for _, member := range members {
-		if member.IsAdmin {
-			if email := userEmail(member.User); email != "" {
-				recipients = append(recipients, email)
+		if !member.IsAdmin {
+			continue
+		}
+		email := userEmail(member.User)
+		if email == "" && member.UserID != 0 && gocast.IsNil(member.User) {
+			usr, getErr := r.users.Get(ctx, member.UserID)
+			if getErr != nil {
+				ctxlogger.Get(ctx).Error("Failed to load admin user for approval notification",
+					zap.Uint64("account_id", id),
+					zap.Uint64("user_id", member.UserID),
+					zap.Error(getErr))
+				continue
 			}
+			email = userEmail(usr)
+		}
+		if email != "" {
+			recipients = append(recipients, email)
 		}
 	}
 
