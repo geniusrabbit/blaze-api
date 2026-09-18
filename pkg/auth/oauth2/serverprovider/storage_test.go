@@ -95,6 +95,53 @@ func (s *storageSuite) TestCreateRefreshTokenSessionUpdatesByPrimaryKey() {
 	s.NoError(err)
 }
 
+func (s *storageSuite) TestAuthorizationCodeToAccessTokenFlow() {
+	const (
+		requestID      = "req-auth-1"
+		authCodeSig    = "auth-code-sig"
+		accessTokenSig = "access-token-sig"
+		rowID          = uint64(10)
+	)
+	ctx := NewContext(s.Ctx)
+
+	// Step 1: CreateAuthorizeCodeSession - creates initial session with auth code
+	req := testOAuthRequest(requestID)
+	req.Form = map[string][]string{
+		"client_id":     {"mcp-client"},
+		"response_type": {"code"},
+	}
+	req.GetSession().SetExpiresAt(fosite.AccessToken, time.Now().Add(10*time.Minute))
+	req.GetSession().SetExpiresAt(fosite.RefreshToken, time.Now().Add(time.Hour))
+
+	s.expectAuthSessionInsert(authCodeSig, requestID)
+	s.NoError(s.storage.CreateAuthorizeCodeSession(ctx, authCodeSig, req))
+
+	// Step 2: CreateAccessTokenSession - updates with new access token signature
+	// This is the critical part that was failing in production with duplicate key error
+	reqToken := testOAuthRequest(requestID) // Same request_id!
+	reqToken.Form = map[string][]string{
+		"client_id":     {"mcp-client"},
+		"grant_type":    {"authorization_code"},
+		"code":          {authCodeSig},
+	}
+	reqToken.GetSession().SetExpiresAt(fosite.AccessToken, time.Now().Add(time.Hour))
+	reqToken.GetSession().SetExpiresAt(fosite.RefreshToken, time.Now().Add(24*time.Hour))
+
+	// Should UPDATE the existing session by request_id, not INSERT a duplicate
+	s.Mock.ExpectQuery(`SELECT \* FROM "auth_session" WHERE request_id=\$1`).
+		WithArgs(requestID, 1).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "request_id", "access_token", "form", "client_id", "username", "subject", "active", "access_token_expires_at", "refresh_token_expires_at", "requested_scope", "granted_scope", "requested_audience", "granted_audience", "created_at", "updated_at"}).
+				AddRow(rowID, requestID, authCodeSig, "client_id=mcp-client&response_type=code", "mcp-client", "user", "subject", true, time.Now().Add(10*time.Minute), time.Now().Add(time.Hour), nil, nil, nil, nil, time.Now(), time.Now()),
+		)
+	// GORM generates UPDATE with multiple fields; accept any arguments
+	s.Mock.ExpectExec(`UPDATE "auth_session" SET`).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	s.NoError(s.storage.CreateAccessTokenSession(ctx, accessTokenSig, reqToken))
+	s.NoError(s.Mock.ExpectationsWereMet())
+}
+
 func (s *storageSuite) expectAuthSessionInsert(accessToken, requestID string) {
 	var got []driver.Value
 	cap := captureArg{dst: &got}
