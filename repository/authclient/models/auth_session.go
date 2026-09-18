@@ -33,6 +33,7 @@ type AuthSession struct {
 	GrantedAudience   gosql.NullableStringArray `db:"granted_audience" gorm:"type:text[]"`
 
 	CreatedAt time.Time      `db:"created_at"`
+	UpdatedAt time.Time      `db:"updated_at"`
 	DeletedAt gorm.DeletedAt `db:"deleted_at"`
 }
 

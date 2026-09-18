@@ -60,14 +60,16 @@ func (s *storageSuite) TestCreatePKCERequestSessionUpdatesExistingSession() {
 	s.Mock.ExpectQuery(`SELECT \* FROM "auth_session"`).
 		WithArgs(codeSig).
 		WillReturnRows(
-			sqlmock.NewRows([]string{"id", "request_id", "access_token", "form", "client_id", "username", "subject", "active", "access_token_expires_at", "refresh_token_expires_at", "created_at"}).
-				AddRow(rowID, requestID, codeSig, "existing=value", "mcp-client", "user", "subject", true, time.Now(), time.Now(), time.Now()),
+			sqlmock.NewRows([]string{"id", "request_id", "access_token", "form", "client_id", "username", "subject", "active", "access_token_expires_at", "refresh_token_expires_at", "created_at", "updated_at"}).
+				AddRow(rowID, requestID, codeSig, "existing=value", "mcp-client", "user", "subject", true, time.Now(), time.Now(), time.Now(), time.Now()),
 		)
+	// GORM automatically adds updated_at to the UPDATE statement
 	s.Mock.ExpectExec(`UPDATE "auth_session" SET`).
-		WithArgs(sqlmock.AnyArg(), rowID).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), rowID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	s.NoError(s.storage.CreatePKCERequestSession(ctx, codeSig, req))
+	s.NoError(s.Mock.ExpectationsWereMet())
 }
 
 func (s *storageSuite) TestCreateRefreshTokenSessionUpdatesByPrimaryKey() {
@@ -84,8 +86,9 @@ func (s *storageSuite) TestCreateRefreshTokenSessionUpdatesByPrimaryKey() {
 			sqlmock.NewRows([]string{"id", "request_id", "access_token"}).
 				AddRow(rowID, requestID, "access-sig"),
 		)
+	// GORM automatically adds updated_at to the UPDATE statement
 	s.Mock.ExpectExec(`UPDATE "auth_session" SET .*WHERE id=\$`).
-		WithArgs(requestID, "access-sig", "refresh-sig", sqlmock.AnyArg(), rowID, rowID).
+		WithArgs(requestID, "access-sig", "refresh-sig", sqlmock.AnyArg(), sqlmock.AnyArg(), rowID, rowID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	err := s.storage.CreateRefreshTokenSession(NewContext(s.Ctx), "refresh-sig", "access-sig", req)
@@ -95,7 +98,7 @@ func (s *storageSuite) TestCreateRefreshTokenSessionUpdatesByPrimaryKey() {
 func (s *storageSuite) expectAuthSessionInsert(accessToken, requestID string) {
 	var got []driver.Value
 	cap := captureArg{dst: &got}
-	args := make([]driver.Value, 16)
+	args := make([]driver.Value, 17) // 17 columns including updated_at
 	for i := range args {
 		args[i] = cap
 	}
