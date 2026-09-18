@@ -39,16 +39,35 @@ func (s *storageSuite) TestGetClientHyphenatedID() {
 	s.Equal("mcp-client", client.GetID())
 }
 
-func (s *storageSuite) TestCreatePKCERequestSessionUsesPrefixedRequestID() {
-	const requestID = "req-1"
+func (s *storageSuite) TestCreatePKCERequestSessionUpdatesExistingSession() {
+	const (
+		requestID = "req-1"
+		codeSig   = "code-sig"
+		rowID     = uint64(1)
+	)
 	req := testOAuthRequest(requestID)
+	req.Form = map[string][]string{
+		"code_challenge":        {"challenge123"},
+		"code_challenge_method": {"S256"},
+	}
 	ctx := NewContext(s.Ctx)
 
-	s.expectAuthSessionInsert("code-sig", requestID)
-	s.NoError(s.storage.CreateAuthorizeCodeSession(ctx, "code-sig", req))
+	// First, authorize code session creates the row
+	s.expectAuthSessionInsert(codeSig, requestID)
+	s.NoError(s.storage.CreateAuthorizeCodeSession(ctx, codeSig, req))
 
-	s.expectAuthSessionInsert("pkce-sig", pkceRequestID(requestID))
-	s.NoError(s.storage.CreatePKCERequestSession(ctx, "pkce-sig", req))
+	// PKCE session updates the same row (same code signature)
+	s.Mock.ExpectQuery(`SELECT \* FROM "auth_session"`).
+		WithArgs(codeSig).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "request_id", "access_token", "form", "client_id", "username", "subject", "active", "access_token_expires_at", "refresh_token_expires_at", "created_at"}).
+				AddRow(rowID, requestID, codeSig, "existing=value", "mcp-client", "user", "subject", true, time.Now(), time.Now(), time.Now()),
+		)
+	s.Mock.ExpectExec(`UPDATE "auth_session" SET`).
+		WithArgs(sqlmock.AnyArg(), rowID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	s.NoError(s.storage.CreatePKCERequestSession(ctx, codeSig, req))
 }
 
 func (s *storageSuite) TestCreateRefreshTokenSessionUpdatesByPrimaryKey() {
