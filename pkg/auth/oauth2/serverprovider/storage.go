@@ -137,11 +137,54 @@ func pkceRequestID(requestID string) string {
 	return pkceRequestIDPrefix + requestID
 }
 
-// CreatePKCERequestSession stores PKCE challenge data as a separate auth_session
-// row. Fosite reuses the authorize request ID; a distinct request_id keeps the
-// PKCE row from colliding with the authorize-code (and later access-token) row.
+// CreatePKCERequestSession updates the existing authorize code session with PKCE
+// challenge data. Fosite calls this after CreateAuthorizeCodeSession with the
+// same code signature, so we UPDATE the existing row instead of INSERTing a
+// duplicate (which would violate the UNIQUE(access_token) constraint).
 func (s *DatabaseStorage) CreatePKCERequestSession(ctx context.Context, code string, request fosite.Requester) error {
 	ctxlogger.Get(ctx).Debug("CreatePKCERequestSession", zap.String("access_token", code))
+	
+	// Try to update existing session by access_token
+	var (
+		session *authclient.AuthSession
+		err     error
+	)
+	
+	session, err = s.getAuthSession(ctx, code, `access_token`)
+	if err != nil && err != sql.ErrNoRows {
+		return errors.Wrap(err, "lookup existing session")
+	}
+	
+	// If session exists, update it with PKCE data
+	if session != nil {
+		// Merge PKCE parameters into the form
+		existingForm, _ := url.ParseQuery(session.Form)
+		newForm := request.GetRequestForm()
+		
+		// Merge code_challenge and code_challenge_method
+		if cc := newForm.Get("code_challenge"); cc != "" {
+			existingForm.Set("code_challenge", cc)
+		}
+		if ccm := newForm.Get("code_challenge_method"); ccm != "" {
+			existingForm.Set("code_challenge_method", ccm)
+		}
+		
+		// Update the session
+		session.Form = existingForm.Encode()
+		err = s.db.Model(&authclient.AuthSession{}).Where(`id=?`, session.ID).Update(`form`, session.Form).Error
+		if err != nil {
+			return errors.Wrap(err, "update session with PKCE data")
+		}
+		
+		// Update cache
+		if cacheErr := s.cache.Set(ctx, s.sessCacheKey(code), session, s.cacheLifetime); cacheErr != nil {
+			ctxlogger.Get(ctx).Error("update session cache", zap.Error(cacheErr))
+		}
+		
+		return nil
+	}
+	
+	// Edge case: no existing session, create a new one
 	return s.newSessionWithRequestID(ctx, code, request, pkceRequestID(request.GetID()))
 }
 
