@@ -18,6 +18,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/cache/dummy"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/memory"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/redis"
+	authclientrepo "github.com/geniusrabbit/blaze-api/repository/authclient/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
@@ -45,6 +46,7 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 		SendDebugMessagesToClients:    conf.OAuth2.SendDebugMessagesToClients,
 	}
 	sessionCache := newCache(ctx, conf.OAuth2.CacheConnect, conf.OAuth2.CacheLifetime)
+	authclientrepo.SetDefaultSessionCache(sessionCache)
 	oauth2storage := serverprovider.NewDatabaseStorage(
 		masterDatabase,
 		oauthUserAccessor{email: deps.UserModule.Repo, password: deps.UserModule.Repo},

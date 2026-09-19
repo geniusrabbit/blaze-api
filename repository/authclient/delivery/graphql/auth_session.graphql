@@ -1,0 +1,85 @@
+"""
+AuthSession is an OAuth2 session stored for an external client.
+Raw access and refresh tokens are never exposed.
+"""
+type AuthSession {
+  ID: ID64!
+  active: Boolean!
+  clientID: String!
+  username: String!
+  subject: String!
+  requestID: String!
+  requestedScope: [String!]
+  grantedScope: [String!]
+  requestedAudience: [String!]
+  grantedAudience: [String!]
+  accessTokenExpiresAt: Time!
+  refreshTokenExpiresAt: Time!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+"""
+AuthSessionConnection implements collection accessor interface with pagination.
+"""
+type AuthSessionConnection {
+  """
+  The total number of sessions
+  """
+  totalCount: Int!
+
+  """
+  A list of AuthSession objects
+  """
+  list: [AuthSession!]
+
+  """
+  Information for paginating this connection
+  """
+  pageInfo: PageInfo!
+}
+
+input AuthSessionListFilter {
+  ID: [ID64!]
+  clientID: [String!]
+  username: [String!]
+  subject: [String!]
+  active: Boolean
+  query: String
+}
+
+input AuthSessionListOrder {
+  ID: Ordering
+  clientID: Ordering
+  createdAt: Ordering
+  accessTokenExpiresAt: Ordering
+}
+
+###############################################################################
+# Query and Mutations
+###############################################################################
+
+extend type Query {
+  """
+  Get an auth session by ID
+  """
+  authSession(id: ID64!): AuthSession
+    @hasPermissions(permissions: ["auth_session.view.*"])
+
+  """
+  List of auth sessions which can be filtered and ordered by some fields
+  """
+  listAuthSessions(
+    filter: AuthSessionListFilter = null
+    order: [AuthSessionListOrder] = null
+    page: Page = null
+  ): AuthSessionConnection @hasPermissions(permissions: ["auth_session.list.*"])
+}
+
+extend type Mutation {
+  """
+  Delete (revoke) an auth session
+  """
+  deleteAuthSession(id: ID64!): AuthSession
+    @hasPermissions(permissions: ["auth_session.delete.*"])
+}

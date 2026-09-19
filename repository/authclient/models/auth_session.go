@@ -37,6 +37,18 @@ type AuthSession struct {
 	DeletedAt gorm.DeletedAt `db:"deleted_at"`
 }
 
+// GetID returns the session primary key.
+func (m AuthSession) GetID() uint64 { return m.ID }
+
+// SetID sets the session primary key.
+func (m *AuthSession) SetID(id uint64) { m.ID = id }
+
+// SetCreatedAt sets the creation timestamp.
+func (m *AuthSession) SetCreatedAt(t time.Time) { m.CreatedAt = t }
+
+// SetUpdatedAt sets the update timestamp.
+func (m *AuthSession) SetUpdatedAt(t time.Time) { m.UpdatedAt = t }
+
 // TableName in database
 func (m *AuthSession) TableName() string {
 	return `auth_session`

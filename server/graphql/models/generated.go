@@ -149,6 +149,41 @@ type AuthClientUpdateInput struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
+// AuthSession is an OAuth2 session stored for an external client.
+// Raw access and refresh tokens are never exposed.
+type AuthSession struct {
+	ID                    uint64    `json:"ID"`
+	Active                bool      `json:"active"`
+	ClientID              string    `json:"clientID"`
+	Username              string    `json:"username"`
+	Subject               string    `json:"subject"`
+	RequestID             string    `json:"requestID"`
+	RequestedScope        []string  `json:"requestedScope,omitempty"`
+	GrantedScope          []string  `json:"grantedScope,omitempty"`
+	RequestedAudience     []string  `json:"requestedAudience,omitempty"`
+	GrantedAudience       []string  `json:"grantedAudience,omitempty"`
+	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
+	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
+	CreatedAt             time.Time `json:"createdAt"`
+	UpdatedAt             time.Time `json:"updatedAt"`
+}
+
+type AuthSessionListFilter struct {
+	ID       []uint64 `json:"ID,omitempty"`
+	ClientID []string `json:"clientID,omitempty"`
+	Username []string `json:"username,omitempty"`
+	Subject  []string `json:"subject,omitempty"`
+	Active   *bool    `json:"active,omitempty"`
+	Query    *string  `json:"query,omitempty"`
+}
+
+type AuthSessionListOrder struct {
+	ID                   *Ordering `json:"ID,omitempty"`
+	ClientID             *Ordering `json:"clientID,omitempty"`
+	CreatedAt            *Ordering `json:"createdAt,omitempty"`
+	AccessTokenExpiresAt *Ordering `json:"accessTokenExpiresAt,omitempty"`
+}
+
 type DirectAccessToken struct {
 	ID          uint64    `json:"ID"`
 	Token       string    `json:"token"`

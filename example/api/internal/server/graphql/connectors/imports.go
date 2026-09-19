@@ -13,6 +13,7 @@ type (
 	SocialAccountConnection     = socaccgraphql.SocialAccountConnection
 	RBACRoleConnection          = rbacgraphql.RBACRoleConnection
 	AuthClientConnection        = authclientgraphql.AuthClientConnection
+	AuthSessionConnection       = authclientgraphql.AuthSessionConnection
 	HistoryActionConnection     = historygraphql.HistoryActionConnection
 	OptionConnection            = optiongraphql.OptionConnection
 	DirectAccessTokenConnection = directaccesstokengraphql.DirectAccessTokenConnection

@@ -38,6 +38,7 @@ func InitModelPermissions(pm *permissions.Manager, deps *Deps) {
 		&domain.User{},
 		&rbacModels.Role{},
 		&authclient.AuthClient{},
+		&authclient.AuthSession{},
 		&domain.Account{},
 		&domain.AccountMember{},
 		&socialaccount.AccountSocialSession{},
@@ -60,6 +61,7 @@ func InitModelPermissions(pm *permissions.Manager, deps *Deps) {
 	_ = pm.RegisterNewPermission(nil, PermPermissionList, rbac.WithDescription("List all permissions"))
 
 	_ = pm.RegisterNewOwningPermissions(&authclient.AuthClient{}, crudPermissions)
+	_ = pm.RegisterNewOwningPermissions(&authclient.AuthSession{}, []string{acl.PermView, acl.PermList, acl.PermCount, acl.PermDelete})
 
 	_ = pm.RegisterNewOwningPermissions(&domain.AccountMember{}, crudPermissionsWithApprove)
 	_ = pm.RegisterNewPermissions(&domain.AccountMember{}, []string{`roles.set.account`, `roles.set.all`, `invite`})

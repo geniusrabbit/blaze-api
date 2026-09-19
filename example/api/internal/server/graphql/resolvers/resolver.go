@@ -23,6 +23,7 @@ type Resolver struct {
 	socAccounts       *socialaccountgraphql.QueryResolver
 	roles             *rbacgraphql.QueryResolver
 	authclients       *authclientgraphql.QueryResolver
+	authsessions      *authclientgraphql.SessionQueryResolver
 	historylogs       *historyloggraphql.QueryResolver
 	options           *optiongraphql.QueryResolver
 	directaccesstoken *datokengraphql.QueryResolver
@@ -49,6 +50,7 @@ func NewResolver(
 		socAccounts:       socialaccountgraphql.NewDefaultQueryResolver(),
 		roles:             rbacgraphql.NewDefaultQueryResolver(),
 		authclients:       authclientgraphql.NewDefaultQueryResolver(),
+		authsessions:      authclientgraphql.NewDefaultSessionQueryResolver(),
 		historylogs:       historyloggraphql.NewDefaultQueryResolver(),
 		options:           optiongraphql.NewQueryResolver(options),
 		directaccesstoken: datokengraphql.NewDefaultQueryResolver(),

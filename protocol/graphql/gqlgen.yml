@@ -100,6 +100,8 @@ models:
     model: github.com/geniusrabbit/blaze-api/repository/rbac/delivery/graphql.RBACRoleConnection
   AuthClientConnection:
     model: github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql.AuthClientConnection
+  AuthSessionConnection:
+    model: github.com/geniusrabbit/blaze-api/repository/authclient/delivery/graphql.AuthSessionConnection
   HistoryActionConnection:
     model: github.com/geniusrabbit/blaze-api/repository/historylog/delivery/graphql.HistoryActionConnection
   OptionConnection:
