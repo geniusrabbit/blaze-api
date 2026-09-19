@@ -25,6 +25,7 @@ func FromAuthSessionModel(sess *models.AuthSession) *gqlmodels.AuthSession {
 		GrantedScope:          []string(sess.GrantedScope),
 		RequestedAudience:     []string(sess.RequestedAudience),
 		GrantedAudience:       []string(sess.GrantedAudience),
+		AccessToken:           sess.AccessToken,
 		AccessTokenExpiresAt:  sess.AccessTokenExpiresAt,
 		RefreshTokenExpiresAt: sess.RefreshTokenExpiresAt,
 		CreatedAt:             sess.CreatedAt,

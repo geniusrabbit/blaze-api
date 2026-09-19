@@ -1,6 +1,6 @@
 """
 AuthSession is an OAuth2 session stored for an external client.
-Raw access and refresh tokens are never exposed.
+Refresh tokens are never exposed.
 """
 type AuthSession {
   ID: ID64!
@@ -13,6 +13,7 @@ type AuthSession {
   grantedScope: [String!]
   requestedAudience: [String!]
   grantedAudience: [String!]
+  accessToken: String!
   accessTokenExpiresAt: Time!
   refreshTokenExpiresAt: Time!
   createdAt: Time!

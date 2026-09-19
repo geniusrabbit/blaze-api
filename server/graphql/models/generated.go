@@ -150,7 +150,7 @@ type AuthClientUpdateInput struct {
 }
 
 // AuthSession is an OAuth2 session stored for an external client.
-// Raw access and refresh tokens are never exposed.
+// Refresh tokens are never exposed.
 type AuthSession struct {
 	ID                    uint64    `json:"ID"`
 	Active                bool      `json:"active"`
@@ -162,6 +162,7 @@ type AuthSession struct {
 	GrantedScope          []string  `json:"grantedScope,omitempty"`
 	RequestedAudience     []string  `json:"requestedAudience,omitempty"`
 	GrantedAudience       []string  `json:"grantedAudience,omitempty"`
+	AccessToken           string    `json:"accessToken"`
 	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
 	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
 	CreatedAt             time.Time `json:"createdAt"`
