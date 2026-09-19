@@ -145,6 +145,50 @@ func (s *testSuite) TestDelete() {
 	s.NoError(err)
 }
 
+func (s *testSuite) TestGetByToken() {
+	accessToken := "test_access_token_abc123"
+	memberID := uint64(10)
+	userID := uint64(1)
+	accountID := uint64(2)
+	now := time.Now()
+
+	s.Mock.ExpectQuery(`^WITH auth_client AS`).
+		WithArgs(accessToken).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "approve_status", "account_id", "user_id", "is_admin", "created_at", "updated_at", "deleted_at"}).
+				AddRow(memberID, pkgModels.ApprovedApproveStatus, accountID, userID, true, now, now, nil),
+		)
+
+	s.Mock.ExpectQuery(`SELECT \* FROM "test_user"`).
+		WithArgs(userID, 1).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "approve_status", "email", "created_at", "updated_at", "deleted_at"}).
+				AddRow(userID, pkgModels.ApprovedApproveStatus, "user@example.com", now, now, nil),
+		)
+
+	s.Mock.ExpectQuery(`SELECT \* FROM "account_base"`).
+		WithArgs(accountID, 1).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "status", "approve_status", "title", "description", "created_at", "updated_at", "deleted_at"}).
+				AddRow(accountID, 1, pkgModels.ApprovedApproveStatus, "Test Account", "Test Description", now, now, nil),
+		)
+
+	s.Mock.ExpectQuery(`SELECT "role_id" FROM "m2m_account_member_role"`).
+		WithArgs(memberID).
+		WillReturnRows(sqlmock.NewRows([]string{"role_id"}))
+
+	userObj, accountObj, err := s.accountRepo.GetByToken(s.Ctx, accessToken)
+
+	s.NoError(err)
+	s.NotNil(userObj)
+	s.NotNil(accountObj)
+	s.Equal(userID, userObj.GetID())
+	s.Equal(accountID, accountObj.GetID())
+	s.Equal("user@example.com", userObj.GetEmail())
+	s.Equal("Test Account", accountObj.Title)
+	s.NotNil(accountObj.Permissions)
+}
+
 func TestAccountSuite(t *testing.T) {
 	suite.Run(t, &testSuite{})
 }

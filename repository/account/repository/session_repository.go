@@ -130,37 +130,37 @@ func (r *sessionRepository[TUser, TAccount]) GetByToken(ctx context.Context, tok
 		accObj        = r.EmptyObject()
 		zeroUser      TUser
 		zeroAcc       TAccount
-		member        = r.newMember()
+		memberBase    models.MemberBase
 		memberRequest = `WITH auth_client AS (` +
 			`  SELECT user_id, account_id FROM ` + (*authclientModels.AuthClient)(nil).TableName() + ` WHERE id = (` +
 			`    SELECT client_id FROM ` + (*authclientModels.AuthSession)(nil).TableName() + ` WHERE deleted_at IS NULL AND access_token=?` +
 			`  )` +
 			`)` +
-			`SELECT am.* FROM ` + member.TableName() + ` AS am, auth_client AS ac` +
+			`SELECT am.* FROM ` + (&memberBase).TableName() + ` AS am, auth_client AS ac` +
 			` WHERE am.deleted_at IS NULL AND am.account_id=ac.account_id AND am.user_id=ac.user_id`
 	)
 
-	if err = db.Raw(memberRequest, token).Scan(member).Error; err != nil {
+	if err = db.Raw(memberRequest, token).Scan(&memberBase).Error; err != nil {
 		return zeroUser, zeroAcc, errors.WithStack(err)
 	}
-	if err = db.First(userObj, member.UserID).Error; err != nil {
+	if err = db.First(userObj, memberBase.UserID).Error; err != nil {
 		return zeroUser, zeroAcc, errors.WithStack(err)
 	}
-	if err = db.First(accObj, member.AccountID).Error; err != nil {
+	if err = db.First(accObj, memberBase.AccountID).Error; err != nil {
 		return zeroUser, zeroAcc, errors.WithStack(err)
 	}
 
 	err = db.Model(&models.M2MAccountMemberRole{}).
-		Select("role_id").Where(`member_id=?`, member.ID).Scan(&roles).Error
+		Select("role_id").Where(`member_id=?`, memberBase.ID).Scan(&roles).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return zeroUser, zeroAcc, errors.WithStack(err)
 	}
 
-	if len(roles) > 0 || member.IsAdmin {
+	if len(roles) > 0 || memberBase.IsAdmin {
 		userApprove := getApprove(userObj)
 		accApprove := getApprove(accObj)
 		if accApprove.IsApproved() && userApprove.IsApproved() {
-			perm, perr := r.PermissionManager(ctx).AsOneRole(ctx, member.IsAdmin, nil, roles...)
+			perm, perr := r.PermissionManager(ctx).AsOneRole(ctx, memberBase.IsAdmin, nil, roles...)
 			if perr != nil {
 				return zeroUser, zeroAcc, perr
 			}

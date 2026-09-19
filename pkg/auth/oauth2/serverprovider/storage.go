@@ -204,9 +204,69 @@ func (s *DatabaseStorage) DeletePKCERequestSession(ctx context.Context, code str
 	return s.invalidateSession(ctx, code, `access_token`)
 }
 
-// CreateAccessTokenSession updates session values
+// CreateAccessTokenSession updates the existing session with the access token
+// signature. During authorization_code grant flow, fosite reuses the request_id
+// from the authorize step, so we must UPDATE the existing session instead of
+// INSERTing a duplicate (which would violate idx_auth_session_uniq_request_id).
 func (s *DatabaseStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
 	ctxlogger.Get(ctx).Debug("CreateAccessTokenSession", zap.String("access_token", signature))
+	
+	// Try to find existing session by request_id (from authorize step)
+	var session authclient.AuthSession
+	err := s.db.Where(`request_id=?`, request.GetID()).Order(`id DESC`).Take(&session).Error
+	
+	if err == nil {
+		// Session exists - update it with the new access token
+		var (
+			sessionObj = request.GetSession()
+			userID     = GetContextTargetUserID(ctx)
+			clientObj  = GetContextTargetClient(ctx)
+		)
+		
+		if userID > 0 && clientObj != nil && clientObj.UserID != userID {
+			return fosite.ErrInvalidClient.WithHint("Check session user")
+		}
+		
+		// Update the session with the new access token and related fields
+		updates := map[string]interface{}{
+			"access_token":             signature,
+			"form":                     request.GetRequestForm().Encode(),
+			"requested_scope":          gosql.NullableStringArray(request.GetRequestedScopes()),
+			"granted_scope":            gosql.NullableStringArray(request.GetGrantedScopes()),
+			"requested_audience":       gosql.NullableStringArray(request.GetRequestedAudience()),
+			"granted_audience":         gosql.NullableStringArray(request.GetGrantedAudience()),
+			"access_token_expires_at":  sessionObj.GetExpiresAt(fosite.AccessToken),
+			"refresh_token_expires_at": sessionObj.GetExpiresAt(fosite.RefreshToken),
+		}
+		
+		err = s.db.Model(&authclient.AuthSession{}).Where(`id=?`, session.ID).Updates(updates).Error
+		if err != nil {
+			return errors.Wrap(err, "update session with access token")
+		}
+		
+		// Update session object for cache
+		session.AccessToken = signature
+		session.Form = request.GetRequestForm().Encode()
+		session.RequestedScope = gosql.NullableStringArray(request.GetRequestedScopes())
+		session.GrantedScope = gosql.NullableStringArray(request.GetGrantedScopes())
+		session.RequestedAudience = gosql.NullableStringArray(request.GetRequestedAudience())
+		session.GrantedAudience = gosql.NullableStringArray(request.GetGrantedAudience())
+		session.AccessTokenExpiresAt = sessionObj.GetExpiresAt(fosite.AccessToken)
+		session.RefreshTokenExpiresAt = sessionObj.GetExpiresAt(fosite.RefreshToken)
+		
+		// Update cache with new access token signature as key
+		if cacheErr := s.cache.Set(ctx, s.sessCacheKey(signature), &session, s.cacheLifetime); cacheErr != nil {
+			ctxlogger.Get(ctx).Error("update session cache", zap.Error(cacheErr))
+		}
+		
+		return nil
+	}
+	
+	// No existing session found (or error) - fall back to creating new session
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		ctxlogger.Get(ctx).Warn("lookup existing session for access token", zap.Error(err))
+	}
+	
 	return s.newSession(ctx, signature, request)
 }
 
