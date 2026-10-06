@@ -11,6 +11,9 @@ type Usecase interface {
 	// Get retrieves a single option by name, type, and target ID.
 	Get(ctx context.Context, name string, otype OptionType, targetID uint64) (*Option, error)
 
+	// GetOneOfType retrieves a single option by name and the first matching target pair.
+	GetOneOfType(ctx context.Context, name string, targetPairs []TargetPair) (*Option, error)
+
 	// FetchList retrieves a list of options filtered, ordered, and paginated according to the parameters.
 	FetchList(ctx context.Context, opts ...QOption) ([]*Option, error)
 

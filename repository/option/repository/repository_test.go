@@ -62,6 +62,56 @@ func (s *testSuite) TestGetDefault() {
 	}
 }
 
+func (s *testSuite) TestGetOneOfTypeEmptyPairs() {
+	got, err := s.testRepo.GetOneOfType(s.Ctx, "opt.name", nil)
+	s.Nil(got)
+	s.EqualError(err, "option target pairs are required")
+}
+
+func (s *testSuite) TestGetOneOfTypeSingleRow() {
+	s.Mock.ExpectQuery("SELECT *").
+		WithArgs(models.AccountOptionType, uint64(5), models.UserOptionType, uint64(1), "opt.name").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}).
+				AddRow(models.UserOptionType, uint64(1), "opt.name", `{"val":1}`, time.Now()),
+		)
+	got, err := s.testRepo.GetOneOfType(s.Ctx, "opt.name", []option.TargetPair{
+		{OptionType: models.AccountOptionType, TargetID: 5},
+		{OptionType: models.UserOptionType, TargetID: 1},
+	})
+	s.NoError(err)
+	s.Equal(models.UserOptionType, got.Type)
+	s.Equal(uint64(1), got.TargetID)
+}
+
+func (s *testSuite) TestGetOneOfTypePairOrder() {
+	s.Mock.ExpectQuery("SELECT *").
+		WithArgs(models.AccountOptionType, uint64(5), models.UserOptionType, uint64(1), "opt.name").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}).
+				AddRow(models.UserOptionType, uint64(1), "opt.name", `{"val":1}`, time.Now()).
+				AddRow(models.AccountOptionType, uint64(5), "opt.name", `{"val":2}`, time.Now()),
+		)
+	got, err := s.testRepo.GetOneOfType(s.Ctx, "opt.name", []option.TargetPair{
+		{OptionType: models.AccountOptionType, TargetID: 5},
+		{OptionType: models.UserOptionType, TargetID: 1},
+	})
+	s.NoError(err)
+	s.Equal(models.AccountOptionType, got.Type)
+	s.Equal(uint64(5), got.TargetID)
+}
+
+func (s *testSuite) TestGetOneOfTypeEmpty() {
+	s.Mock.ExpectQuery("SELECT *").
+		WithArgs(models.UserOptionType, uint64(1), "opt.missing").
+		WillReturnRows(sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}))
+	got, err := s.testRepo.GetOneOfType(s.Ctx, "opt.missing", []option.TargetPair{
+		{OptionType: models.UserOptionType, TargetID: 1},
+	})
+	s.NoError(err)
+	s.Nil(got)
+}
+
 func (s *testSuite) TestFetchList() {
 	s.Mock.ExpectQuery("SELECT *").
 		WithArgs("opt.name1", "opt.name2", 100).

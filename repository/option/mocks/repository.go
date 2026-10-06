@@ -110,6 +110,21 @@ func (mr *MockRepositoryMockRecorder) Get(ctx, name, otype, targetID any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), ctx, name, otype, targetID)
 }
 
+// GetOneOfType mocks base method.
+func (m *MockRepository) GetOneOfType(ctx context.Context, name string, targetPairs []option.TargetPair) (*option.Option, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOneOfType", ctx, name, targetPairs)
+	ret0, _ := ret[0].(*option.Option)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOneOfType indicates an expected call of GetOneOfType.
+func (mr *MockRepositoryMockRecorder) GetOneOfType(ctx, name, targetPairs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneOfType", reflect.TypeOf((*MockRepository)(nil).GetOneOfType), ctx, name, targetPairs)
+}
+
 // Set mocks base method.
 func (m *MockRepository) Set(ctx context.Context, opt *option.Option) error {
 	m.ctrl.T.Helper()

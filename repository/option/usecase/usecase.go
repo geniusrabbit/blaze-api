@@ -43,6 +43,30 @@ func (a *Usecase) Get(ctx context.Context, name string, otype models.OptionType,
 	return targetObj, nil
 }
 
+// GetOneOfType retrieves an option by name from the first matching target pair.
+func (a *Usecase) GetOneOfType(ctx context.Context, name string, targetPairs []option.TargetPair) (*models.Option, error) {
+	pairs := make([]option.TargetPair, len(targetPairs))
+	for i, pair := range targetPairs {
+		if pair.TargetID == 0 {
+			switch pair.OptionType {
+			case models.UserOptionType:
+				pair.TargetID = session.User(ctx).GetID()
+			case models.AccountOptionType:
+				pair.TargetID = session.AccountID(ctx)
+			}
+		}
+		pairs[i] = pair
+	}
+	targetObj, err := a.baseRepo.GetOneOfType(ctx, name, pairs)
+	if err != nil {
+		return nil, err
+	}
+	if !acl.HaveObjectPermissions(ctx, targetObj, acl.PermGet+`.*`) {
+		return nil, acl.ErrNoPermissions.WithMessage("get")
+	}
+	return targetObj, nil
+}
+
 // FetchList retrieves a list of options filtered and ordered with permission checks
 func (a *Usecase) FetchList(ctx context.Context, opts ...option.QOption) ([]*models.Option, error) {
 	if !acl.HaveAccessList(ctx, &models.Option{}) {

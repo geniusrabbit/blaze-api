@@ -55,6 +55,31 @@ func (r *Repository) Get(ctx context.Context, name string, otype models.OptionTy
 	return object, nil
 }
 
+// GetOneOfType returns the first option that matches a target pair, in slice order.
+func (r *Repository) GetOneOfType(ctx context.Context, name string, targetPairs []option.TargetPair) (*models.Option, error) {
+	if len(targetPairs) == 0 {
+		return nil, errors.New("option target pairs are required")
+	}
+
+	list, err := r.FetchList(ctx, &option.Filter{Name: []string{name}, TargetPairs: targetPairs})
+	if err != nil || len(list) == 0 {
+		return nil, err
+	}
+
+	if len(list) == 1 {
+		return list[0], nil
+	}
+
+	for _, pair := range targetPairs {
+		for _, obj := range list {
+			if obj.Type == pair.OptionType && obj.TargetID == pair.TargetID {
+				return obj, nil
+			}
+		}
+	}
+	return list[0], nil
+}
+
 // FetchList returns list of
 func (r *Repository) FetchList(ctx context.Context, opts ...option.QOption) ([]*models.Option, error) {
 	var (

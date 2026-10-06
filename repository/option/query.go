@@ -2,6 +2,7 @@ package option
 
 import (
 	"bytes"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -13,6 +14,7 @@ import (
 type Filter struct {
 	Type        []optionModels.OptionType
 	TargetID    []uint64
+	TargetPairs []TargetPair
 	Name        []string
 	NamePattern []string
 }
@@ -27,6 +29,17 @@ func (fl *Filter) PrepareQuery(q *gorm.DB) *gorm.DB {
 	}
 	if len(fl.TargetID) > 0 {
 		q = q.Where(`target_id IN (?)`, fl.TargetID)
+	}
+	if len(fl.TargetPairs) == 1 {
+		q = q.Where(fl.TargetPairs[0].OptionType, fl.TargetPairs[0].TargetID)
+	} else if len(fl.TargetPairs) > 0 {
+		conds := make([]string, len(fl.TargetPairs))
+		args := make([]any, 0, len(fl.TargetPairs)*2)
+		for i, pair := range fl.TargetPairs {
+			conds[i] = `(type=? AND target_id=?)`
+			args = append(args, pair.OptionType, pair.TargetID)
+		}
+		q = q.Where(`(`+strings.Join(conds, ` OR `)+`)`, args...)
 	}
 	if len(fl.Name) > 0 {
 		q = q.Where(`name IN (?)`, fl.Name)
