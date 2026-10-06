@@ -6,8 +6,12 @@ import (
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
+	"github.com/geniusrabbit/blaze-api/pkg/sysops"
 	"github.com/go-faster/errors"
 )
+
+// AutoApproveOption is an option to automatically approve a new object
+const AutoApproveOption = "new_object.auto_approve"
 
 // Usecase provides a generic business logic layer with ACL (Access Control List) support
 // for CRUD operations on entities of type T with ID type TID.
@@ -88,7 +92,11 @@ func (u *Usecase[T, TID]) Create(ctx context.Context, obj *T, opts ...Option) (i
 		return id, acl.ErrNoPermissions.WithMessage("create")
 	}
 	// New entities start in Pending status (no-op for models without approval workflow).
-	setModelApproveStatus(obj, pkgModels.PendingApproveStatus)
+	if sysops.Get(ctx, AutoApproveOption).Bool() {
+		setModelApproveStatus(obj, pkgModels.ApprovedApproveStatus)
+	} else {
+		setModelApproveStatus(obj, pkgModels.PendingApproveStatus)
+	}
 	return u.Repo.Create(ctx, obj, opts...)
 }
 
