@@ -21,27 +21,30 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
-	"github.com/geniusrabbit/blaze-api/repository/user"
+	userpkg "github.com/geniusrabbit/blaze-api/repository/user"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
-var errInvalidAccountTarget = errors.New(`invalid account target`)
+var (
+	errInvalidAccountTarget  = errors.New(`invalid account target`)
+	errAuthorizationRequired = errors.New("authorization required")
+)
 
 // LoginPasswordAuth is the interface for username/password login.
-type LoginPasswordAuth[T user.Model] interface {
+type LoginPasswordAuth[T userpkg.Model] interface {
 	Login(ctx context.Context, login, password string) (T, error)
 }
 
 // emailPasswordLogin adapts separate email + password repositories into LoginPasswordAuth.
-type emailPasswordLogin[T user.AuthCapableModel] struct {
-	email    user.EmailRepository[T]
-	password user.PasswordRepository[T]
+type emailPasswordLogin[T userpkg.AuthCapableModel] struct {
+	email    userpkg.EmailRepository[T]
+	password userpkg.PasswordRepository[T]
 }
 
 // NewEmailPasswordLogin creates a LoginPasswordAuth from separate email and password repositories.
-func NewEmailPasswordLogin[T user.AuthCapableModel](
-	email user.EmailRepository[T],
-	password user.PasswordRepository[T],
+func NewEmailPasswordLogin[T userpkg.AuthCapableModel](
+	email userpkg.EmailRepository[T],
+	password userpkg.PasswordRepository[T],
 ) LoginPasswordAuth[T] {
 	return &emailPasswordLogin[T]{email: email, password: password}
 }
@@ -57,14 +60,14 @@ func (l *emailPasswordLogin[T]) Login(ctx context.Context, login, pass string) (
 
 // Resolver exposes the login mutation for consumers that extend the schema
 // with account_login/login.graphql.
-type Resolver[TUser user.Model, TAccount account.Model] struct {
+type Resolver[TUser userpkg.Model, TAccount account.Model] struct {
 	provider    *jwt.Provider
 	userLogin   LoginPasswordAuth[TUser]
 	accountRepo account.SessionRepository[TUser, TAccount]
 }
 
 // New wraps an existing AuthResolver to serve the login mutation.
-func New[TUser user.Model, TAccount account.Model](
+func New[TUser userpkg.Model, TAccount account.Model](
 	provider *jwt.Provider,
 	userLogin LoginPasswordAuth[TUser],
 	accountRepo account.SessionRepository[TUser, TAccount],
@@ -83,6 +86,9 @@ func (r *Resolver[TUser, TAccount]) Login(ctx context.Context, login, password s
 	user, err := r.userLogin.Login(ctx, login, password)
 	if err != nil {
 		return nil, err
+	}
+	if userpkg.SessionRejected(user) {
+		return nil, errAuthorizationRequired
 	}
 
 	acc, err := r.accountForUser(ctx, user, accID)

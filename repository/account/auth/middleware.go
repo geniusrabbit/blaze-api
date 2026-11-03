@@ -9,11 +9,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
-	"github.com/geniusrabbit/blaze-api/repository/user"
+	userpkg "github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 // Middleware returns an HTTP handler that performs authorization checks on incoming requests.
-func Middleware[TUser user.Model, TAccount account.Model](
+func Middleware[TUser userpkg.Model, TAccount account.Model](
 	next http.Handler,
 	loader *Loader[TUser, TAccount],
 	authorizers ...auth.Authorizer[TUser, TAccount],
@@ -26,6 +26,10 @@ func Middleware[TUser user.Model, TAccount account.Model](
 		token, user, acc, err := authWrap.Authorize(w, r)
 		if err != nil {
 			ctxlogger.Get(ctx).Error("authorize", zap.Error(err))
+			unauthorized(w)
+			return
+		}
+		if userpkg.SessionRejected(user) {
 			unauthorized(w)
 			return
 		}
