@@ -55,6 +55,9 @@ func (r *AuthResolver[TUser, TAccount]) Logout(ctx context.Context) (bool, error
 
 // SwitchAccount is the resolver for the switchAccount field.
 func (r *AuthResolver[TUser, TAccount]) SwitchAccount(ctx context.Context, id uint64) (*gqlmodels.SessionToken, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	userObj := session.User(ctx)
 	if userObj == nil || userObj.IsAnonymous() {
 		return nil, errUserIsNotAuthorized

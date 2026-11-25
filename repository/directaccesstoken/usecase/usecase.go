@@ -13,6 +13,21 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/directaccesstoken/models"
 )
 
+var (
+	// ErrTokenForAnotherUser is returned when a token is generated for another user without directaccesstoken.create.all.
+	ErrTokenForAnotherUser = errors.New("generating an access token for another user requires directaccesstoken.create.all")
+	// ErrTokenWithoutUser is returned when a token is generated outside a user session.
+	ErrTokenWithoutUser = errors.New("an access token must belong to a user")
+)
+
+type tokenScope int
+
+const (
+	scopeOwner tokenScope = iota
+	scopeAccount
+	scopeAll
+)
+
 // Usecase handles business logic for direct access tokens.
 type Usecase struct {
 	repo directaccesstoken.Repository
@@ -24,12 +39,16 @@ func New(repo directaccesstoken.Repository) *Usecase {
 }
 
 // Get retrieves a direct access token by ID with permission checks.
+// Without the account or all cover only the session user's tokens are visible.
 func (u *Usecase) Get(ctx context.Context, id uint64) (*models.DirectAccessToken, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	accToken, err := u.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if !acl.HaveAccessView(ctx, accToken) {
+	if !acl.HaveAccessView(ctx, accToken) || !tokenInScope(ctx, accToken, scopeFor(ctx, acl.PermView)) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "get access token")
 	}
 	return accToken, nil
@@ -37,30 +56,45 @@ func (u *Usecase) Get(ctx context.Context, id uint64) (*models.DirectAccessToken
 
 // FetchList retrieves a filtered and paginated list of direct access tokens.
 func (u *Usecase) FetchList(ctx context.Context, opts ...directaccesstoken.QOption) ([]*models.DirectAccessToken, error) {
-	if !acl.HaveAccessList(ctx, &models.DirectAccessToken{}) {
-		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list access tokens")
-		}
-		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
 	}
-	return u.repo.FetchList(ctx, opts...)
+	if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
+		return nil, errors.Wrap(acl.ErrNoPermissions, "list access tokens")
+	}
+	return u.repo.FetchList(ctx, scopedOptions(ctx, opts, scopeFor(ctx, acl.PermList))...)
 }
 
 // Count returns the total count of direct access tokens matching the filter.
 func (u *Usecase) Count(ctx context.Context, opts ...directaccesstoken.QOption) (int64, error) {
-	if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{}) {
-		if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
-			return 0, errors.Wrap(acl.ErrNoPermissions, "count access tokens")
-		}
-		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return 0, err
 	}
-	return u.repo.Count(ctx, opts...)
+	if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
+		return 0, errors.Wrap(acl.ErrNoPermissions, "count access tokens")
+	}
+	return u.repo.Count(ctx, scopedOptions(ctx, opts, scopeFor(ctx, acl.PermCount))...)
 }
 
 // Generate creates a new direct access token.
+// The token belongs to the session user unless userID names another user,
+// which requires directaccesstoken.create.all.
 func (u *Usecase) Generate(ctx context.Context, userID, accountID uint64, description string, expiresAt time.Time) (*models.DirectAccessToken, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
+	sessionUserID := session.UserID(ctx)
+	if sessionUserID == 0 {
+		return nil, ErrTokenWithoutUser
+	}
+	if userID == 0 {
+		userID = sessionUserID
+	}
+	if userID != sessionUserID && scopeFor(ctx, acl.PermCreate) != scopeAll {
+		return nil, ErrTokenForAnotherUser
+	}
 	if !acl.HaveAccessCreate(ctx, &models.DirectAccessToken{
-		UserID:    sql.Null[uint64]{V: userID, Valid: userID > 0},
+		UserID:    sql.Null[uint64]{V: userID, Valid: true},
 		AccountID: accountID,
 	}) {
 		return nil, errors.Wrap(acl.ErrNoPermissions, "generate access token")
@@ -69,12 +103,48 @@ func (u *Usecase) Generate(ctx context.Context, userID, accountID uint64, descri
 }
 
 // Revoke revokes direct access tokens matching the filter criteria.
+// Without directaccesstoken.delete.account or .all only the session user's tokens are revoked.
 func (u *Usecase) Revoke(ctx context.Context, opts ...directaccesstoken.QOption) error {
-	if !acl.HaveAccessDelete(ctx, &models.DirectAccessToken{}) {
-		if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
-			return errors.Wrap(acl.ErrNoPermissions, "revoke access tokens")
-		}
-		opts, _ = directaccesstoken.ListOptions(opts).WithPermissions(ctx, &directaccesstoken.Filter{})
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return err
 	}
-	return u.repo.Revoke(ctx, opts...)
+	accountToken := &models.DirectAccessToken{AccountID: session.AccountID(ctx)}
+	if !acl.HaveAccessDelete(ctx, accountToken) && !acl.HaveAccessList(ctx, accountToken) {
+		return errors.Wrap(acl.ErrNoPermissions, "revoke access tokens")
+	}
+	return u.repo.Revoke(ctx, scopedOptions(ctx, opts, scopeFor(ctx, acl.PermDelete))...)
+}
+
+func scopeFor(ctx context.Context, action string) tokenScope {
+	resource := &models.DirectAccessToken{}
+	switch {
+	case acl.HaveObjectPermissions(ctx, resource, action+".all"):
+		return scopeAll
+	case acl.HaveObjectPermissions(ctx, resource, action+".account"):
+		return scopeAccount
+	}
+	return scopeOwner
+}
+
+func scopedOptions(ctx context.Context, opts []directaccesstoken.QOption, scope tokenScope) []directaccesstoken.QOption {
+	switch scope {
+	case scopeAll:
+		return opts
+	case scopeAccount:
+		return append(opts, &directaccesstoken.Filter{AccountID: []uint64{session.AccountID(ctx)}})
+	}
+	return append(opts, &directaccesstoken.Filter{
+		AccountID: []uint64{session.AccountID(ctx)},
+		UserID:    []uint64{session.UserID(ctx)},
+	})
+}
+
+func tokenInScope(ctx context.Context, token *models.DirectAccessToken, scope tokenScope) bool {
+	switch scope {
+	case scopeAll:
+		return true
+	case scopeAccount:
+		return token.AccountID == session.AccountID(ctx)
+	}
+	return token.AccountID == session.AccountID(ctx) && token.UserID.Valid && token.UserID.V == session.UserID(ctx)
 }

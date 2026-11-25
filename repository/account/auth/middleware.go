@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -23,9 +24,13 @@ func Middleware[TUser userpkg.Model, TAccount account.Model](
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		token, user, acc, err := authWrap.Authorize(w, r)
+		authorizerCode, token, user, acc, err := authWrap.AuthorizeWithCode(w, r)
 		if err != nil {
 			ctxlogger.Get(ctx).Error("authorize", zap.Error(err))
+			if errors.Is(err, auth.ErrAuthorizationUnavailable) {
+				unavailable(w)
+				return
+			}
 			unauthorized(w)
 			return
 		}
@@ -39,9 +44,16 @@ func Middleware[TUser userpkg.Model, TAccount account.Model](
 		if any(user) == any(zeroUser) && any(acc) == any(zeroAcc) {
 			ctx = session.WithAnonymousUserAccount(ctx)
 		} else {
+			crossAccountHeader := r.Header.Get(session.CrossAuthHeader)
+			if crossAccountHeader != "" && authorizerCode == session.AuthorizerCodeDirectToken {
+				ctxlogger.Get(ctx).Error("cross account connect is not allowed for API key sessions")
+				unauthorized(w)
+				return
+			}
+
 			// Example:
 			// Header: auth.cross.account = AccountID[:UserID]
-			user, acc, err = loader.CrossAccountConnect(ctx, r.Header.Get(session.CrossAuthHeader), user, acc)
+			user, acc, err = loader.CrossAccountConnect(ctx, crossAccountHeader, user, acc)
 			if err != nil {
 				ctxlogger.Get(ctx).Error("cross account connect", zap.Error(err))
 				unauthorized(w)
@@ -49,20 +61,29 @@ func Middleware[TUser userpkg.Model, TAccount account.Model](
 			}
 
 			if any(acc) != any(zeroAcc) {
-				if any(user) != any(zeroUser) && !loader.Members.IsMember(ctx, user.GetID(), acc.GetID()) {
-					ctxlogger.Get(ctx).Error("user is not a member of the account")
-					unauthorized(w)
-					return
+				if any(user) != any(zeroUser) {
+					isMember, err := loader.CheckMembership(ctx, user.GetID(), acc.GetID())
+					if err != nil {
+						ctxlogger.Get(ctx).Error("membership check", zap.Error(err))
+						unavailable(w)
+						return
+					}
+					if !isMember {
+						ctxlogger.Get(ctx).Error("user is not a member of the account")
+						unauthorized(w)
+						return
+					}
 				}
 
 				if err = loader.Accounts.LoadPermissions(ctx, acc, user); err != nil {
 					ctxlogger.Get(ctx).Error("load permissions", zap.Error(err))
-					unauthorized(w)
+					unavailable(w)
 					return
 				}
 			}
 
 			ctx = session.WithUserAccount(ctx, user, acc)
+			ctx = session.WithAuthorizerCode(ctx, authorizerCode)
 		}
 
 		next.ServeHTTP(w, r.WithContext(session.WithToken(ctx, token)))
@@ -74,4 +95,11 @@ func unauthorized(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
 	_, _ = w.Write([]byte(`{"errors":[{"message":"Unauthorized","code":401}]}`))
+}
+
+// unavailable writes an HTTP 503 Service Unavailable response with a JSON error message.
+func unavailable(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusServiceUnavailable)
+	_, _ = w.Write([]byte(`{"errors":[{"message":"Service Unavailable","code":503}]}`))
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/user"
@@ -34,6 +35,9 @@ func NewMemberQueryResolver[TUser user.Model, TAccount account.Model, TGQLAccoun
 
 // Invite is the resolver for the inviteAccountMember field.
 func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Invite(ctx context.Context, accountID uint64, member *models.InviteMemberInput) (*models.MemberPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	accountMember, err := r.members.InviteMember(ctx, accountID, member.UserID, InviteMemberAllRoles(member)...)
 	if err != nil {
 		return nil, err
@@ -47,6 +51,9 @@ func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Invite(ctx context.C
 
 // Update is the resolver for the updateAccountMember field.
 func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Update(ctx context.Context, memberID uint64, member *models.MemberInput) (*models.MemberPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	accountMember, err := r.members.SetMemberRoles(ctx, memberID, MemberAllRoles(member)...)
 	if err != nil {
 		return nil, err
@@ -60,6 +67,9 @@ func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Update(ctx context.C
 
 // Remove is the resolver for the removeAccountMember field.
 func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Remove(ctx context.Context, memberID uint64) (*models.MemberPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	err := r.members.UnlinkAccountMember(ctx, memberID)
 	if err != nil {
 		return nil, err
@@ -72,11 +82,17 @@ func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Remove(ctx context.C
 
 // ApproveAccountMember is the resolver for the approveAccountMember field.
 func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Approve(ctx context.Context, memberID uint64, msg string) (*models.MemberPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	panic(fmt.Errorf("not implemented: ApproveAccountMember - approveAccountMember"))
 }
 
 // Reject is the resolver for the rejectAccountMember field.
 func (r *MemberQueryResolver[TUser, TAccount, TGQLAccount]) Reject(ctx context.Context, memberID uint64, msg string) (*models.MemberPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	panic(fmt.Errorf("not implemented: RejectAccountMember - rejectAccountMember"))
 }
 

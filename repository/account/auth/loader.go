@@ -3,15 +3,17 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 )
 
 var (
-	// errAuthUserIsNotMemberOfAccount is returned when a user is not a member of the target account
-	errAuthUserIsNotMemberOfAccount = errors.New("user is not a member of the account")
+	// ErrUserIsNotMemberOfAccount is returned when a user is not a member of the target account
+	ErrUserIsNotMemberOfAccount = errors.New("user is not a member of the account")
 	// errNoCrossAuthPermission is returned when a user lacks cross-account authentication permissions
 	errNoCrossAuthPermission = errors.New("user don't have cross auth permissions")
 )
@@ -34,6 +36,20 @@ func NewLoader[TUser user.Model, TAccount account.Model](
 		Accounts: accounts,
 		Members:  members,
 	}
+}
+
+// CheckMembership reports whether the user is a member of the account.
+// A failed query is returned wrapped in auth.ErrAuthorizationUnavailable,
+// so it is not mistaken for "not a member".
+func (l *Loader[TUser, TAccount]) CheckMembership(ctx context.Context, userID, accountID uint64) (bool, error) {
+	count, err := l.Members.CountMembers(ctx, &account.MemberFilter{
+		UserID:    []uint64{userID},
+		AccountID: []uint64{accountID},
+	})
+	if err != nil {
+		return false, fmt.Errorf("%w: membership check: %w", auth.ErrAuthorizationUnavailable, err)
+	}
+	return count > 0, nil
 }
 
 // UserAccountByID retrieves and validates a user and account by their IDs, ensuring proper permissions.
@@ -63,8 +79,14 @@ func (l *Loader[TUser, TAccount]) UserAccountByID(ctx context.Context, uID, accI
 	}
 
 	if any(account) != any(zeroAcc) {
-		if any(userObj) != any(zeroUser) && !l.Members.IsMember(ctx, userObj.GetID(), account.GetID()) {
-			return zeroUser, zeroAcc, errAuthUserIsNotMemberOfAccount
+		if any(userObj) != any(zeroUser) {
+			isMember, err := l.CheckMembership(ctx, userObj.GetID(), account.GetID())
+			if err != nil {
+				return zeroUser, zeroAcc, err
+			}
+			if !isMember {
+				return zeroUser, zeroAcc, ErrUserIsNotMemberOfAccount
+			}
 		}
 
 		if any(prevAccount) != any(zeroAcc) && prevAccount.GetID() != account.GetID() &&

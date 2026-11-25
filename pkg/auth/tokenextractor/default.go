@@ -2,6 +2,7 @@ package tokenextractor
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/ory/fosite"
 
@@ -17,4 +18,13 @@ func DefaultExtractor(r *http.Request) (string, error) {
 		token = state.Get(`access_token`)
 	}
 	return token, nil
+}
+
+// AuthorizationHeaderExtractor reads the token from the `Authorization: Bearer` header only.
+func AuthorizationHeaderExtractor(r *http.Request) (string, error) {
+	scheme, token, found := strings.Cut(strings.TrimSpace(r.Header.Get("Authorization")), " ")
+	if !found || !strings.EqualFold(scheme, "Bearer") {
+		return "", nil
+	}
+	return strings.TrimSpace(token), nil
 }

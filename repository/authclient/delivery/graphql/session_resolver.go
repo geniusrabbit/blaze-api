@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	authclientrepo "github.com/geniusrabbit/blaze-api/repository/authclient/repository"
 	authclientusecase "github.com/geniusrabbit/blaze-api/repository/authclient/usecase"
@@ -54,6 +55,9 @@ func (r *SessionQueryResolver) ListAuthSessions(
 
 // DeleteAuthSession is the resolver for the deleteAuthSession field.
 func (r *SessionQueryResolver) DeleteAuthSession(ctx context.Context, id uint64) (*gqlmodels.AuthSession, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	sess, err := r.sessions.Get(ctx, id)
 	if err != nil {
 		return nil, err

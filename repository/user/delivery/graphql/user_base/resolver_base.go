@@ -94,6 +94,9 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdat
 // UpdateUser is the resolver for the updateUser field.
 func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) UpdateUser(ctx context.Context, id uint64, input TGQLUserUpdateInput) (TGQLUserPayload, error) {
 	var zero TGQLUserPayload
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return zero, err
+	}
 	userObj, err := r.core.Get(ctx, id)
 	if err != nil {
 		return zero, err
@@ -107,11 +110,19 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdat
 
 // ApproveUser is the resolver for the approveUser field.
 func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ApproveUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		var zero TGQLUserPayload
+		return zero, err
+	}
 	return r.updateApproveStatus(ctx, id, pkgModels.ApprovedApproveStatus, msg)
 }
 
 // RejectUser is the resolver for the rejectUser field.
 func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdateInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) RejectUser(ctx context.Context, id uint64, msg *string) (TGQLUserPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		var zero TGQLUserPayload
+		return zero, err
+	}
 	return r.updateApproveStatus(ctx, id, pkgModels.DisapprovedApproveStatus, msg)
 }
 

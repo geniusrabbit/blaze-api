@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
@@ -78,6 +79,9 @@ func (r *QueryResolverPassword[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload
 
 // ChangeUserPassword is the resolver for the changeUserPassword field.
 func (r *QueryResolverPassword[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) ChangeUserPassword(ctx context.Context, currentPassword, newPassword string) (*gqlmodels.StatusResponse, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	err := r.password.ChangePassword(ctx, currentPassword, newPassword)
 	if err != nil {
 		switch {

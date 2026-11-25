@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
@@ -55,6 +56,9 @@ func (r *QueryResolver) ListAuthClients(ctx context.Context,
 
 // CreateAuthClient is the resolver for the createAuthClient field.
 func (r *QueryResolver) CreateAuthClient(ctx context.Context, input *gqlmodels.AuthClientCreateInput) (*gqlmodels.AuthClientPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	// Create and fill model from input
 	clientObj := CreateFillModel(input, &models.AuthClient{})
 
@@ -75,6 +79,9 @@ func (r *QueryResolver) CreateAuthClient(ctx context.Context, input *gqlmodels.A
 
 // UpdateAuthClient is the resolver for the updateAuthClient field.
 func (r *QueryResolver) UpdateAuthClient(ctx context.Context, id string, input *gqlmodels.AuthClientUpdateInput) (*gqlmodels.AuthClientPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	clientObj, err := r.authClients.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -94,6 +101,9 @@ func (r *QueryResolver) UpdateAuthClient(ctx context.Context, id string, input *
 
 // DeleteAuthClient is the resolver for the deleteAuthClient field.
 func (r *QueryResolver) DeleteAuthClient(ctx context.Context, id string, msg *string) (*gqlmodels.AuthClientPayload, error) {
+	if err := session.DenyDirectTokenSession(ctx); err != nil {
+		return nil, err
+	}
 	if err := r.authClients.Delete(ctx, id, historylog.Message("GQL delete authclient")); err != nil {
 		return nil, err
 	}
