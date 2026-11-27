@@ -59,9 +59,6 @@ migrate: build-migrate ## Migrate migrations and fixtures
 	- $(DOCKER_COMPOSE) run --rm migration
 	- $(DOCKER_COMPOSE) run --rm migration-fixtures
 
-.PHONY: dev-migrate
-dev-migrate: build-migrate ## Migrate development migrations and fixtures
-	$(DOCKER_COMPOSE) run --rm dev-migration
 
 .PHONY: db-cli
 db-cli: ## Open development database

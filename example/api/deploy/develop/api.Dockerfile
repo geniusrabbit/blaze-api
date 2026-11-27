@@ -8,9 +8,11 @@ LABEL maintainer="Dmitry Ponomarev <demdxx@gmail.com>"
 LABEL service.name=geniusrabbit.api-template
 
 ENV SERVER_HTTP_LISTEN=:8080
-ENV SERVER_GRPC_LISTEN=tcp://:8081
 ENV SERVER_PROFILE_MODE=net
-ENV SERVER_PROFILE_LISTEN=8082
+# Development image: pprof is published on 6060 by docker-compose.
+# In production keep it on localhost or turn SERVER_PROFILE_MODE off.
+ENV SERVER_PROFILE_LISTEN=:6060
+ENV MIGRATIONS_DIR=/data/migrations
 
 COPY example/api/.build/${TARGETPLATFORM}/api /api
 COPY ./deploy/migrations /data/migrations

@@ -14,9 +14,10 @@ services:
       POSTGRES_DB: ${DATABASE_DB}
       POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
 
+  # The same migrations and tables the API applies on start (MIGRATE_ON_START)
   migration:
     image: github.com/geniusrabbit/blaze-api:migrate-latest
-    command: '-path "/migrations/prod/" -database "${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}" up'
+    command: '-path "/migrations/initial/" -database "${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}&x-migrations-table=schema_migrations_initial" up'
     depends_on: [ api-template-db ]
 
   migration-fixtures:
@@ -24,10 +25,8 @@ services:
     command: '-path "/migrations/fixtures/" -database "${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}&x-migrations-table=schema_migrations_fixtures" up'
     depends_on: [ api-template-db ]
 
-  migration-dev:
-    image: github.com/geniusrabbit/blaze-api:migrate-latest
-    command: '-path "/migrations/dev/" -database ${SYSTEM_STORAGE_DATABASE_MASTER_CONNECT}&x-migrations-table=schema_migrations_dev up'
-    depends_on: [ api-template-db ]
+  # Trait migrations (deploy/migrations/traits) have no version prefixes: the
+  # API image numbers the chosen ones (see api.Dockerfile) and applies them.
 
   # Alternative to migration/migration-fixtures above: applies the combined
   # declarative Atlas "app" schema (see docs/MIGRATIONS.md and

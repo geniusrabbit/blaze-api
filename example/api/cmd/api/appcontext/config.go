@@ -43,7 +43,7 @@ type serverConfig struct {
 	} `json:"graphql" yaml:"graphql"`
 	Profile struct {
 		Mode   string `json:"mode" yaml:"mode" default:"net" env:"SERVER_PROFILE_MODE"`
-		Listen string `json:"listen" yaml:"listen" default:"" env:"SERVER_PROFILE_LISTEN"`
+		Listen string `json:"listen" yaml:"listen" default:"localhost:6060" env:"SERVER_PROFILE_LISTEN"`
 	} `json:"profile" yaml:"profile"`
 }
 
@@ -196,6 +196,11 @@ type ConfigType struct {
 	// Never enable it in production.
 	Debug      bool   `json:"debug" default:"false" env:"DEBUG"`
 	LogEncoder string `json:"log_encoder" env:"LOG_ENCODER"`
+
+	// MigrationsDir holds the initial/, fixtures/ and traits/ SQL migrations
+	MigrationsDir string `json:"migrations_dir" yaml:"migrations_dir" env:"MIGRATIONS_DIR" default:"/data/migrations"`
+	// MigrateOnStart applies the migrations when the API starts
+	MigrateOnStart bool `json:"migrate_on_start" yaml:"migrate_on_start" env:"MIGRATE_ON_START" default:"true"`
 
 	Server      serverConfig     `json:"server" yaml:"server"`
 	Session     sessionConfig    `json:"session" yaml:"session"`

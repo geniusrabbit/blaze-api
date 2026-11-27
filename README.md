@@ -47,6 +47,7 @@ make run-api
 
 # API is available at http://localhost:8581
 # GraphQL playground: http://localhost:8581/
+# Liveness / readiness: http://localhost:8581/healthcheck, http://localhost:8581/readiness
 # Prometheus metrics: http://localhost:8581/metrics
 # pprof profiler:     http://localhost:8583/debug/pprof/
 ```

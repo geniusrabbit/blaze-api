@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/demdxx/gocast/v2"
@@ -58,22 +59,21 @@ func init() {
 		// Secrets are masked by ConfigType.String
 		fmt.Println(conf)
 	}
+}
 
-	// Migrate database schemas
-	fatalError(migratedb.Migrate(context.Background(), conf.System.Storage.MasterConnect, []migratedb.MigrateSource{
-		{
-			URI:                   []string{"file:///data/migrations/initial"},
-			SchemaMigrationsTable: "schema_migrations_initial",
-		},
-		{
-			URI:                   []string{"file:///data/migrations/fixtures"},
-			SchemaMigrationsTable: "schema_migrations_fixtures",
-		},
-		{
-			URI:                   []string{"file:///data/migrations/traits"},
-			SchemaMigrationsTable: "schema_migrations_traits",
-		},
-	}), "migrate database")
+// migrate applies the SQL migrations from conf.MigrationsDir. It runs in main,
+// after the logger is set up; golang-migrate takes a database lock, so
+// replicas starting together don't run the same migration twice.
+func migrate(ctx context.Context, conf *appcontext.ConfigType) error {
+	dir := strings.TrimSuffix(conf.MigrationsDir, "/")
+	sources := make([]migratedb.MigrateSource, 0, 3)
+	for _, name := range []string{"initial", "fixtures", "traits"} {
+		sources = append(sources, migratedb.MigrateSource{
+			URI:                   []string{"file://" + dir + "/" + name},
+			SchemaMigrationsTable: "schema_migrations_" + name,
+		})
+	}
+	return migratedb.Migrate(ctx, conf.System.Storage.MasterConnect, sources)
 }
 
 func initZapLogger() *zap.Logger {
@@ -106,9 +106,15 @@ func main() {
 		Date:    buildDate,
 	})
 
+	// Migrate database schemas
+	if conf.MigrateOnStart {
+		fatalError(migrate(ctx, conf), "migrate database")
+	}
+
 	// Profiling server of collector
-	profiler.Run(conf.Server.Profile.Mode,
+	stopProfiler := profiler.Run(conf.Server.Profile.Mode,
 		conf.Server.Profile.Listen, loggerObj, true)
+	defer stopProfiler()
 
 	// Establich connect to the database
 	masterDatabase, slaveDatabase, err := database.ConnectMasterSlave(ctx,
@@ -156,6 +162,10 @@ func main() {
 				MaxAliases:    conf.Server.GraphQL.MaxAliases,
 				Introspection: conf.Server.GraphQL.Introspection,
 			},
+		},
+		ReadinessChecks: []profiler.Check{
+			profiler.DatabaseCheck("master", masterDatabase),
+			profiler.DatabaseCheck("slave", slaveDatabase),
 		},
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
