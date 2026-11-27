@@ -2,9 +2,11 @@ package graphql
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/messanger"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
@@ -44,21 +46,34 @@ func (r *PasswordResetQueryResolver[T]) ResetUserPassword(ctx context.Context, e
 		}, nil
 	}
 
+	// The answer is the same whether the email is registered or not, so the
+	// mutation can't be used to find out which emails have accounts.
+	sentResponse := &gqlmodels.StatusResponse{
+		ClientMutationID: requestid.Get(ctx),
+		Status:           gqlmodels.ResponseStatusSuccess,
+		Message:          &[]string{"If the email is registered, a password reset link has been sent"}[0],
+	}
+
 	userObj, err := r.email.GetByEmail(ctx, email)
+	if errors.Is(err, acl.ErrNoPermissions) {
+		ctxlogger.Get(ctx).Info("Reset password: user is not accessible")
+		return sentResponse, nil
+	}
 	if err != nil {
 		return nil, err
 	}
 	var zero T
 	if any(userObj) == any(zero) || userObj.GetID() == 0 {
-		ctxlogger.Get(ctx).Info("User not found for reset password", zap.String("email", email))
-		return &gqlmodels.StatusResponse{
-			ClientMutationID: requestid.Get(ctx),
-			Status:           gqlmodels.ResponseStatusSuccess,
-			Message:          &[]string{"Password reset link sent to " + email}[0],
-		}, nil
+		ctxlogger.Get(ctx).Info("Reset password: user not found")
+		return sentResponse, nil
 	}
 
-	pswReset, userObj, err := r.password.ResetPassword(ctx, userObj.GetID())
+	userID := userObj.GetID()
+	pswReset, userObj, err := r.password.ResetPassword(ctx, userID)
+	if errors.Is(err, acl.ErrNoPermissions) {
+		ctxlogger.Get(ctx).Info("Reset password: not allowed for the user", zap.Uint64("user_id", userID))
+		return sentResponse, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +98,7 @@ func (r *PasswordResetQueryResolver[T]) ResetUserPassword(ctx context.Context, e
 		}
 	}
 
-	return &gqlmodels.StatusResponse{
-		ClientMutationID: requestid.Get(ctx),
-		Status:           gqlmodels.ResponseStatusSuccess,
-		Message:          &[]string{"Password reset link sent to " + email}[0],
-	}, nil
+	return sentResponse, nil
 }
 
 // UpdateUserPassword is the resolver for the updateUserPassword field.
@@ -98,6 +109,10 @@ func (r *PasswordResetQueryResolver[T]) UpdateUserPassword(ctx context.Context, 
 // UpdateResetedUserPassword completes password reset with token.
 func (r *PasswordResetQueryResolver[T]) UpdateResetedUserPassword(ctx context.Context, token, email, password string) (*gqlmodels.StatusResponse, error) {
 	userObj, err := r.email.GetByEmail(ctx, email)
+	if errors.Is(err, acl.ErrNoPermissions) {
+		// Same answer as for an unknown email or a wrong token
+		return nil, userusecase.ErrInvalidPasswordResetCode
+	}
 	if err != nil {
 		return nil, err
 	}
