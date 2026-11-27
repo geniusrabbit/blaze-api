@@ -23,10 +23,24 @@ import (
 
 type serverConfig struct {
 	HTTP struct {
-		Listen       string        `default:":8080" field:"listen" json:"listen" yaml:"listen" cli:"http-listen" env:"SERVER_HTTP_LISTEN"`
-		ReadTimeout  time.Duration `default:"120s" field:"read_timeout" json:"read_timeout" yaml:"read_timeout" env:"SERVER_HTTP_READ_TIMEOUT"`
-		WriteTimeout time.Duration `default:"120s" field:"write_timeout" json:"write_timeout" yaml:"write_timeout" env:"SERVER_HTTP_WRITE_TIMEOUT"`
+		Listen string `default:":8080" field:"listen" json:"listen" yaml:"listen" cli:"http-listen" env:"SERVER_HTTP_LISTEN"`
+		// Read/WriteTimeout limit the whole request; 0 keeps them off because
+		// they also cut long-lived GraphQL websocket subscriptions.
+		ReadTimeout       time.Duration `default:"0s" field:"read_timeout" json:"read_timeout" yaml:"read_timeout" env:"SERVER_HTTP_READ_TIMEOUT"`
+		WriteTimeout      time.Duration `default:"0s" field:"write_timeout" json:"write_timeout" yaml:"write_timeout" env:"SERVER_HTTP_WRITE_TIMEOUT"`
+		ReadHeaderTimeout time.Duration `default:"10s" field:"read_header_timeout" json:"read_header_timeout" yaml:"read_header_timeout" env:"SERVER_HTTP_READ_HEADER_TIMEOUT"`
+		IdleTimeout       time.Duration `default:"120s" field:"idle_timeout" json:"idle_timeout" yaml:"idle_timeout" env:"SERVER_HTTP_IDLE_TIMEOUT"`
+		ShutdownTimeout   time.Duration `default:"30s" field:"shutdown_timeout" json:"shutdown_timeout" yaml:"shutdown_timeout" env:"SERVER_HTTP_SHUTDOWN_TIMEOUT"`
+		MaxBodySize       int64         `default:"10485760" field:"max_body_size" json:"max_body_size" yaml:"max_body_size" env:"SERVER_HTTP_MAX_BODY_SIZE"`
+		// CORSOrigins is a comma-separated list of allowed origins (see middleware.CORSConfig)
+		CORSOrigins string `default:"" field:"cors_origins" json:"cors_origins" yaml:"cors_origins" env:"SERVER_HTTP_CORS_ORIGINS"`
 	}
+	GraphQL struct {
+		MaxComplexity int  `default:"1000" json:"max_complexity" yaml:"max_complexity" env:"GRAPHQL_MAX_COMPLEXITY"`
+		MaxDepth      int  `default:"12" json:"max_depth" yaml:"max_depth" env:"GRAPHQL_MAX_DEPTH"`
+		MaxAliases    int  `default:"30" json:"max_aliases" yaml:"max_aliases" env:"GRAPHQL_MAX_ALIASES"`
+		Introspection bool `default:"false" json:"introspection" yaml:"introspection" env:"GRAPHQL_INTROSPECTION"`
+	} `json:"graphql" yaml:"graphql"`
 	Profile struct {
 		Mode   string `json:"mode" yaml:"mode" default:"net" env:"SERVER_PROFILE_MODE"`
 		Listen string `json:"listen" yaml:"listen" default:"" env:"SERVER_PROFILE_LISTEN"`
@@ -176,8 +190,11 @@ type ConfigType struct {
 	Hostname       string `json:"hostname" yaml:"hostname" env:"HOSTNAME"`
 	Hostcode       string `json:"hostcode" yaml:"hostcode" env:"HOSTCODE"`
 
-	LogAddr    string `json:"log_addr" default:"" env:"LOG_ADDR"`
-	LogLevel   string `json:"log_level" default:"debug" env:"LOG_LEVEL"`
+	LogAddr  string `json:"log_addr" default:"" env:"LOG_ADDR"`
+	LogLevel string `json:"log_level" default:"info" env:"LOG_LEVEL"`
+	// Debug enables development features (the dev token authorizer, config dump).
+	// Never enable it in production.
+	Debug      bool   `json:"debug" default:"false" env:"DEBUG"`
 	LogEncoder string `json:"log_encoder" env:"LOG_ENCODER"`
 
 	Server      serverConfig     `json:"server" yaml:"server"`
@@ -189,19 +206,65 @@ type ConfigType struct {
 	Permissions permissionConfig `json:"permissions" yaml:"permissions"`
 }
 
-// String implementation of Stringer interface
+// String implementation of Stringer interface.
+// Secrets (passwords, client secrets, tokens, connection strings) are masked.
 func (cfg *ConfigType) String() (res string) {
-	if data, err := json.MarshalIndent(cfg, "", "  "); err != nil {
-		res = `{"error":"` + err.Error() + `"}`
-	} else {
-		res = string(data)
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return `{"error":"` + err.Error() + `"}`
 	}
-	return res
+	var tree any
+	if err = json.Unmarshal(data, &tree); err != nil {
+		return `{"error":"` + err.Error() + `"}`
+	}
+	if data, err = json.MarshalIndent(redactSecrets(tree), "", "  "); err != nil {
+		return `{"error":"` + err.Error() + `"}`
+	}
+	return string(data)
 }
 
-// IsDebug mode
+// secretKeyParts mark config keys whose values must never be printed.
+var secretKeyParts = []string{"secret", "password", "token", "connect", "dsn", "key"}
+
+func redactSecrets(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		for k, item := range val {
+			lk := strings.ToLower(k)
+			secret := false
+			for _, part := range secretKeyParts {
+				secret = secret || strings.Contains(lk, part)
+			}
+			if s, ok := item.(string); secret && ok {
+				if s != "" {
+					val[k] = "***"
+				}
+				continue
+			}
+			val[k] = redactSecrets(item)
+		}
+	case []any:
+		for i := range val {
+			val[i] = redactSecrets(val[i])
+		}
+	}
+	return v
+}
+
+// IsDebug mode, enabled explicitly with DEBUG=true
 func (cfg *ConfigType) IsDebug() bool {
-	return strings.EqualFold(cfg.LogLevel, "debug")
+	return cfg.Debug
+}
+
+// CORSOrigins returns the allowed CORS origins.
+func (cfg *ConfigType) CORSOrigins() []string {
+	var origins []string
+	for _, o := range strings.Split(cfg.Server.HTTP.CORSOrigins, ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			origins = append(origins, o)
+		}
+	}
+	return origins
 }
 
 // Config global value

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -24,6 +25,7 @@ import (
 	accAuth "github.com/geniusrabbit/blaze-api/repository/account/auth"
 	"github.com/geniusrabbit/blaze-api/repository/option/repository"
 	"github.com/geniusrabbit/blaze-api/repository/option/usecase"
+	"github.com/geniusrabbit/blaze-api/server/graphql/limits"
 )
 
 type (
@@ -31,9 +33,21 @@ type (
 	muxInitWrapper func(mux *chi.Mux)
 )
 
+// Config of the HTTP server limits. Zero durations are off.
+type Config struct {
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	ReadHeaderTimeout time.Duration
+	IdleTimeout       time.Duration
+	ShutdownTimeout   time.Duration
+	MaxBodySize       int64
+	CORS              middleware.CORSConfig
+	GraphQLLimits     limits.Config
+}
+
 // HTTPServer wrapper object
 type HTTPServer struct {
-	RequestTimeout time.Duration
+	Config         Config
 	ContextWrap    contextWrapper
 	InitWrap       muxInitWrapper
 	Authorizers    []auth.Authorizer[*domain.User, *domain.Account]
@@ -45,9 +59,10 @@ type HTTPServer struct {
 }
 
 // Run starts a HTTP server and blocks while running if successful.
-// The server will be shutdown when "ctx" is canceled.
+// The server is shut down gracefully when "ctx" is canceled: Run returns
+// after in-flight requests finish or Config.ShutdownTimeout passes.
 func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
-	s.Logger.Info("Start balance HTTP API: " + address)
+	s.Logger.Info("Start HTTP API: " + address)
 
 	mux := chi.NewRouter()
 	mux.With(basicauth.NewFromEnv("Graph", "GRAPHQL_USERS_")).
@@ -55,7 +70,8 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,
-		usecase.NewUsecase(repository.NewOptionRepository(nil)), s.GraphqlOptions...))
+		usecase.NewUsecase(repository.NewOptionRepository(nil)),
+		s.Config.GraphQLLimits, s.Config.MaxBodySize, s.GraphqlOptions...))
 
 	if s.InitWrap != nil {
 		s.InitWrap(mux)
@@ -67,24 +83,45 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	h = accAuth.Middleware(h, s.AuthLoader, s.Authorizers...)
 	h = middleware.HTTPContextWrapper(h, s.ContextWrap)
 	h = middleware.HTTPSession(h, s.SessionManager)
+	h = middleware.MaxBodySize(h, s.Config.MaxBodySize)
+	h = middleware.Recover(h)
 	h = middleware.RealIP(h)
-	h = middleware.AllowCORS(h)
+	h = middleware.CORS(h, s.Config.CORS)
 	h = middleware.RequestID(h)
 	h = nethttp.Middleware(opentracing.GlobalTracer(), h)
 
-	srv := &http.Server{Addr: address, Handler: h}
+	srv := &http.Server{
+		Addr:              address,
+		Handler:           h,
+		ReadTimeout:       s.Config.ReadTimeout,
+		WriteTimeout:      s.Config.WriteTimeout,
+		ReadHeaderTimeout: s.Config.ReadHeaderTimeout,
+		IdleTimeout:       s.Config.IdleTimeout,
+		MaxHeaderBytes:    1 << 20,
+	}
+
+	shutdownDone := make(chan struct{})
 	go func() {
+		defer close(shutdownDone)
 		<-ctx.Done()
 		s.Logger.Info("Shutting down the http server")
-		if err := srv.Shutdown(context.Background()); err != nil {
+		shutdownCtx := context.Background()
+		if s.Config.ShutdownTimeout > 0 {
+			var cancel context.CancelFunc
+			shutdownCtx, cancel = context.WithTimeout(shutdownCtx, s.Config.ShutdownTimeout)
+			defer cancel()
+		}
+		if err := srv.Shutdown(shutdownCtx); err != nil {
 			s.Logger.Error("Failed to shutdown http server", zap.Error(err))
 		}
 	}()
 
 	s.Logger.Info(fmt.Sprintf("Starting listening at %s", address))
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		s.Logger.Error("Failed to listen and serve", zap.Error(err))
 		return err
 	}
+	// Wait for in-flight requests before returning
+	<-shutdownDone
 	return nil
 }
