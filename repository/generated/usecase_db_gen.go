@@ -110,8 +110,9 @@ func (u *Usecase[T, TID]) Update(ctx context.Context, id TID, obj *T, opts ...Op
 		return err
 	}
 
-	// Check if user has update permissions for the existing entity
-	if !acl.HaveAccessUpdate(ctx, existingObj) {
+	// Check update permissions for the existing entity and for the new values
+	// (e.g. moving the object to another account)
+	if !acl.HaveAccessUpdate(ctx, existingObj) || !acl.HaveAccessUpdate(ctx, obj) {
 		return acl.ErrNoPermissions.WithMessage("update")
 	}
 	return u.Repo.Update(ctx, id, obj, opts...)
