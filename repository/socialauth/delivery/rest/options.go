@@ -2,10 +2,13 @@ package rest
 
 import (
 	"context"
+	"time"
 
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
+	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
+	accauth "github.com/geniusrabbit/blaze-api/repository/account/auth"
 	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
 	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 	"github.com/geniusrabbit/blaze-api/repository/user"
@@ -25,6 +28,64 @@ func WithSuccessRedirectURL(url string) Option {
 	return func(w *Oauth2Wrapper) {
 		w.successRedirectURL = url
 	}
+}
+
+// WithAllowedRedirectURLs sets the redirect targets the `redirect` login
+// parameter may point to. Each entry is an absolute URL: a target is allowed
+// when its scheme and host match and its path starts with the entry path.
+// Relative paths (starting with a single "/") are always allowed. The origins
+// of the success and error redirect URLs are allowed implicitly.
+func WithAllowedRedirectURLs(urls ...string) Option {
+	return func(w *Oauth2Wrapper) {
+		w.allowedRedirects = append(w.allowedRedirects, urls...)
+	}
+}
+
+// WithStateSecret sets the secret used to sign the OAuth2 state (at least 16
+// bytes). By default it is derived from the session provider secret.
+func WithStateSecret(secret string) Option {
+	return func(w *Oauth2Wrapper) {
+		w.stateSecret = []byte(secret)
+	}
+}
+
+// WithStateLifetime sets how long a started login stays valid (15 minutes by default).
+func WithStateLifetime(ttl time.Duration) Option {
+	return func(w *Oauth2Wrapper) {
+		w.stateTTL = ttl
+	}
+}
+
+// WithLinkSession enables linking a social account to an already logged-in
+// user. The login request must then be authenticated with the Authorization
+// header (use `?response=json` to get the provider URL from a fetch request).
+// On callback, fn restores the session of that user from the signed state.
+func WithLinkSession(fn func(ctx context.Context, userID, accountID uint64) (context.Context, error)) Option {
+	return func(w *Oauth2Wrapper) {
+		w.linkSession = fn
+	}
+}
+
+// WithLinkSessionLoader is WithLinkSession backed by the auth loader, with the
+// same membership and permission checks as the auth middleware.
+func WithLinkSessionLoader[TUser user.Model, TAccount account.Model](loader *accauth.Loader[TUser, TAccount]) Option {
+	return WithLinkSession(func(ctx context.Context, userID, accountID uint64) (context.Context, error) {
+		var (
+			zeroUser TUser
+			zeroAcc  TAccount
+		)
+		userObj, accountObj, err := loader.UserAccountByID(ctx, userID, accountID, zeroUser, zeroAcc)
+		if err != nil {
+			return ctx, err
+		}
+		if any(userObj) == any(zeroUser) || userObj.GetID() != userID || user.SessionRejected(userObj) {
+			return ctx, errLinkUserRejected
+		}
+		if any(accountObj) == any(zeroAcc) {
+			return session.WithUserAccount(ctx, userObj, nil), nil
+		}
+		return session.WithUserAccount(ctx, userObj, accountObj), nil
+	})
 }
 
 // WithSocialAuthUsecase sets the social auth usecase

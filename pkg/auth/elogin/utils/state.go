@@ -63,6 +63,9 @@ func (s State) Extend(key, value string) State {
 }
 
 // Encode serializes the State to a base64-encoded BSON string.
+//
+// Deprecated: the value is neither signed nor bound to the browser, so it
+// gives no CSRF protection. Use StateCodec for OAuth2 states.
 func (s State) Encode() string {
 	sort.Sort(s)
 	data := make(bson.D, 0, len(s))
@@ -74,6 +77,8 @@ func (s State) Encode() string {
 }
 
 // DecodeState deserializes a base64-encoded BSON string back into a State.
+//
+// Deprecated: the decoded value is attacker controlled. Use StateCodec.Decode.
 func DecodeState(s string) State {
 	srcData, _ := base64.URLEncoding.DecodeString(s)
 	var data bson.M

@@ -191,6 +191,7 @@ func main() {
 				mux.Handle("/auth/facebook/*",
 					rest.NewWrapper(facebook.NewFacebookConfig(oa2conf),
 						rest.WithSessionProvider(jwtProvider),
+						rest.WithLinkSessionLoader(deps.AuthLoader),
 						rest.WithAccountResolver(func(ctx context.Context, filter *account.Filter) ([]*domain.Account, error) {
 							return deps.AccountRepo.FetchList(ctx, filter)
 						}),
