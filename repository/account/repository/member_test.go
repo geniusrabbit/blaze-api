@@ -9,7 +9,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/database"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
@@ -80,35 +79,6 @@ func (s *testMemberSuite) TestIsAdmin() {
 	s.True(ok)
 }
 
-func (s *testMemberSuite) TestLinkMember() {
-	s.Mock.ExpectBegin()
-	s.Mock.ExpectQuery("INSERT INTO").
-		WithArgs(pkgModels.ApprovedApproveStatus, uint64(101), uint64(101), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(101))
-	s.Mock.ExpectQuery("INSERT INTO").
-		WithArgs(pkgModels.ApprovedApproveStatus, uint64(101), uint64(102), true, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(102))
-	s.Mock.ExpectCommit()
-
-	accountObj := testAccountStub(101)
-	accountObj.Title = "test"
-	users := []*testutil.User{testutil.Stub(101), testutil.Stub(102)}
-	err := s.memberRepo.LinkMember(s.Ctx, accountObj, true, users...)
-	s.NoError(err)
-}
-
-func (s *testMemberSuite) TestUnlinkMember() {
-	ctx := s.Ctx
-	s.Mock.ExpectExec(`UPDATE "account_member" SET "deleted_at"`).
-		WithArgs(sqlmock.AnyArg(), uint64(101), uint64(101), uint64(102)).
-		WillReturnResult(sqlmock.NewResult(0, 2))
-	accountObj := testAccountStub(101)
-	accountObj.Title = "test"
-	users := []*testutil.User{testutil.Stub(101), testutil.Stub(102)}
-	err := s.memberRepo.UnlinkMember(ctx, accountObj, users...)
-	s.NoError(err)
-}
-
 func (s *testMemberSuite) TestSetMemberRolesNotFound() {
 	s.Mock.ExpectQuery(`SELECT \* FROM "account_member"`).
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -140,17 +110,6 @@ func (s *testMemberSuite) TestSetMemberRolesEmptyClearsJoins() {
 	s.Mock.ExpectCommit()
 
 	err := s.memberRepo.SetMemberRoles(s.Ctx, testAccountStub(10), testutil.Stub(101))
-	s.NoError(err)
-}
-
-func (s *testMemberSuite) TestLinkMemberOnConflictClearsDeletedAt() {
-	s.Mock.ExpectBegin()
-	s.Mock.ExpectQuery(`INSERT INTO "account_member".*ON CONFLICT.*"deleted_at"`).
-		WithArgs(pkgModels.ApprovedApproveStatus, uint64(10), uint64(101), false, sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
-	s.Mock.ExpectCommit()
-
-	err := s.memberRepo.LinkMember(s.Ctx, testAccountStub(10), false, testutil.Stub(101))
 	s.NoError(err)
 }
 

@@ -2,7 +2,10 @@ package usecase
 
 import (
 	"context"
-	"slices"
+
+	"gorm.io/gorm"
+
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/account"
@@ -136,11 +139,15 @@ func (a *MemberUsecase[TUser, TAccount]) InviteMember(ctx context.Context, accou
 		return nil, err
 	}
 
-	// Link member to account and set roles
-	if err = a.memberRepo.LinkMember(ctx, accountObj, slices.Contains(roles, "admin"), usr); err != nil {
-		return nil, err
-	}
-	if err = a.memberRepo.SetMemberRoles(ctx, accountObj, usr, roles...); err != nil {
+	// Link the member and set the roles in one transaction: a failure in
+	// SetMemberRoles must not leave a member without the requested roles.
+	err = database.ContextTransactionExec(ctx, func(ctx context.Context, _ *gorm.DB) error {
+		if err := a.memberRepo.LinkMember(ctx, accountObj, account.HasAdminRole(roles...), usr); err != nil {
+			return err
+		}
+		return a.memberRepo.SetMemberRoles(ctx, accountObj, usr, roles...)
+	})
+	if err != nil {
 		return nil, err
 	}
 	member, err := a.memberRepo.Member(ctx, usr.GetID(), accountObj.GetID())
