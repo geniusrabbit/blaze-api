@@ -12,6 +12,7 @@ package accountlogin
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/demdxx/gocast/v2"
@@ -22,6 +23,8 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	userpkg "github.com/geniusrabbit/blaze-api/repository/user"
+	"github.com/geniusrabbit/blaze-api/repository/user/password"
+	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -49,14 +52,35 @@ func NewEmailPasswordLogin[T userpkg.AuthCapableModel](
 	return &emailPasswordLogin[T]{email: email, password: password}
 }
 
+// Login checks the email and password. An unknown email and a wrong password
+// give the same ErrInvalidCredentials, and an unknown email still runs a
+// password hash check, so neither the answer nor its timing tells whether
+// the email is registered.
 func (l *emailPasswordLogin[T]) Login(ctx context.Context, login, pass string) (T, error) {
+	var zero T
 	userObj, err := l.email.GetByEmail(ctx, login)
 	if err != nil {
-		var zero T
 		return zero, err
 	}
-	return l.password.GetByPassword(ctx, userObj.GetID(), pass)
+	if gocast.IsNil(userObj) || userObj.GetID() == 0 {
+		_ = password.ComparePasswords(dummyPasswordHash(), []byte(pass))
+		return zero, ErrInvalidCredentials
+	}
+	userObj, err = l.password.GetByPassword(ctx, userObj.GetID(), pass)
+	if errors.Is(err, userrepo.ErrInvalidPassword) || errors.Is(err, repository.ErrNotFound) {
+		return zero, ErrInvalidCredentials
+	}
+	return userObj, err
 }
+
+// ErrInvalidCredentials is returned for an unknown email or a wrong password.
+var ErrInvalidCredentials = errors.New("invalid email or password")
+
+// dummyPasswordHash is checked against for unknown emails to equalize timing.
+var dummyPasswordHash = sync.OnceValue(func() string {
+	hash, _ := password.PasswordHash([]byte("blaze-api: no such user"))
+	return hash
+})
 
 // Resolver exposes the login mutation for consumers that extend the schema
 // with account_login/login.graphql.
