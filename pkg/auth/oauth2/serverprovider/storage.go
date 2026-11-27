@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/gosql/v2"
 	"github.com/guregu/null"
 	"github.com/ory/fosite"
@@ -20,6 +22,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/user"
+	userrepo "github.com/geniusrabbit/blaze-api/repository/user/repository"
 )
 
 type cacher interface {
@@ -60,7 +63,7 @@ func (s *DatabaseStorage) GetClient(ctx context.Context, id string) (fosite.Clie
 		clientObj authclient.AuthClient
 		err       = s.fromCacheOrSelect(ctx, s.clientCacheKey(id), &clientObj, "id = ?", id)
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, fosite.ErrNotFound) {
 		return nil, fosite.ErrNotFound
 	}
 	if err != nil {
@@ -143,24 +146,24 @@ func pkceRequestID(requestID string) string {
 // duplicate (which would violate the UNIQUE(access_token) constraint).
 func (s *DatabaseStorage) CreatePKCERequestSession(ctx context.Context, code string, request fosite.Requester) error {
 	ctxlogger.Get(ctx).Debug("CreatePKCERequestSession", zap.String("access_token", code))
-	
+
 	// Try to update existing session by access_token
 	var (
 		session *authclient.AuthSession
 		err     error
 	)
-	
+
 	session, err = s.getAuthSession(ctx, code, `access_token`)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, fosite.ErrNotFound) {
 		return errors.Wrap(err, "lookup existing session")
 	}
-	
+
 	// If session exists, update it with PKCE data
 	if session != nil {
 		// Merge PKCE parameters into the form
 		existingForm, _ := url.ParseQuery(session.Form)
 		newForm := request.GetRequestForm()
-		
+
 		// Merge code_challenge and code_challenge_method
 		if cc := newForm.Get("code_challenge"); cc != "" {
 			existingForm.Set("code_challenge", cc)
@@ -168,22 +171,22 @@ func (s *DatabaseStorage) CreatePKCERequestSession(ctx context.Context, code str
 		if ccm := newForm.Get("code_challenge_method"); ccm != "" {
 			existingForm.Set("code_challenge_method", ccm)
 		}
-		
+
 		// Update the session
 		session.Form = existingForm.Encode()
 		err = s.db.Model(&authclient.AuthSession{}).Where(`id=?`, session.ID).Update(`form`, session.Form).Error
 		if err != nil {
 			return errors.Wrap(err, "update session with PKCE data")
 		}
-		
+
 		// Update cache
 		if cacheErr := s.cache.Set(ctx, s.sessCacheKey(code), session, s.cacheLifetime); cacheErr != nil {
 			ctxlogger.Get(ctx).Error("update session cache", zap.Error(cacheErr))
 		}
-		
+
 		return nil
 	}
-	
+
 	// Edge case: no existing session, create a new one
 	return s.newSessionWithRequestID(ctx, code, request, pkceRequestID(request.GetID()))
 }
@@ -198,10 +201,16 @@ func (s *DatabaseStorage) GetPKCERequestSession(ctx context.Context, code string
 	return s.toRequest(ctx, sess)
 }
 
-// DeletePKCERequestSession action
+// DeletePKCERequestSession is a no-op.
+//
+// The PKCE data lives in the authorize code session row. Fosite calls this
+// method while handling the token request, before the authorize code handler
+// reads the code again, so invalidating the row here would make that read
+// look like a code replay. The code becomes unusable once the access token
+// session replaces it (CreateAccessTokenSession) or it is invalidated.
 func (s *DatabaseStorage) DeletePKCERequestSession(ctx context.Context, code string) error {
-	ctxlogger.Get(ctx).Debug("DeletePKCERequestSession", zap.String("access_token", code))
-	return s.invalidateSession(ctx, code, `access_token`)
+	ctxlogger.Get(ctx).Debug("DeletePKCERequestSession")
+	return nil
 }
 
 // CreateAccessTokenSession updates the existing session with the access token
@@ -210,11 +219,11 @@ func (s *DatabaseStorage) DeletePKCERequestSession(ctx context.Context, code str
 // INSERTing a duplicate (which would violate idx_auth_session_uniq_request_id).
 func (s *DatabaseStorage) CreateAccessTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
 	ctxlogger.Get(ctx).Debug("CreateAccessTokenSession", zap.String("access_token", signature))
-	
+
 	// Try to find existing session by request_id (from authorize step)
 	var session authclient.AuthSession
 	err := s.db.Where(`request_id=?`, request.GetID()).Order(`id DESC`).Take(&session).Error
-	
+
 	if err == nil {
 		// Session exists - update it with the new access token
 		var (
@@ -222,14 +231,15 @@ func (s *DatabaseStorage) CreateAccessTokenSession(ctx context.Context, signatur
 			userID     = GetContextTargetUserID(ctx)
 			clientObj  = GetContextTargetClient(ctx)
 		)
-		
+
 		if userID > 0 && clientObj != nil && clientObj.UserID != userID {
 			return fosite.ErrInvalidClient.WithHint("Check session user")
 		}
-		
+
 		// Update the session with the new access token and related fields
 		updates := map[string]interface{}{
 			"access_token":             signature,
+			"active":                   true,
 			"form":                     request.GetRequestForm().Encode(),
 			"requested_scope":          gosql.NullableStringArray(request.GetRequestedScopes()),
 			"granted_scope":            gosql.NullableStringArray(request.GetGrantedScopes()),
@@ -238,14 +248,15 @@ func (s *DatabaseStorage) CreateAccessTokenSession(ctx context.Context, signatur
 			"access_token_expires_at":  sessionObj.GetExpiresAt(fosite.AccessToken),
 			"refresh_token_expires_at": sessionObj.GetExpiresAt(fosite.RefreshToken),
 		}
-		
+
 		err = s.db.Model(&authclient.AuthSession{}).Where(`id=?`, session.ID).Updates(updates).Error
 		if err != nil {
 			return errors.Wrap(err, "update session with access token")
 		}
-		
+
 		// Update session object for cache
 		session.AccessToken = signature
+		session.Active = true
 		session.Form = request.GetRequestForm().Encode()
 		session.RequestedScope = gosql.NullableStringArray(request.GetRequestedScopes())
 		session.GrantedScope = gosql.NullableStringArray(request.GetGrantedScopes())
@@ -253,20 +264,20 @@ func (s *DatabaseStorage) CreateAccessTokenSession(ctx context.Context, signatur
 		session.GrantedAudience = gosql.NullableStringArray(request.GetGrantedAudience())
 		session.AccessTokenExpiresAt = sessionObj.GetExpiresAt(fosite.AccessToken)
 		session.RefreshTokenExpiresAt = sessionObj.GetExpiresAt(fosite.RefreshToken)
-		
+
 		// Update cache with new access token signature as key
 		if cacheErr := s.cache.Set(ctx, s.sessCacheKey(signature), &session, s.cacheLifetime); cacheErr != nil {
 			ctxlogger.Get(ctx).Error("update session cache", zap.Error(cacheErr))
 		}
-		
+
 		return nil
 	}
-	
+
 	// No existing session found (or error) - fall back to creating new session
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		ctxlogger.Get(ctx).Warn("lookup existing session for access token", zap.Error(err))
 	}
-	
+
 	return s.newSession(ctx, signature, request)
 }
 
@@ -315,10 +326,16 @@ func (s *DatabaseStorage) GetRefreshTokenSession(ctx context.Context, signature 
 	if err != nil {
 		return nil, err
 	}
-	if sess.RefreshTokenExpiresAt.After(time.Now()) {
-		return nil, fosite.ErrTokenExpired
+	req, err := s.toRequest(ctx, sess)
+	if err != nil {
+		return req, err
 	}
-	return s.toRequest(ctx, sess)
+	// Revocation and rotation set the expiration to now, so an expired token is
+	// an inactive one; fosite needs the request together with ErrInactiveToken.
+	if !sess.RefreshTokenExpiresAt.After(time.Now()) {
+		return req, fosite.ErrInactiveToken
+	}
+	return req, nil
 }
 
 // DeleteRefreshTokenSession from database
@@ -327,17 +344,25 @@ func (s *DatabaseStorage) DeleteRefreshTokenSession(ctx context.Context, signatu
 	return s.dropSession(ctx, signature, `refresh_token`)
 }
 
-// RotateRefreshToken invalid method
-func (s *DatabaseStorage) RotateRefreshToken(ctx context.Context, requestID string, refreshTokenSignature string) (err error) {
-	ctxlogger.Get(ctx).Debug("RotateRefreshToken",
-		zap.String("request_id", requestID))
-	panic("RotateRefreshToken is not emplimented")
+// RotateRefreshToken revokes the refresh and access tokens of the request
+// before fosite issues new ones. The new tokens are then written into the same
+// session row by CreateAccessTokenSession and CreateRefreshTokenSession, which
+// replaces the old refresh token signature, so the old token can't be used again.
+func (s *DatabaseStorage) RotateRefreshToken(ctx context.Context, requestID string, refreshTokenSignature string) error {
+	ctxlogger.Get(ctx).Debug("RotateRefreshToken", zap.String("request_id", requestID))
+	if err := s.RevokeRefreshToken(ctx, requestID); err != nil {
+		return err
+	}
+	return s.dropSessionCache(ctx, refreshTokenSignature)
 }
 
-// CreateImplicitAccessTokenSession invalid method
+// ErrImplicitGrantUnsupported is returned for the implicit grant, which is not supported.
+var ErrImplicitGrantUnsupported = fosite.ErrUnsupportedResponseType.WithHint("The implicit grant is not supported.")
+
+// CreateImplicitAccessTokenSession is not supported: the implicit grant leaks
+// tokens in URLs and is removed in OAuth 2.1. Use the authorization code flow with PKCE.
 func (s *DatabaseStorage) CreateImplicitAccessTokenSession(ctx context.Context, code string, req fosite.Requester) error {
-	ctxlogger.Get(ctx).Debug("CreateImplicitAccessTokenSession", zap.String("access_token", code))
-	panic("CreateImplicitAccessTokenSession is not emplimented")
+	return ErrImplicitGrantUnsupported
 }
 
 // RevokeRefreshToken revokes a refresh token as specified in:
@@ -384,34 +409,43 @@ func (s *DatabaseStorage) RevokeAccessToken(ctx context.Context, requestID strin
 	})
 }
 
-// Authenticate user by login and secret (:password)
-func (s *DatabaseStorage) Authenticate(ctx context.Context, email string, secret string) error {
+// Authenticate user by login and secret (:password).
+// It implements the fosite resource owner password storage: unknown users and
+// wrong passwords return fosite.ErrNotFound, the subject is the user ID.
+func (s *DatabaseStorage) Authenticate(ctx context.Context, email string, secret string) (string, error) {
 	ctxlogger.Get(ctx).Debug("Authenticate")
+	if s.userAccessor == nil {
+		return "", fosite.ErrNotFound
+	}
 
 	userObj, err := s.userAccessor.GetByEmail(ctx, email)
-	if err == sql.ErrNoRows {
-		return fosite.ErrNotFound
+	if isNotFound(err) {
+		return "", fosite.ErrNotFound
 	}
-
 	if err != nil {
-		return err
+		return "", err
+	}
+	if gocast.IsNil(userObj) || userObj.GetID() == 0 {
+		return "", fosite.ErrNotFound
 	}
 
-	if userObj == nil || userObj.GetID() == 0 {
-		return fosite.ErrNotFound
+	authUser, err := s.userAccessor.GetByPassword(ctx, userObj.GetID(), secret)
+	if err != nil {
+		if isNotFound(err) || errors.Is(err, userrepo.ErrInvalidPassword) {
+			return "", fosite.ErrNotFound
+		}
+		return "", err
+	}
+	if gocast.IsNil(authUser) || authUser.GetID() != userObj.GetID() {
+		return "", fosite.ErrNotFound
 	}
 
-	user, err := s.userAccessor.GetByPassword(ctx, userObj.GetID(), secret)
-	if err == sql.ErrNoRows {
-		return fosite.ErrNotFound
-	}
+	SetContextTargetUserID(ctx, authUser.GetID())
+	return strconv.FormatUint(authUser.GetID(), 10), nil
+}
 
-	if user == nil || user.GetID() == 0 {
-		return nil
-	}
-
-	SetContextTargetUserID(ctx, user.GetID())
-	return errors.New("Invalid credentials")
+func isNotFound(err error) bool {
+	return errors.Is(err, sql.ErrNoRows) || errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, fosite.ErrNotFound)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -504,21 +538,35 @@ func (s *DatabaseStorage) getSessionCode(ctx context.Context, code, fieldName st
 }
 
 func (s *DatabaseStorage) dropSession(ctx context.Context, code, fieldName string) error {
-	err := s.db.Model((*authclient.AuthSession)(nil)).Delete(fieldName+`=?`, code).Error
-	if err == sql.ErrNoRows {
-		return fosite.ErrNotFound
-	}
-	if err != nil {
-		return errors.Wrap(err, `DeleteOpenIDConnectSession`)
-	}
-	// Drop cache data
+	// The cache key is resolved before the row is gone
 	cacheKey, err := s.getSessionCode(ctx, code, fieldName)
 	if err != nil {
 		return err
 	}
+	res := s.db.WithContext(ctx).Where(fieldName+`=?`, code).Delete(&authclient.AuthSession{})
+	if res.Error != nil {
+		return errors.Wrap(res.Error, `delete session`)
+	}
+	if res.RowsAffected == 0 {
+		return fosite.ErrNotFound
+	}
 	if cacheErr := s.cache.Del(ctx, cacheKey); cacheErr != nil {
 		ctxlogger.Get(ctx).Error(`clear session cache`,
 			zap.String(`cache_key`, cacheKey), zap.Error(cacheErr))
+	}
+	if fieldName != `access_token` {
+		_ = s.dropSessionCache(ctx, code)
+	}
+	return nil
+}
+
+// dropSessionCache removes a cached session by token signature.
+func (s *DatabaseStorage) dropSessionCache(ctx context.Context, signature string) error {
+	if signature == "" {
+		return nil
+	}
+	if err := s.cache.Del(ctx, s.sessCacheKey(signature)); err != nil && !errors.Is(err, cache.ErrEntryNotFound) {
+		ctxlogger.Get(ctx).Error(`clear session cache`, zap.Error(err))
 	}
 	return nil
 }
@@ -533,11 +581,16 @@ func (s *DatabaseStorage) invalidateSession(ctx context.Context, code, fieldName
 		ctxlogger.Get(ctx).Error("incalidate session cache",
 			zap.String(`cache_key`, cacheKey), zap.Error(err))
 	}
-	err = s.db.Model((*authclient.AuthSession)(nil)).Where(fieldName+`=? AND active=TRUE`, code).Update(`active`, true).Error
-	if err == sql.ErrNoRows {
-		return fosite.ErrNotFound
+	res := s.db.WithContext(ctx).Model((*authclient.AuthSession)(nil)).
+		Where(fieldName+`=? AND active=?`, code, true).Update(`active`, false)
+	if res.Error != nil {
+		return res.Error
 	}
-	return err
+	// Nothing was active: the code was already used (e.g. a concurrent exchange)
+	if res.RowsAffected == 0 {
+		return fosite.ErrInvalidatedAuthorizeCode
+	}
+	return nil
 }
 
 func (s *DatabaseStorage) authToSession(ctx context.Context, sessionObj *authclient.AuthSession) (_ fosite.Session, err error) {
@@ -594,18 +647,26 @@ func (s *DatabaseStorage) clientCacheKey(id string) string {
 	return "cli:" + id
 }
 
-func (s *DatabaseStorage) fromCacheOrSelect(ctx context.Context, cacheKey string, target any, args ...any) error {
-	if err := s.cache.Get(ctx, cacheKey, target); err != nil && err != cache.ErrEntryNotFound {
-		ctxlogger.Get(ctx).Error("cache load", zap.String("cache_key", cacheKey), zap.Error(err))
+// fromCacheOrSelect loads one record from the database and refreshes the cache.
+//
+// The database is always the source of truth: a cached copy must never be
+// returned for a row that is gone or changed (a rotated refresh token, for
+// example), so the cache is only written here. Not found is fosite.ErrNotFound.
+func (s *DatabaseStorage) fromCacheOrSelect(ctx context.Context, cacheKey string, target any, query string, args ...any) error {
+	err := s.db.WithContext(ctx).Where(query, args...).Take(target).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return fosite.ErrNotFound
 	}
-	err := s.db.Find(target, args...).Error
-	if err == nil {
-		err = s.cache.Set(ctx, cacheKey, target, s.cacheLifetime)
-		if err != nil {
-			ctxlogger.Get(ctx).Error("set cache", zap.String("cache_key", cacheKey), zap.Error(err))
-		}
+	if err != nil {
+		return err
 	}
-	return err
+	if err = s.cache.Set(ctx, cacheKey, target, s.cacheLifetime); err != nil {
+		ctxlogger.Get(ctx).Error("set cache", zap.String("cache_key", cacheKey), zap.Error(err))
+	}
+	return nil
 }
 
-var _ oauth2.TokenRevocationStorage = (*DatabaseStorage)(nil)
+var (
+	_ oauth2.TokenRevocationStorage                       = (*DatabaseStorage)(nil)
+	_ oauth2.ResourceOwnerPasswordCredentialsGrantStorage = (*DatabaseStorage)(nil)
+)

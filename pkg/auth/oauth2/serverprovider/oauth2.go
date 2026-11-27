@@ -16,7 +16,8 @@ func NewProvider(config *fosite.Config, store *DatabaseStorage, strat *compose.C
 		// enabled handlers
 		compose.OAuth2AuthorizeExplicitFactory,
 		compose.OAuth2PKCEFactory, // after explicit: PKCE reads the authorize code
-		compose.OAuth2AuthorizeImplicitFactory,
+		// The implicit grant is not supported (removed in OAuth 2.1): use the
+		// authorization code flow with PKCE.
 		compose.OAuth2ClientCredentialsGrantFactory,
 		compose.OAuth2RefreshTokenGrantFactory,
 		// compose.OAuth2ResourceOwnerPasswordCredentialsFactory,
