@@ -1,3 +1,4 @@
+//go:build jaeger
 // +build jaeger
 
 package gopentracing

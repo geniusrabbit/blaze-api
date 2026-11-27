@@ -1,0 +1,14 @@
+# golangci-lint v2 configuration. The version is pinned in the Makefile
+# (GOLANGCI_LINT_VERSION) and in CI, so local and CI results match.
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+  # Candidates to enable after their existing findings are fixed:
+  # errorlint (7), gosec (14), misspell (13), unconvert (3), nilerr (3)
+
+formatters:
+  enable:
+    - gofmt
