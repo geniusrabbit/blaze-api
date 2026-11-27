@@ -68,9 +68,14 @@ func (a *PasswordUsecase[T]) ChangePassword(ctx context.Context, currentPassword
 }
 
 // ResetPassword generates a password reset token for the user with access control check.
+//
+// The caller of a "forgot password" request is usually anonymous and can't
+// view the user, so the user is read without the view check; the
+// `password.reset.*` permission on the user is the access check. The token
+// goes to the user's own address, never to the caller.
 func (a *PasswordUsecase[T]) ResetPassword(ctx context.Context, userID uint64) (*user.UserPasswordReset, T, error) {
 	var zero T
-	userObj, err := a.core.Get(ctx, userID)
+	userObj, err := a.core.Get(acl.WithNoPermCheck(ctx), userID)
 	if err != nil {
 		return nil, zero, err
 	}
@@ -96,9 +101,10 @@ func (a *PasswordUsecase[T]) UpdatePassword(ctx context.Context, userID uint64, 
 	if len(password) < 8 {
 		return ErrPasswordTooShort
 	}
-	userObj, err := a.core.Get(ctx, userID)
+	// The reset token is the authorization here; the caller can't view the user
+	userObj, err := a.core.Get(acl.WithNoPermCheck(ctx), userID)
 	if err != nil {
-		if err == sql.ErrNoRows || err == gorm.ErrRecordNotFound {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrInvalidPasswordResetCode
 		}
 		return err

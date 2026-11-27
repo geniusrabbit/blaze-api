@@ -64,6 +64,12 @@ func ownedObject(ctx context.Context, obj any, usr user.Model, acc account.Model
 	case objName == "account":
 		return acc.NewWithIDs(acc.GetID(), usr.GetID())
 	case objName == "user":
+		// Build the registered user type: the session user may be another
+		// type (the anonymous session user is), and a permission check on it
+		// would never match the registered "user" resource.
+		if registered, ok := obj.(user.Model); ok {
+			return registered.NewWithID(usr.GetID())
+		}
 		return usr.NewWithID(usr.GetID())
 	}
 

@@ -75,7 +75,10 @@ func InitModelPermissions(pm *permissions.Manager, deps *Deps) {
 			rbac.WithDescription("Anonymous user role"),
 			rbac.WithPermissions(
 				`user.view.owner`, `user.list.owner`, `user.count.owner`,
-				`user.password.reset.owner`, `user.password.set.owner`, PermAccountRegister,
+				// "Forgot password": a logged-out caller requests a reset for an
+				// account it doesn't own; the link goes to that account's email
+				`user.password.reset.all`,
+				`user.password.set.owner`, PermAccountRegister,
 				`account.view.owner`, `account.list.owner`, `account.count.owner`,
 				`directaccesstoken.view.owner`, `directaccesstoken.list.owner`, `directaccesstoken.count.owner`,
 				`role.check`,

@@ -69,11 +69,6 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	mux := chi.NewRouter()
 	mux.With(basicauth.NewFromEnv("Graph", "GRAPHQL_USERS_")).
 		Handle("/playground", playground.Handler("Query console", "/graphql"))
-	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
-	if len(s.ReadinessChecks) > 0 {
-		mux.Handle("/readiness", profiler.ReadinessHandler(2*time.Second, s.ReadinessChecks...))
-	}
-	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,
 		usecase.NewUsecase(repository.NewOptionRepository(nil)),
 		s.Config.GraphQLLimits, s.Config.MaxBodySize, s.GraphqlOptions...))
@@ -94,6 +89,11 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	h = middleware.CORS(h, s.Config.CORS)
 	h = middleware.RequestID(h)
 	h = nethttp.Middleware(opentracing.GlobalTracer(), h)
+
+	// Probes and metrics don't go through sessions and authorization: they
+	// must answer while the database (used to load roles) is down, otherwise
+	// a DB outage makes the liveness probe fail and restarts the pods.
+	h = probeRouter(h, s.ReadinessChecks)
 
 	srv := &http.Server{
 		Addr:              address,
@@ -129,4 +129,22 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	// Wait for in-flight requests before returning
 	<-shutdownDone
 	return nil
+}
+
+// probeRouter serves /healthcheck (liveness), /readiness and /metrics
+// directly and passes everything else to the application handler.
+func probeRouter(app http.Handler, readiness []profiler.Check) http.Handler {
+	probes := http.NewServeMux()
+	probes.HandleFunc("/healthcheck", profiler.HealthCheckHandler)
+	if len(readiness) > 0 {
+		probes.Handle("/readiness", profiler.ReadinessHandler(2*time.Second, readiness...))
+	}
+	probes.Handle("/metrics", promhttp.Handler())
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, pattern := probes.Handler(r); pattern != "" {
+			probes.ServeHTTP(w, r)
+			return
+		}
+		app.ServeHTTP(w, r)
+	})
 }
