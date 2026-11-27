@@ -17,6 +17,22 @@ func DefaultExtractor(r *http.Request) (string, error) {
 	return fosite.AccessTokenFromRequest(r), nil
 }
 
+// HeaderOrWebsocketQuery reads the token from the `Authorization: Bearer`
+// header, or from the query parameter for websocket upgrade requests only:
+// browsers can't set headers on websocket connections. Elsewhere tokens in
+// URLs are not accepted, as they leak into access and proxy logs.
+func HeaderOrWebsocketQuery(param string) func(r *http.Request) (string, error) {
+	return func(r *http.Request) (string, error) {
+		if token, _ := AuthorizationHeaderExtractor(r); token != "" {
+			return token, nil
+		}
+		if strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
+			return r.URL.Query().Get(param), nil
+		}
+		return "", nil
+	}
+}
+
 // AuthorizationHeaderExtractor reads the token from the `Authorization: Bearer` header only.
 func AuthorizationHeaderExtractor(r *http.Request) (string, error) {
 	scheme, token, found := strings.Cut(strings.TrimSpace(r.Header.Get("Authorization")), " ")

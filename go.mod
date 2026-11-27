@@ -10,19 +10,18 @@ require (
 	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/allegro/bigcache/v3 v3.2.0
-	github.com/auth0/go-jwt-middleware v1.0.1
 	github.com/demdxx/gocast/v2 v2.12.2
 	github.com/demdxx/goconfig v1.3.1
 	github.com/demdxx/rbac v1.0.0
 	github.com/demdxx/sendmsg v0.0.0-20240126132054-834dad9e9d6e
 	github.com/demdxx/xtypes v0.3.1
 	github.com/elliotchance/redismock/v8 v8.11.1
-	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 	github.com/geniusrabbit/gosql/v2 v2.3.3
 	github.com/geniusrabbit/notificationcenter/v2 v2.5.0
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-faster/errors v0.8.0
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/guregu/null v4.0.0+incompatible
