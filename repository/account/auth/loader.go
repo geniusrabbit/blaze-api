@@ -109,14 +109,53 @@ func (l *Loader[TUser, TAccount]) UserAccountByID(ctx context.Context, uID, accI
 // CrossAccountConnect validates and connects to a cross-account context if specified via header.
 // Example:
 //
-//	CrossAuthHeader: "X-Cross-Auth"
-//	Header value: "userID:accountID" (e.g., "123:456")
+//	Header: session.CrossAuthHeader ("auth.cross.account")
+//	Value:  "AccountID[:UserID]" (e.g., "456" or "456:123")
+//
+// Switching to another account or acting as another user requires the
+// auth.cross permission of the current session, checked against the target
+// account. Sessions without an account can't switch at all. When UserID is
+// omitted, the current user is kept and must be a member of the target account.
 func (l *Loader[TUser, TAccount]) CrossAccountConnect(ctx context.Context, crossAccountID string, userObj TUser, accountObj TAccount) (TUser, TAccount, error) {
-	if crossAccountID != "" {
-		userID, accountID := session.ParseCrossAuthHeader(crossAccountID)
-		if userID > 0 || accountID > 0 {
-			return l.UserAccountByID(ctx, userID, accountID, userObj, accountObj)
+	var (
+		zeroUser TUser
+		zeroAcc  TAccount
+	)
+	if crossAccountID == "" {
+		return userObj, accountObj, nil
+	}
+
+	accountID, userID, err := session.ParseCrossAuthHeaderStrict(crossAccountID)
+	if err != nil {
+		return zeroUser, zeroAcc, err
+	}
+	if any(userObj) == any(zeroUser) || any(accountObj) == any(zeroAcc) {
+		return zeroUser, zeroAcc, errNoCrossAuthPermission
+	}
+	if userID == 0 {
+		userID = userObj.GetID()
+	}
+
+	// Nothing to switch
+	if accountID == accountObj.GetID() && userID == userObj.GetID() {
+		return userObj, accountObj, nil
+	}
+
+	targetAccount := accountObj
+	if accountID != accountObj.GetID() {
+		if targetAccount, err = l.Accounts.Get(ctx, accountID); err != nil {
+			return zeroUser, zeroAcc, err
+		}
+		if any(targetAccount) == any(zeroAcc) || targetAccount.GetID() != accountID {
+			return zeroUser, zeroAcc, errNoCrossAuthPermission
 		}
 	}
-	return userObj, accountObj, nil
+
+	// The permission is always checked against the current session account,
+	// including the case of switching the user inside the same account.
+	if !accountObj.CheckPermissions(ctx, targetAccount, session.PermAuthCross) {
+		return zeroUser, zeroAcc, errNoCrossAuthPermission
+	}
+
+	return l.UserAccountByID(ctx, userID, accountID, userObj, accountObj)
 }
