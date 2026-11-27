@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"errors"
 	"github.com/demdxx/gocast/v2"
-	"github.com/pkg/errors"
 
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	baseRepo "github.com/geniusrabbit/blaze-api/repository"

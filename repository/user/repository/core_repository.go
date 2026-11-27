@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	baseRepo "github.com/geniusrabbit/blaze-api/repository"

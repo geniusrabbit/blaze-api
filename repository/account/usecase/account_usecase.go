@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
@@ -51,7 +51,7 @@ func (a *AccountUsecase[TUser, TAccount]) Get(ctx context.Context, id uint64) (T
 		return zero, err
 	}
 	if !acl.HaveAccessView(ctx, accountObj) {
-		return zero, errors.Wrap(acl.ErrNoPermissions, "view account")
+		return zero, fmt.Errorf("%s: %w", "view account", acl.ErrNoPermissions)
 	}
 	return accountObj, nil
 }
@@ -59,12 +59,12 @@ func (a *AccountUsecase[TUser, TAccount]) Get(ctx context.Context, id uint64) (T
 // FetchList of accounts by filter
 func (a *AccountUsecase[TUser, TAccount]) FetchList(ctx context.Context, opts ...account.QOption) ([]TAccount, error) {
 	if !acl.HaveAccessList(ctx, session.Account(ctx)) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list account")
+		return nil, fmt.Errorf("%s: %w", "list account", acl.ErrNoPermissions)
 	}
 	if !acl.HaveAccessList(ctx, a.EmptyObject()) {
 		var err error
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.Filter{}); err != nil {
-			return nil, errors.Wrap(acl.ErrNoPermissions, err.Error())
+			return nil, fmt.Errorf("%s: %w", err.Error(), acl.ErrNoPermissions)
 		}
 	}
 	return a.accountRepo.FetchList(ctx, opts...)
@@ -73,12 +73,12 @@ func (a *AccountUsecase[TUser, TAccount]) FetchList(ctx context.Context, opts ..
 // Count of accounts by filter
 func (a *AccountUsecase[TUser, TAccount]) Count(ctx context.Context, opts ...account.QOption) (int64, error) {
 	if !acl.HaveAccessCount(ctx, session.Account(ctx)) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "list account")
+		return 0, fmt.Errorf("%s: %w", "list account", acl.ErrNoPermissions)
 	}
 	if !acl.HaveAccessCount(ctx, a.EmptyObject()) {
 		var err error
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.Filter{}); err != nil {
-			return 0, errors.Wrap(acl.ErrNoPermissions, err.Error())
+			return 0, fmt.Errorf("%s: %w", err.Error(), acl.ErrNoPermissions)
 		}
 	}
 	return a.accountRepo.Count(ctx, opts...)
@@ -88,13 +88,13 @@ func (a *AccountUsecase[TUser, TAccount]) Count(ctx context.Context, opts ...acc
 func (a *AccountUsecase[TUser, TAccount]) Update(ctx context.Context, accountObj TAccount) (uint64, error) {
 	if accountObj.GetID() == 0 {
 		if !acl.HaveAccessCreate(ctx, accountObj) {
-			return 0, errors.Wrap(acl.ErrNoPermissions, "create account")
+			return 0, fmt.Errorf("%s: %w", "create account", acl.ErrNoPermissions)
 		}
 		id, err := a.accountRepo.Create(ctx, accountObj)
 		return id, err
 	}
 	if !acl.HaveAccessUpdate(ctx, accountObj) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "update account")
+		return 0, fmt.Errorf("%s: %w", "update account", acl.ErrNoPermissions)
 	}
 	return accountObj.GetID(), a.accountRepo.Update(
 		historylog.WithPK(ctx, accountObj.GetID()),
@@ -121,7 +121,7 @@ func (a *AccountUsecase[TUser, TAccount]) Register(ctx context.Context, ownerObj
 	}
 
 	if any(ownerObj) == any(zeroUser) || (ownerObj.GetID() == 0 && ownerEmail == "") {
-		return 0, errors.Wrap(ErrOwnerRequired, "invalid user data")
+		return 0, fmt.Errorf("%s: %w", "invalid user data", ErrOwnerRequired)
 	}
 
 	// Check permissions for account registration

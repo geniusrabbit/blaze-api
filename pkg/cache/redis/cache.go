@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/demdxx/gocast/v2"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/geniusrabbit/blaze-api/pkg/cache"
 )
@@ -79,10 +79,10 @@ func (c *Cache) TrySet(ctx context.Context, key string, value any, lifetime time
 // Get cached item
 func (c *Cache) Get(ctx context.Context, key string, target any) error {
 	data, err := c.client.Get(ctx, key).Result()
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		err = json.Unmarshal([]byte(data), target)
-	case redis.Nil:
+	case errors.Is(err, redis.Nil):
 		err = cache.ErrEntryNotFound
 	}
 	return err
@@ -93,9 +93,15 @@ func (c *Cache) Del(ctx context.Context, key string) error {
 	return c.client.Del(ctx, key).Err()
 }
 
+// prepareLifetime caps the lifetime at maxLifetime. A non-positive lifetime
+// means "no expiry" in Redis, so it becomes maxLifetime when one is set
+// (before, lifetime 0 bypassed the cap and the entry never expired).
 func (c *Cache) prepareLifetime(lifetime time.Duration) time.Duration {
 	if c.maxLifetime <= 0 {
 		return lifetime
+	}
+	if lifetime <= 0 {
+		return c.maxLifetime
 	}
 	return min(lifetime, c.maxLifetime)
 }

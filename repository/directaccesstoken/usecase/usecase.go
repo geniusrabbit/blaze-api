@@ -3,9 +3,10 @@ package usecase
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
@@ -49,7 +50,7 @@ func (u *Usecase) Get(ctx context.Context, id uint64) (*models.DirectAccessToken
 		return nil, err
 	}
 	if !acl.HaveAccessView(ctx, accToken) || !tokenInScope(ctx, accToken, scopeFor(ctx, acl.PermView)) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "get access token")
+		return nil, fmt.Errorf("%s: %w", "get access token", acl.ErrNoPermissions)
 	}
 	return accToken, nil
 }
@@ -60,7 +61,7 @@ func (u *Usecase) FetchList(ctx context.Context, opts ...directaccesstoken.QOpti
 		return nil, err
 	}
 	if !acl.HaveAccessList(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list access tokens")
+		return nil, fmt.Errorf("%s: %w", "list access tokens", acl.ErrNoPermissions)
 	}
 	return u.repo.FetchList(ctx, scopedOptions(ctx, opts, scopeFor(ctx, acl.PermList))...)
 }
@@ -71,7 +72,7 @@ func (u *Usecase) Count(ctx context.Context, opts ...directaccesstoken.QOption) 
 		return 0, err
 	}
 	if !acl.HaveAccessCount(ctx, &models.DirectAccessToken{AccountID: session.AccountID(ctx)}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "count access tokens")
+		return 0, fmt.Errorf("%s: %w", "count access tokens", acl.ErrNoPermissions)
 	}
 	return u.repo.Count(ctx, scopedOptions(ctx, opts, scopeFor(ctx, acl.PermCount))...)
 }
@@ -97,7 +98,7 @@ func (u *Usecase) Generate(ctx context.Context, userID, accountID uint64, descri
 		UserID:    sql.Null[uint64]{V: userID, Valid: true},
 		AccountID: accountID,
 	}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "generate access token")
+		return nil, fmt.Errorf("%s: %w", "generate access token", acl.ErrNoPermissions)
 	}
 	return u.repo.Generate(ctx, userID, accountID, description, expiresAt)
 }
@@ -110,7 +111,7 @@ func (u *Usecase) Revoke(ctx context.Context, opts ...directaccesstoken.QOption)
 	}
 	accountToken := &models.DirectAccessToken{AccountID: session.AccountID(ctx)}
 	if !acl.HaveAccessDelete(ctx, accountToken) && !acl.HaveAccessList(ctx, accountToken) {
-		return errors.Wrap(acl.ErrNoPermissions, "revoke access tokens")
+		return fmt.Errorf("%s: %w", "revoke access tokens", acl.ErrNoPermissions)
 	}
 	return u.repo.Revoke(ctx, scopedOptions(ctx, opts, scopeFor(ctx, acl.PermDelete))...)
 }

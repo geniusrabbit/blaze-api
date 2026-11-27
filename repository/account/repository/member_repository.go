@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"errors"
 	"github.com/demdxx/xtypes"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 

@@ -2,10 +2,11 @@ package stream
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
+	"errors"
 	nc "github.com/geniusrabbit/notificationcenter/v2"
-	"github.com/pkg/errors"
 )
 
 // ErrUnsupportedScheme in case if scheme is not defined
@@ -29,7 +30,7 @@ func ConnectSubscriber(ctx context.Context, urlStr string) (nc.Subscriber, error
 	}
 	conn := subscriberConnectors[parsedURL.Scheme]
 	if conn == nil {
-		return nil, errors.Wrap(ErrUnsupportedScheme, parsedURL.Scheme)
+		return nil, fmt.Errorf("%s: %w", parsedURL.Scheme, ErrUnsupportedScheme)
 	}
 	return conn(ctx, urlStr)
 }
@@ -42,7 +43,7 @@ func ConnectPublisher(ctx context.Context, urlStr string) (nc.Publisher, error) 
 	}
 	conn := publisherConnectors[parsedURL.Scheme]
 	if conn == nil {
-		return nil, errors.Wrap(ErrUnsupportedScheme, parsedURL.Scheme)
+		return nil, fmt.Errorf("%s: %w", parsedURL.Scheme, ErrUnsupportedScheme)
 	}
 	return conn(ctx, urlStr)
 }

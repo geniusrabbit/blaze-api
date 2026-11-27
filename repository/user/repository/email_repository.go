@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"strings"
 
+	"errors"
 	baseRepo "github.com/geniusrabbit/blaze-api/repository"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 

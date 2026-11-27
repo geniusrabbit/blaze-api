@@ -36,13 +36,13 @@ func TestStateCodec(t *testing.T) {
 
 	other, _ := NewStateCodec([]byte("fedcba9876543210"), time.Minute)
 	for name, value := range map[string]string{
-		"empty":          "",
-		"no signature":   encoded[:len(encoded)-44],
-		"tampered":       tamper(encoded),
-		"bad signature":  encoded[:len(encoded)-2] + "AA",
-		"legacy bson":    NewState(Param{Key: "access_token", Value: "x"}).Encode(),
-		"other secret":   func() string { v, _, _ := other.Encode(nil); return v }(),
-		"garbage base64": "!!!.!!!",
+		"empty":           "",
+		"no signature":    encoded[:len(encoded)-44],
+		"tampered":        tamper(encoded),
+		"bad signature":   encoded[:len(encoded)-2] + "AA",
+		"legacy unsigned": NewState(Param{Key: "access_token", Value: "x"}).Encode(),
+		"other secret":    func() string { v, _, _ := other.Encode(nil); return v }(),
+		"garbage base64":  "!!!.!!!",
 	} {
 		if _, err := codec.Decode(value); !errors.Is(err, ErrStateInvalid) {
 			t.Errorf("%s: error = %v, want ErrStateInvalid", name, err)

@@ -3,8 +3,7 @@ package usecase
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
@@ -37,7 +36,7 @@ func (a *RoleUsecase) GetByName(ctx context.Context, name string) (*rbac.Role, e
 		return nil, err
 	}
 	if !acl.HaveAccessView(ctx, roleObj) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view role/permission")
+		return nil, fmt.Errorf("%s: %w", "view role/permission", acl.ErrNoPermissions)
 	}
 	return roleObj, nil
 }
@@ -45,13 +44,13 @@ func (a *RoleUsecase) GetByName(ctx context.Context, name string) (*rbac.Role, e
 // FetchList retrieves a filtered list of roles with access control validation
 func (a *RoleUsecase) FetchList(ctx context.Context, qops ...rbac.QOption) ([]*rbac.Role, error) {
 	if !acl.HaveAccessList(ctx, &rbac.Role{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
+		return nil, fmt.Errorf("%s: %w", "list role/permission", acl.ErrNoPermissions)
 	}
 	list, err := a.Usecase.Repo.(rbac.Repository).
 		FetchList(ctx, prepareQueryOptions(ctx, qops, `list`)...)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
+			return nil, fmt.Errorf("%s: %w", "list role/permission", acl.ErrNoPermissions)
 		}
 	}
 	return list, err
@@ -60,7 +59,7 @@ func (a *RoleUsecase) FetchList(ctx context.Context, qops ...rbac.QOption) ([]*r
 // Count returns the count of roles matching the filter with access control
 func (a *RoleUsecase) Count(ctx context.Context, qops ...rbac.QOption) (int64, error) {
 	if !acl.HaveAccessList(ctx, &rbac.Role{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "list role/permission")
+		return 0, fmt.Errorf("%s: %w", "list role/permission", acl.ErrNoPermissions)
 	}
 	return a.Usecase.Repo.(rbac.Repository).Count(ctx, prepareQueryOptions(ctx, qops, `count`)...)
 }

@@ -3,6 +3,7 @@ package serverprovider
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -11,12 +12,12 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	"errors"
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/gosql/v2"
 	"github.com/guregu/null"
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/handler/oauth2"
-	"github.com/pkg/errors"
 
 	"github.com/geniusrabbit/blaze-api/pkg/cache"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
@@ -67,7 +68,7 @@ func (s *DatabaseStorage) GetClient(ctx context.Context, id string) (fosite.Clie
 		return nil, fosite.ErrNotFound
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "get client object")
+		return nil, fmt.Errorf("%s: %w", "get client object", err)
 	}
 	if clientObj.ExpiresAt.Before(time.Now()) {
 		return nil, fosite.ErrInvalidClient.WithHint("get OAuth2 client")
@@ -155,7 +156,7 @@ func (s *DatabaseStorage) CreatePKCERequestSession(ctx context.Context, code str
 
 	session, err = s.getAuthSession(ctx, code, `access_token`)
 	if err != nil && !errors.Is(err, fosite.ErrNotFound) {
-		return errors.Wrap(err, "lookup existing session")
+		return fmt.Errorf("%s: %w", "lookup existing session", err)
 	}
 
 	// If session exists, update it with PKCE data
@@ -176,7 +177,7 @@ func (s *DatabaseStorage) CreatePKCERequestSession(ctx context.Context, code str
 		session.Form = existingForm.Encode()
 		err = s.db.Model(&authclient.AuthSession{}).Where(`id=?`, session.ID).Update(`form`, session.Form).Error
 		if err != nil {
-			return errors.Wrap(err, "update session with PKCE data")
+			return fmt.Errorf("%s: %w", "update session with PKCE data", err)
 		}
 
 		// Update cache
@@ -251,7 +252,7 @@ func (s *DatabaseStorage) CreateAccessTokenSession(ctx context.Context, signatur
 
 		err = s.db.Model(&authclient.AuthSession{}).Where(`id=?`, session.ID).Updates(updates).Error
 		if err != nil {
-			return errors.Wrap(err, "update session with access token")
+			return fmt.Errorf("%s: %w", "update session with access token", err)
 		}
 
 		// Update session object for cache
@@ -485,7 +486,7 @@ func (s *DatabaseStorage) newSessionWithRequestID(ctx context.Context, token str
 		err = s.db.Create(sessionObj).Error
 	)
 	if err != nil {
-		return errors.Wrap(err, "create session")
+		return fmt.Errorf("%s: %w", "create session", err)
 	}
 	if err = s.cache.Set(ctx, s.sessCacheKey(token), sessionObj, s.cacheLifetime); err != nil {
 		ctxlogger.Get(ctx).Error("put session to cache", zap.Error(err))
@@ -545,7 +546,7 @@ func (s *DatabaseStorage) dropSession(ctx context.Context, code, fieldName strin
 	}
 	res := s.db.WithContext(ctx).Where(fieldName+`=?`, code).Delete(&authclient.AuthSession{})
 	if res.Error != nil {
-		return errors.Wrap(res.Error, `delete session`)
+		return fmt.Errorf("%s: %w", `delete session`, res.Error)
 	}
 	if res.RowsAffected == 0 {
 		return fosite.ErrNotFound
@@ -611,17 +612,17 @@ func (s *DatabaseStorage) authToSession(ctx context.Context, sessionObj *authcli
 func (s *DatabaseStorage) toRequest(ctx context.Context, sessionObj *authclient.AuthSession) (*fosite.Request, error) {
 	session, authErr := s.authToSession(ctx, sessionObj)
 	if session == nil {
-		return nil, errors.Wrap(authErr, "auth session")
+		return nil, fmt.Errorf("%s: %w", "auth session", authErr)
 	}
 
 	client, err := s.GetClient(ctx, sessionObj.ClientID)
 	if err != nil {
-		return nil, errors.Wrap(err, "get client")
+		return nil, fmt.Errorf("%s: %w", "get client", err)
 	}
 
 	val, err := url.ParseQuery(sessionObj.Form)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse form data")
+		return nil, fmt.Errorf("%s: %w", "parse form data", err)
 	}
 
 	SetContextSession(ctx, sessionObj)

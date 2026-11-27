@@ -2,11 +2,12 @@ package permissions
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"errors"
 	"github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -75,7 +76,7 @@ func (mng *Manager) AsOneRole(ctx context.Context, isAdmin bool, filter func(con
 	if isAdmin {
 		adminRole := mng.Role(ctx, DefaultAdminRole)
 		if adminRole == nil {
-			return nil, errors.Wrap(ErrUndefinedRole, DefaultAdminRole)
+			return nil, fmt.Errorf("%s: %w", DefaultAdminRole, ErrUndefinedRole)
 		}
 		roles = append(roles, adminRole)
 	}

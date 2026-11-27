@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 
+	"errors"
 	"github.com/demdxx/gocast/v2"
 	"github.com/demdxx/rbac"
 	"github.com/demdxx/xtypes"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 

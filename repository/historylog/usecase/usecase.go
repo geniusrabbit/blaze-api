@@ -3,8 +3,7 @@ package usecase
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
@@ -26,7 +25,7 @@ func NewUsecase(repo historylog.Repository) *HistoryUsecase {
 // Count of roles by filter
 func (a *HistoryUsecase) Count(ctx context.Context, opts ...historylog.QOption) (int64, error) {
 	if !acl.HaveAccessList(ctx, &historylogModels.HistoryAction{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "list log items")
+		return 0, fmt.Errorf("%s: %w", "list log items", acl.ErrNoPermissions)
 	}
 	return a.repo.Count(ctx, opts...)
 }
@@ -34,12 +33,12 @@ func (a *HistoryUsecase) Count(ctx context.Context, opts ...historylog.QOption) 
 // FetchList of roles by filter
 func (a *HistoryUsecase) FetchList(ctx context.Context, opts ...historylog.QOption) ([]*historylogModels.HistoryAction, error) {
 	if !acl.HaveAccessList(ctx, &historylogModels.HistoryAction{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list log items")
+		return nil, fmt.Errorf("%s: %w", "list log items", acl.ErrNoPermissions)
 	}
 	list, err := a.repo.FetchList(ctx, opts...)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list log items")
+			return nil, fmt.Errorf("%s: %w", "list log items", acl.ErrNoPermissions)
 		}
 	}
 	return list, err

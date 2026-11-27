@@ -3,8 +3,7 @@ package usecase
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
@@ -111,7 +110,7 @@ func (a *Usecase) SetOption(ctx context.Context, name string, otype models.Optio
 		Name:     name,
 	}
 	if err := obj.Value.SetValue(value); err != nil {
-		return errors.Wrap(err, "set option value")
+		return fmt.Errorf("%s: %w", "set option value", err)
 	}
 	return a.baseRepo.Set(ctx, obj)
 }
