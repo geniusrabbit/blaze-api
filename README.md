@@ -45,14 +45,14 @@ cp .env.example .env
 # Start Postgres + run migrations + start the API
 make run-api
 
-# API is available at http://localhost:8581
-# GraphQL playground: http://localhost:8581/
-# Liveness / readiness: http://localhost:8581/healthcheck, http://localhost:8581/readiness
+# API (GraphQL):      http://localhost:8581/graphql
+# GraphQL playground: http://localhost:8581/playground (basic auth: GRAPHQL_USERS_<name>=<password>)
+# Liveness/readiness: http://localhost:8581/healthcheck, http://localhost:8581/readiness
 # Prometheus metrics: http://localhost:8581/metrics
-# pprof profiler:     http://localhost:8583/debug/pprof/
+# pprof profiler:     http://localhost:8583/debug/pprof/ (dev image only; localhost:6060 by default)
 ```
 
-The `run-api` target builds the Docker image, runs migrations, and starts the full stack via docker-compose.
+The `run-api` target builds the Docker image and starts the full stack via docker-compose. The API applies the SQL migrations itself on start (`MIGRATE_ON_START=true`, from `MIGRATIONS_DIR`, default `/data/migrations`). A migration that failed half-way leaves the database "dirty": the API then refuses to start until the schema is fixed and the version is marked with `migrate force <version>`.
 
 For an alternative, schema-as-HCL migration workflow based on [Atlas](https://atlasgo.io) (opt-in, additional to the SQL migrations above), see [docs/MIGRATIONS.md](docs/MIGRATIONS.md).
 
@@ -104,59 +104,76 @@ A full annotated example lives in [example/api/.env.example](example/api/.env.ex
 
 ### Wiring it together (`main.go`)
 
+A condensed version of [example/api/cmd/api/main.go](example/api/cmd/api/main.go); see it for the full wiring.
+
 ```go
-// example/api/cmd/api/main.go
-package main
-
-import (
-  "github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
-  "github.com/geniusrabbit/blaze-api/pkg/database"
-  "github.com/geniusrabbit/blaze-api/pkg/permissions"
-  "github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
-  "github.com/geniusrabbit/blaze-api/pkg/auth/oauth2"
-  "github.com/geniusrabbit/blaze-api/repository/account/authorizer"
-  "github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
-)
-
 func main() {
-  // Connect master + slave databases
-  masterDB, slaveDB, _ := database.ConnectMasterSlave(ctx,
-    conf.System.Storage.MasterConnect,
-    conf.System.Storage.SlaveConnect)
+  conf := &appcontext.Config // loaded with goconfig from env / files
+  logger := initZapLogger()
+  ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+  defer cancel()
 
-  // Register GORM callback — writes a HistoryAction row for every mutation
-  gormlog.Register(masterDB)
+  // Apply SQL migrations (fails on a dirty database instead of resetting it)
+  if conf.MigrateOnStart {
+    fatalError(migrate(ctx, conf), "migrate database")
+  }
 
-  // Build permission manager (RBAC, cached)
+  // pprof/metrics on a separate listener; stop it on exit
+  stopProfiler := profiler.Run(conf.Server.Profile.Mode, conf.Server.Profile.Listen, logger, true)
+  defer stopProfiler()
+
+  masterDB, slaveDB, err := database.ConnectMasterSlave(ctx,
+    conf.System.Storage.MasterConnect, conf.System.Storage.SlaveConnect)
+  fatalError(err, "connect to database")
+  fatalError(gormlog.Register(masterDB), "register history log") // history rows in the same transaction
+
+  deps := appinit.NewDeps() // repositories, usecases, auth loader
   permissionManager := permissions.NewManager(masterDB, conf.Permissions.RoleCacheLifetime)
-  appinit.InitModelPermissions(permissionManager)  // register all domain models
+  appinit.InitModelPermissions(permissionManager, deps)
 
-  // Build OAuth2 + JWT providers
-  oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDB)
-
-  // Attach services to context (propagated to every request handler)
-  ctx = ctxlogger.WithLogger(ctx, logger)
-  ctx = database.WithDatabase(ctx, masterDB, slaveDB)
-  ctx = permissions.WithManager(ctx, permissionManager)
+  // OAuth2 server + JWT provider (the JWT secret must be at least 32 bytes)
+  oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDB, deps)
 
   httpServer := server.HTTPServer{
-    Logger:      logger,
-    JWTProvider: jwtProvider,
-    Authorizers: []auth.Authorizer[*user.User, *account.Account]{
-      jwt.NewAuthorizer(jwtProvider),
-      oauth2.NewAuthorizer(oauth2provider),
-      authorizer.NewDevTokenAuthorizer(...), // dev-only static token
+    Config: server.Config{ // timeouts, body limit, CORS allowlist, GraphQL limits
+      ReadHeaderTimeout: conf.Server.HTTP.ReadHeaderTimeout,
+      ShutdownTimeout:   conf.Server.HTTP.ShutdownTimeout,
+      MaxBodySize:       conf.Server.HTTP.MaxBodySize,
+      CORS:              middleware.CORSConfig{AllowedOrigins: conf.CORSOrigins(), AllowCredentials: true},
+      GraphQLLimits:     limits.Config{Introspection: conf.Server.GraphQL.Introspection},
+    },
+    ReadinessChecks: []profiler.Check{profiler.DatabaseCheck("master", masterDB)},
+    Logger:          logger,
+    JWTProvider:     jwtProvider,
+    AuthLoader:      deps.AuthLoader,
+    Authorizers: []auth.Authorizer[*domain.User, *domain.Account]{
+      jwt.NewAuthorizer(jwtProvider, deps.AuthLoader),
+      oauth2.NewAuthorizer(oauth2provider, deps.AccountRepo),
+      authorizer.NewDevTokenAuthorizer(devTokenOptions, deps.AuthLoader), // only with DEBUG=true
     },
     ContextWrap: func(ctx context.Context) context.Context {
       ctx = ctxlogger.WithLogger(ctx, logger)
       ctx = database.WithDatabase(ctx, masterDB, slaveDB)
-      ctx = permissions.WithManager(ctx, permissionManager)
-      return ctx
+      return permissions.WithManager(ctx, permissionManager)
     },
   }
-  httpServer.Run(ctx, conf.Server.HTTP.Listen)
+  fatalError(httpServer.Run(ctx, conf.Server.HTTP.Listen), "HTTP server") // graceful shutdown on ctx cancel
 }
 ```
+
+### Security defaults
+
+The framework is meant to be safe by default; most of these can be tuned, few should be turned off.
+
+| Area | Default |
+|---|---|
+| JWT | HS256 only, `exp` required, `iss`/`aud` checked when set, secret ≥ 32 bytes; token from the `Authorization` header only (`tokenextractor.HeaderOrWebsocketQuery` allows `?access_token=` on websocket handshakes); optional revocation (`jwt.NewCacheRevocationStore`, used by `logout`) |
+| GraphQL | complexity ≤ 1000, depth ≤ 12, aliases ≤ 30, introspection off (`server/graphql/limits`); page size ≤ `repository.MaxPageSize` (1000); `@cacheData` keys are per user and account and the directive can't be set from queries |
+| HTTP | header timeout, idle timeout, body size limit, panic recovery, graceful shutdown; CORS only for `SERVER_HTTP_CORS_ORIGINS` (`middleware.CORS`) |
+| Sessions | `auth.cross.account` (`AccountID[:UserID]`) needs the `auth.cross` permission for any switch; API keys can't switch accounts, create keys or change passwords |
+| Social login | signed, browser-bound OAuth2 `state`; `redirect` only to allowed URLs (`rest.WithAllowedRedirectURLs`); linking to the logged-in user requires the `Authorization` header; provider tokens are never returned by GraphQL |
+| Passwords | bcrypt over HMAC-SHA256, any length; reset tokens from `crypto/rand`; login and reset don't reveal whether an email is registered |
+| Debug | off unless `DEBUG=true`; the config dump masks secrets; tokens are never logged |
 
 ### Registering permissions for a domain model
 
@@ -164,7 +181,7 @@ Every model that should participate in ACL must be registered with the permissio
 
 ```go
 // example/api/cmd/api/appinit/acl.go
-func InitModelPermissions(pm *permissions.Manager) {
+func InitModelPermissions(pm *permissions.Manager, deps *Deps) {
   acl.InitModelPermissions(pm,
     &user.User{},
     &rbacModels.Role{},
@@ -418,7 +435,7 @@ Each mock package carries the directive:
 Base types ship with core fields only. Extend them in your app without forking library schemas:
 
 ```graphql
-# example/api/protocol/graphql/extensions/account.graphql
+# example/api/protocol/graphql/extensions/extend_account.graphql
 extend type Account {
   title: String!
   description: String!
@@ -453,7 +470,7 @@ Regenerate and wire generic resolvers:
 
 ```bash
 cd example/api/protocol/graphql && go run github.com/99designs/gqlgen
-cd example/api && make build-api
+cd example/api && make build
 ```
 
 Resolver wiring lives in `example/api/internal/server/graphql/wiring/` (`NewExampleAccountQueryResolver`, `NewExampleUserQueryResolver`, `NewExampleMemberQueryResolver`).
@@ -504,8 +521,14 @@ models:
 # Run all tests
 make test
 
-# Run tests with race detector + coverage report
+# Run tests with race detector + coverage report (written to .build/tmp)
 make cover
+
+# Install the pinned tools (golangci-lint, mockgen) used by CI
+make tools
+
+# Check dependencies for known vulnerabilities
+make vuln
 
 # Regenerate mocks (go generate ./...)
 make generate-code
@@ -514,9 +537,9 @@ make generate-code
 cd example/api && make build-gql
 
 # Build the example API binary
-cd example/api && make build-api
+cd example/api && make build
 
-# Run full stack via Docker Compose (Postgres + migrations + API)
+# Run full stack via Docker Compose (Postgres + API, which applies the migrations)
 cd example/api && make run-api
 
 # Lint
@@ -528,302 +551,6 @@ make lint
 - [ ] OAuth2 social providers: Google, LinkedIn, X.com (endpoints are already wired; need full handler)
 - [ ] REST API interface
 - [ ] Swagger / OpenAPI documentation
-- [ ] OpenTelemetry tracing ([opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go/))
-
-**Features**
-
-- [x] Users: Manage user data and interactions.
-- [x] Accounts: Handle account operations and storage.
-- [x] Roles: Role-Based Access Control (RBAC) for managing user permissions.
-- [x] Permissions: Define and manage access rights for different roles.
-- [x] JWT Authentication: Secure your API with JWT-based authentication.
-- [x] GraphQL API: Integrated GraphQL support for building flexible APIs.
-- [x] OAuth2: Server and client support with remote authorization.
-- [x] Object history log: Track all mutations with a per-request message.
-- [x] Auth clients: OAuth2 client management (token issuance, revocation).
-- [x] Generic repository/usecase layer: Type-safe CRUD with compile-time model constraints.
-- [x] Tests: Comprehensive test suite for maintaining code quality.
-- [x] Logging: Structured logging with context propagation.
-- [ ] REST API: RESTful API interface for your application.
-- [ ] Swagger API documentation: Generate comprehensive API documentation with Swagger.
-
-## Quick Start
-
-### Installation
-
-```bash
-go get github.com/geniusrabbit/blaze-api
-```
-
-### Example Usage
-
-```go
-// @see example/api/cmd/api/main.go
-package main
-
-import (
-  ...
-  "github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
-  "github.com/geniusrabbit/blaze-api/pkg/permissions"
-  "github.com/geniusrabbit/blaze-api/pkg/database"
-  "github.com/geniusrabbit/blaze-api/pkg/middleware"
-  "github.com/geniusrabbit/blaze-api/repository/historylog/middleware/gormlog"
-)
-
-func main() {
-  // Register callback for history log (only for modifications)
-  gormlog.Register(masterDatabase)
-
-  // Init permission manager
-  permissionManager := permissions.NewManager(masterDatabase, conf.Permissions.RoleCacheLifetime)
-  appinit.InitModelPermissions(permissionManager)
-
-  // Init OAuth2 + JWT providers
-  oauth2provider, jwtProvider := appinit.Auth(ctx, conf, masterDatabase)
-
-  // Init HTTP server
-  httpServer := server.HTTPServer{
-    OAuth2provider: oauth2provider,
-    JWTProvider:    jwtProvider,
-    SessionManager: appinit.SessionManager("session", 60*time.Minute),
-    AuthOption: gocast.IfThen(conf.IsDebug(), &middleware.AuthOption{
-      DevToken:     conf.Session.DevToken,
-      DevUserID:    conf.Session.DevUserID,
-      DevAccountID: conf.Session.DevAccountID,
-    }, nil),
-    ContextWrap: func(ctx context.Context) context.Context {
-      ctx = ctxlogger.WithLogger(ctx, loggerObj)
-      ctx = database.WithDatabase(ctx, masterDatabase, slaveDatabase)
-      ctx = permissionmanager.WithManager(ctx, permissionManager)
-      return ctx
-    },
-  }
-  httpServer.Run(ctx, ":8080")
-}
-```
-
-## Architecture
-
-### Repository / Usecase layer (`repository/generated`)
-
-All domain entities follow the same layered pattern:
-
-```
-repository/<domain>/
-  models/        — domain structs (must implement generated.Model[TID])
-  repository.go  — domain Repository/Usecase interface
-  repository/    — GORM implementation (embeds generated.Repository[T, TID])
-  usecase/       — business logic (embeds generated.Usecase[T, TID])
-  mocks/         — generated mocks (go:generate mockgen, DO NOT EDIT)
-  delivery/      — transport adapters (GraphQL resolvers, REST handlers)
-```
-
-The generic base types live in `repository/generated`:
-
-| Type                      | Description                                                         |
-| ------------------------- | ------------------------------------------------------------------- |
-| `Repository[T, TID]`      | GORM CRUD implementation for any model satisfying `Model[TID]`      |
-| `Usecase[T, TID]`         | ACL-checked business logic delegating to `RepositoryIface[T, TID]`  |
-| `UsecaseApprover[T, TID]` | Approve/reject workflow with ACL checks                             |
-| `BaseModel[TID]`          | Convenience embed — provides `GetID`/`SetID` for free               |
-| `BaseTimestamps`          | Convenience embed — provides `SetCreatedAt`/`SetUpdatedAt` for free |
-
-#### Defining a new domain model
-
-A model type `T` must satisfy the `generated.Model[TID]` constraint — i.e., expose `GetID() TID` via a **value receiver**. The easiest way is to embed `generated.BaseModel`:
-
-```go
-import "github.com/geniusrabbit/blaze-api/repository/generated"
-
-type Widget struct {
-    generated.BaseModel[uint64]  // GetID() + SetID() for free
-    generated.BaseTimestamps     // SetCreatedAt() + SetUpdatedAt() for free
-    gorm.DeletedAt
-
-    Name string
-}
-```
-
-Then create the repository:
-
-```go
-type Repository struct {
-    generated.Repository[Widget, uint64]
-}
-
-func New() *Repository {
-    return &Repository{Repository: *generated.NewRepository[Widget, uint64]()}
-}
-```
-
-If your model already has `ID`, `CreatedAt`, `UpdatedAt` fields but no embeds, add the methods explicitly (value receiver required for `GetID`):
-
-```go
-func (m Widget) GetID() uint64          { return m.ID }
-func (m *Widget) SetID(id uint64)       { m.ID = id }
-func (m *Widget) SetCreatedAt(t time.Time) { m.CreatedAt = t }
-func (m *Widget) SetUpdatedAt(t time.Time) { m.UpdatedAt = t }
-```
-
-### Query options (`repository.QOption`)
-
-All mutation and query methods accept `...QOption` instead of positional parameters. Options compose freely:
-
-```go
-type QOption interface {
-    PrepareQuery(query *gorm.DB) *gorm.DB
-}
-```
-
-Built-in options:
-
-| Option                                                      | Package                 | Effect                                                                        |
-| ----------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------- |
-| `historylog.Message("reason")`                              | `repository/historylog` | Attaches a human-readable message to the mutation recorded in the history log |
-| `&repository.PreloadOption{Fields: []string{"ChildRoles"}}` | `repository`            | Adds GORM `.Preload(...)` calls                                               |
-| `filter` (`*Filter` implementing `QOption`)                 | domain package          | Adds WHERE conditions                                                         |
-| `order` (`*Order` implementing `QOption`)                   | domain package          | Adds ORDER BY                                                                 |
-
-Example:
-
-```go
-id, err := roleRepo.Create(ctx, role, historylog.Message("initial seed"))
-
-err = roleRepo.Delete(ctx, id,
-    historylog.Message("cleanup"),
-)
-```
-
-### History log
-
-Every write that goes through a GORM master connection registered with `gormlog.Register(db)` records a `HistoryAction` row. The optional `historylog.Message(msg)` option attaches a human-readable reason:
-
-```go
-gormlog.Register(masterDatabase)
-
-// later, in a usecase or resolver:
-repo.Delete(ctx, id, historylog.Message("user requested account deletion"))
-```
-
-### Mock generation
-
-Mocks are generated with [mockgen](https://github.com/uber-go/mock) and committed as source code. **Never edit mock files by hand** — regenerate them:
-
-```bash
-make generate-code   # runs: go generate ./...
-```
-
-Each mock package carries the directive:
-
-Each mock package carries the directive:
-
-```go
-//go:generate mockgen -source=../repository.go -destination=../mocks/repository.go
-```
-
-## Extending the GraphQL API
-
-1. Add a schema file to `protocol/graphql/schemas/` (or your app's `schemas/` folder).
-2. Reference it in `gqlgen.yml`:
-
-```yaml
-schema:
-  - ./schemas/*.graphql
-  - ../../vendor/github.com/geniusrabbit/blaze-api/protocol/graphql/schemas/*.graphql
-  - ../../vendor/github.com/geniusrabbit/blaze-api/repository/**/*.graphql
-```
-
-1. Regenerate the server code:
-
-```bash
-make build-gql   # runs: go run github.com/99designs/gqlgen
-```
-
-1. Implement the generated resolver stubs in `internal/server/graphql/resolvers/`.
-
-A minimal `gqlgen.yml` for an application that imports blaze-api:
-
-```yaml
-schema:
-  - ./schemas/*.graphql
-  - ../../vendor/github.com/geniusrabbit/blaze-api/protocol/graphql/schemas/*.graphql
-  - ../../vendor/github.com/geniusrabbit/blaze-api/repository/**/*.graphql
-
-skip_mod_tidy: yes
-
-exec:
-  filename: ../../internal/server/graphql/generated/exec.go
-  package: generated
-
-model:
-  filename: ../../internal/server/graphql/models/generated.go
-  package: models
-
-resolver:
-  layout: follow-schema
-  dir: ../../internal/server/graphql/resolvers
-  package: resolvers
-
-omit_slice_element_pointers: false
-skip_validation: true
-
-autobind:
-  - github.com/geniusrabbit/blaze-api/server/graphql/models
-
-models:
-  ID:
-    model:
-      - github.com/99designs/gqlgen/graphql.ID
-      - github.com/99designs/gqlgen/graphql.Int64
-  Int64:
-    model:
-      - github.com/99designs/gqlgen/graphql.Int64
-  Time:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.Time
-  JSON:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.JSON
-  NullableJSON:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.NullableJSON
-  UUID:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.UUID
-  ID64:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/types.ID64
-  UserConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.UserConnection
-  AccountConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AccountConnection
-  RBACRoleConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.RBACRoleConnection
-  AuthClientConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.AuthClientConnection
-  HistoryActionConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.HistoryActionConnection
-  OptionConnection:
-    model: github.com/geniusrabbit/blaze-api/server/graphql/connectors.OptionConnection
-```
-
-## Development
-
-```bash
-# Run all tests
-make test
-
-# Run tests with coverage report
-make cover
-
-# Regenerate mocks and gqlgen code
-make generate-code
-
-# Build the example API
-cd example/api && make build-api
-
-# Lint
-make lint
-```
-
-## TODO
-
-- [ ] OAuth2 social providers: Google, Facebook, LinkedIn, GitHub
-- [ ] REST API interface
-- [ ] Swagger / OpenAPI documentation
-- [ ] OpenTelemetry tracing ([opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go/))
+- [ ] OpenTelemetry tracing ([opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go/)) instead of OpenTracing/Jaeger/APM
+- [ ] Move the example app into its own Go module, so its dependencies don't reach consumers
+- [ ] Keep the Atlas HCL schemas in sync with the SQL migrations (CI drift check)
