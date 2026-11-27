@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 

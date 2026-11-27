@@ -3,6 +3,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
 	"github.com/demdxx/gocast/v2"
@@ -12,7 +13,6 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
 	"github.com/geniusrabbit/blaze-api/repository/authclient/models"
 	"github.com/geniusrabbit/blaze-api/repository/historylog"
-	"github.com/pkg/errors"
 )
 
 // AuthclientUsecase provides bussiness logic for account access
@@ -34,7 +34,7 @@ func (a *AuthclientUsecase) Get(ctx context.Context, id string) (*models.AuthCli
 		return nil, err
 	}
 	if !acl.HaveAccessView(ctx, authclientObj) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view authclient")
+		return nil, fmt.Errorf("%s: %w", "view authclient", acl.ErrNoPermissions)
 	}
 	return authclientObj, nil
 }
@@ -42,12 +42,12 @@ func (a *AuthclientUsecase) Get(ctx context.Context, id string) (*models.AuthCli
 // FetchList of accounts by filter
 func (a *AuthclientUsecase) FetchList(ctx context.Context, opts ...authclient.QOption) ([]*models.AuthClient, error) {
 	if !acl.HaveAccessList(ctx, &models.AuthClient{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list authclient")
+		return nil, fmt.Errorf("%s: %w", "list authclient", acl.ErrNoPermissions)
 	}
 	list, err := a.authclientRepo.FetchList(ctx, opts...)
 	for _, link := range list {
 		if !acl.HaveAccessList(ctx, link) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list authclient")
+			return nil, fmt.Errorf("%s: %w", "list authclient", acl.ErrNoPermissions)
 		}
 	}
 	return list, err
@@ -56,7 +56,7 @@ func (a *AuthclientUsecase) FetchList(ctx context.Context, opts ...authclient.QO
 // Count of accounts by filter
 func (a *AuthclientUsecase) Count(ctx context.Context, opts ...authclient.QOption) (int64, error) {
 	if !acl.HaveAccessList(ctx, &models.AuthClient{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "list authclient")
+		return 0, fmt.Errorf("%s: %w", "list authclient", acl.ErrNoPermissions)
 	}
 	return a.authclientRepo.Count(ctx, opts...)
 }
@@ -69,7 +69,7 @@ func (a *AuthclientUsecase) Count(ctx context.Context, opts ...authclient.QOptio
 func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *models.AuthClient, opts ...authclient.QOption) (string, error) {
 	var err error
 	if !acl.HaveAccessCreate(ctx, authclientObj) {
-		return "", errors.Wrap(acl.ErrNoPermissions, "create authclient")
+		return "", fmt.Errorf("%s: %w", "create authclient", acl.ErrNoPermissions)
 	}
 	if err = assignOwner(ctx, authclientObj, acl.PermCreate); err != nil {
 		return "", err
@@ -87,11 +87,11 @@ func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj
 		return err
 	}
 	if !acl.HaveAccessUpdate(ctx, current) || !acl.HaveAccessUpdate(ctx, authclientObj) {
-		return errors.Wrap(acl.ErrNoPermissions, "update authclient")
+		return fmt.Errorf("%s: %w", "update authclient", acl.ErrNoPermissions)
 	}
 	if (current.UserID != authclientObj.UserID || current.AccountID != authclientObj.AccountID) &&
 		!haveGlobalAccess(ctx, authclientObj, acl.PermUpdate) {
-		return errors.Wrap(acl.ErrNoPermissions, "change authclient owner")
+		return fmt.Errorf("%s: %w", "change authclient owner", acl.ErrNoPermissions)
 	}
 	return a.authclientRepo.Update(historylog.WithPK(ctx, id), id, authclientObj, opts...)
 }
@@ -119,7 +119,7 @@ func assignOwner(ctx context.Context, obj *models.AuthClient, action string) err
 	if haveGlobalAccess(ctx, obj, action) {
 		return nil
 	}
-	return errors.Wrap(acl.ErrNoPermissions, "authclient owner must be the session user and account")
+	return fmt.Errorf("%s: %w", "authclient owner must be the session user and account", acl.ErrNoPermissions)
 }
 
 // Delete delites record by ID
@@ -129,7 +129,7 @@ func (a *AuthclientUsecase) Delete(ctx context.Context, id string, opts ...authc
 		return err
 	}
 	if !acl.HaveAccessDelete(ctx, authclientObj) {
-		return errors.Wrap(acl.ErrNoPermissions, "delete authclient")
+		return fmt.Errorf("%s: %w", "delete authclient", acl.ErrNoPermissions)
 	}
 	return a.authclientRepo.Delete(historylog.WithPK(ctx, id), id, opts...)
 }

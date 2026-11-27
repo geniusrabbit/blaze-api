@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"errors"
 	"gorm.io/gorm"
 
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"

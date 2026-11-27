@@ -2,11 +2,12 @@ package graphql
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"errors"
 	"github.com/demdxx/gocast/v2"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
@@ -84,10 +85,10 @@ func (r *QueryResolver) Check(ctx context.Context, name string, key, targetID, i
 					}
 					err = gocast.SetStructFieldValue(ctx, obj, key, uid)
 				default:
-					return nil, errors.Wrap(ErrInvalidTargetValue, *targetID)
+					return nil, fmt.Errorf("%s: %w", *targetID, ErrInvalidTargetValue)
 				}
 			} else {
-				return nil, errors.Wrap(ErrInvalidTargetValue, *targetID)
+				return nil, fmt.Errorf("%s: %w", *targetID, ErrInvalidTargetValue)
 			}
 			if err != nil {
 				return nil, err

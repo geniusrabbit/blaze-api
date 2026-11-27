@@ -2,13 +2,13 @@ package generated
 
 import (
 	"context"
+	"fmt"
 	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/sysops"
-	"github.com/go-faster/errors"
 )
 
 // AutoApproveOption is an option to automatically approve a new object
@@ -31,7 +31,7 @@ func (u *Usecase[T, TID]) Get(ctx context.Context, id TID, qops ...Option) (*T, 
 
 	// Check if user has read permissions for this specific object
 	if !acl.HaveAccessView(ctx, targetObj) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view")
+		return nil, fmt.Errorf("%s: %w", "view", acl.ErrNoPermissions)
 	}
 	return targetObj, nil
 }

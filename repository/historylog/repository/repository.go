@@ -4,7 +4,7 @@ package repository
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/repository"

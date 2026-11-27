@@ -2,12 +2,13 @@ package directives
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
+	"errors"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/demdxx/gocast/v2"
-	"github.com/pkg/errors"
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
@@ -35,7 +36,7 @@ func HasPermissions[T user.Model, A account.Model](ctx context.Context, obj any,
 	pm := permissions.FromContext(ctx)
 
 	if accountObj == nil {
-		return nil, errors.Wrap(errAuthorizationRequired, `no correct account`)
+		return nil, fmt.Errorf("%s: %w", `no correct account`, errAuthorizationRequired)
 	}
 
 	if len(perms) < 1 {
@@ -49,7 +50,7 @@ func HasPermissions[T user.Model, A account.Model](ctx context.Context, obj any,
 			if user.IsAnonymous() {
 				return nil, errAuthorizationRequired
 			}
-			return nil, errors.Wrap(errAccessForbidden, objName+` [`+strings.Trim(perm[len(objName):], `.`)+`]`)
+			return nil, fmt.Errorf("%s: %w", objName+` [`+strings.Trim(perm[len(objName):], `.`)+`]`, errAccessForbidden)
 		}
 	}
 

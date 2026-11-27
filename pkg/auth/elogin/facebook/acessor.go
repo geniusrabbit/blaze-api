@@ -3,11 +3,11 @@ package facebook
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
@@ -55,7 +55,7 @@ func FacebookUserData(ctx context.Context, token *oauth2.Token, oauth2conf *oaut
 	fbUserDetailsResp, fbUserDetailsRespError := http.DefaultClient.Do(fbUserDetailsRequest)
 
 	if fbUserDetailsRespError != nil {
-		return nil, errors.Wrap(fbUserDetailsRespError, "Error occurred while getting information from Facebook")
+		return nil, fmt.Errorf("%s: %w", "Error occurred while getting information from Facebook", fbUserDetailsRespError)
 	}
 	defer func() {
 		_ = fbUserDetailsResp.Body.Close()
@@ -64,7 +64,7 @@ func FacebookUserData(ctx context.Context, token *oauth2.Token, oauth2conf *oaut
 	// Decode the JSON response into facebookUserDetails struct.
 	decoderErr := json.NewDecoder(fbUserDetailsResp.Body).Decode(&fbUserDetails)
 	if decoderErr != nil {
-		return nil, errors.Wrap(decoderErr, "Error occurred while getting information from Facebook")
+		return nil, fmt.Errorf("%s: %w", "Error occurred while getting information from Facebook", decoderErr)
 	}
 
 	return &elogin.UserData{

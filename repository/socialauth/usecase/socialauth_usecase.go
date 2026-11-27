@@ -2,8 +2,9 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
@@ -57,7 +58,7 @@ func New[T user.Model](
 // Get social account by id.
 func (u *Usecase[T]) Get(ctx context.Context, id uint64) (*socialAccountModels.AccountSocial, error) {
 	if !acl.HaveAccessView(ctx, &socialAccountModels.AccountSocial{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "get social account")
+		return nil, fmt.Errorf("%s: %w", "get social account", acl.ErrNoPermissions)
 	}
 	return u.socAccountRepo.Get(ctx, id)
 }
@@ -65,7 +66,7 @@ func (u *Usecase[T]) Get(ctx context.Context, id uint64) (*socialAccountModels.A
 // List social accounts by filter.
 func (u *Usecase[T]) List(ctx context.Context, filter *socialauth.Filter) ([]*socialAccountModels.AccountSocial, error) {
 	if !acl.HaveAccessList(ctx, &socialAccountModels.AccountSocial{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list social accounts")
+		return nil, fmt.Errorf("%s: %w", "list social accounts", acl.ErrNoPermissions)
 	}
 	return u.socAccountRepo.List(ctx, filter)
 }
@@ -85,7 +86,7 @@ func (u *Usecase[T]) Register(ctx context.Context, ownerObj user.Model, accountO
 		return 0, errors.New("socialauth: invalid user type for Register")
 	}
 	if !acl.HavePermissions(ctx, "account.register") {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "register/link social account")
+		return 0, fmt.Errorf("%s: %w", "register/link social account", acl.ErrNoPermissions)
 	}
 
 	err := database.ContextTransactionExec(ctx, func(txctx context.Context, _ *gorm.DB) error {
@@ -127,7 +128,7 @@ func (u *Usecase[T]) ensureOwner(ctx context.Context, current T, accountObj *soc
 
 	uid, err := u.userRepo.Create(ctx, current)
 	if err != nil {
-		return current, errors.Wrap(err, "socialauth: create owner user")
+		return current, fmt.Errorf("%s: %w", "socialauth: create owner user", err)
 	}
 	if setter, ok := any(current).(interface{ SetID(uint64) }); ok {
 		setter.SetID(uid)
@@ -147,7 +148,7 @@ func (u *Usecase[T]) sessionUser(ctx context.Context) T {
 // Update social account by id.
 func (u *Usecase[T]) Update(ctx context.Context, id uint64, account *socialAccountModels.AccountSocial) error {
 	if !acl.HaveAccessUpdate(ctx, account) {
-		return errors.Wrap(acl.ErrNoPermissions, "update social account")
+		return fmt.Errorf("%s: %w", "update social account", acl.ErrNoPermissions)
 	}
 	return u.socAccountRepo.Update(ctx, id, account)
 }

@@ -2,10 +2,8 @@ package utils
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"sort"
-
-	"github.com/demdxx/gocast/v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // State represents a collection of parameters.
@@ -62,30 +60,28 @@ func (s State) Extend(key, value string) State {
 	return append(s, Param{Key: key, Value: value})
 }
 
-// Encode serializes the State to a base64-encoded BSON string.
+// Encode serializes the State to a base64-encoded JSON object (keys sorted).
 //
 // Deprecated: the value is neither signed nor bound to the browser, so it
 // gives no CSRF protection. Use StateCodec for OAuth2 states.
 func (s State) Encode() string {
 	sort.Sort(s)
-	data := make(bson.D, 0, len(s))
-	for _, p := range s {
-		data = append(data, bson.DocElem{Name: p.Key, Value: p.Value})
-	}
-	b, _ := bson.Marshal(data)
+	b, _ := json.Marshal(stateToMap(s))
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-// DecodeState deserializes a base64-encoded BSON string back into a State.
+// DecodeState deserializes a base64-encoded JSON object back into a State.
+// Invalid input yields an empty State.
 //
 // Deprecated: the decoded value is attacker controlled. Use StateCodec.Decode.
 func DecodeState(s string) State {
 	srcData, _ := base64.URLEncoding.DecodeString(s)
-	var data bson.M
-	_ = bson.Unmarshal(srcData, &data)
-	var state State
+	var data map[string]string
+	_ = json.Unmarshal(srcData, &data)
+	state := make(State, 0, len(data))
 	for k, v := range data {
-		state = append(state, Param{Key: k, Value: gocast.Str(v)})
+		state = append(state, Param{Key: k, Value: v})
 	}
+	sort.Sort(state)
 	return state
 }

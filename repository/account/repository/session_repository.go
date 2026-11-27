@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"strings"
 
+	"errors"
 	"github.com/demdxx/rbac"
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
@@ -86,13 +86,13 @@ func (r *sessionRepository[TUser, TAccount]) LoadPermissions(ctx context.Context
 	)
 
 	if err := query.Find(&member, `account_id=? AND user_id=?`, accountObj.GetID(), userObj.GetID()).Error; err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	err := r.Slave(ctx).Table((*models.M2MAccountMemberRole)(nil).TableName()).
 		Where(`member_id=?`, member.ID).Select(`role_id`).Find(&roles).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && !errors.Is(err, sql.ErrNoRows) {
-		return errors.WithStack(err)
+		return err
 	}
 
 	if member.IsAdmin {
@@ -142,19 +142,19 @@ func (r *sessionRepository[TUser, TAccount]) GetByToken(ctx context.Context, tok
 	)
 
 	if err = db.Raw(memberRequest, token).Scan(&memberBase).Error; err != nil {
-		return zeroUser, zeroAcc, errors.WithStack(err)
+		return zeroUser, zeroAcc, err
 	}
 	if err = db.First(userObj, memberBase.UserID).Error; err != nil {
-		return zeroUser, zeroAcc, errors.WithStack(err)
+		return zeroUser, zeroAcc, err
 	}
 	if err = db.First(accObj, memberBase.AccountID).Error; err != nil {
-		return zeroUser, zeroAcc, errors.WithStack(err)
+		return zeroUser, zeroAcc, err
 	}
 
 	err = db.Model(&models.M2MAccountMemberRole{}).
 		Select("role_id").Where(`member_id=?`, memberBase.ID).Scan(&roles).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return zeroUser, zeroAcc, errors.WithStack(err)
+		return zeroUser, zeroAcc, err
 	}
 
 	if len(roles) > 0 || memberBase.IsAdmin {

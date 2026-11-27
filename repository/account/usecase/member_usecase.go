@@ -2,15 +2,16 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
+	"errors"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/user"
-	"github.com/pkg/errors"
 )
 
 // MemberUsecase provides bussiness logic for account members
@@ -64,7 +65,7 @@ func (a *MemberUsecase[TUser, TAccount]) EmptyObject() *account.Member[TUser, TA
 func (a *MemberUsecase[TUser, TAccount]) FetchListMembers(ctx context.Context, opts ...account.QOption) (_ []*account.Member[TUser, TAccount], err error) {
 	if !acl.HaveAccessList(ctx, a.EmptyObject()) {
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.MemberFilter{}); err != nil {
-			return nil, errors.Wrap(acl.ErrNoPermissions, err.Error())
+			return nil, fmt.Errorf("%s: %w", err.Error(), acl.ErrNoPermissions)
 		}
 	}
 	return a.memberRepo.FetchListMembers(ctx, opts...)
@@ -75,7 +76,7 @@ func (a *MemberUsecase[TUser, TAccount]) CountMembers(ctx context.Context, opts 
 	if !acl.HaveAccessCount(ctx, a.EmptyObject()) {
 		var err error
 		if opts, err = account.ListOptions(opts).WithPermissions(ctx, &account.MemberFilter{}); err != nil {
-			return 0, errors.Wrap(acl.ErrNoPermissions, err.Error())
+			return 0, fmt.Errorf("%s: %w", err.Error(), acl.ErrNoPermissions)
 		}
 	}
 	return a.memberRepo.CountMembers(ctx, opts...)
@@ -84,10 +85,10 @@ func (a *MemberUsecase[TUser, TAccount]) CountMembers(ctx context.Context, opts 
 // LinkMember into account
 func (a *MemberUsecase[TUser, TAccount]) LinkMember(ctx context.Context, accountObj TAccount, isAdmin bool, members ...TUser) error {
 	if !acl.HaveAccessView(ctx, accountObj) {
-		return errors.Wrap(acl.ErrNoPermissions, "view account")
+		return fmt.Errorf("%s: %w", "view account", acl.ErrNoPermissions)
 	}
 	if !acl.HaveAccessCreate(ctx, a.EmptyObject()) {
-		return errors.Wrap(acl.ErrNoPermissions, "create member account")
+		return fmt.Errorf("%s: %w", "create member account", acl.ErrNoPermissions)
 	}
 	return a.memberRepo.LinkMember(ctx, accountObj, isAdmin, members...)
 }
@@ -99,7 +100,7 @@ func (a *MemberUsecase[TUser, TAccount]) UnlinkMember(ctx context.Context, accou
 	}
 	for _, member := range members {
 		if !acl.HaveAccessDelete(ctx, a.aclMember(accountObj.GetID(), member.GetID())) {
-			return errors.Wrap(acl.ErrNoPermissions, "delete member account")
+			return fmt.Errorf("%s: %w", "delete member account", acl.ErrNoPermissions)
 		}
 	}
 	return a.memberRepo.UnlinkMember(ctx, accountObj, members...)
@@ -117,7 +118,7 @@ func (a *MemberUsecase[TUser, TAccount]) UnlinkAccountMember(ctx context.Context
 	// The @hasPermissions directive checks only the session's own permissions,
 	// so the target member (and its account) must be checked here.
 	if !acl.HaveAccessDelete(ctx, member) {
-		return errors.Wrap(acl.ErrNoPermissions, "delete member account")
+		return fmt.Errorf("%s: %w", "delete member account", acl.ErrNoPermissions)
 	}
 	return a.memberRepo.UnlinkMember(ctx, member.Account, member.User)
 }
@@ -173,7 +174,7 @@ func (a *MemberUsecase[TUser, TAccount]) SetAccountMemeberRoles(ctx context.Cont
 		return nil, err
 	}
 	if !acl.HaveObjectPermissions(ctx, member, `roles.set.*`) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
+		return nil, fmt.Errorf("%s: %w", "update member roles", acl.ErrNoPermissions)
 	}
 	return member, a.memberRepo.SetMemberRoles(ctx, member.Account, member.User, roles...)
 }
@@ -188,7 +189,7 @@ func (a *MemberUsecase[TUser, TAccount]) SetMemberRoles(ctx context.Context, mem
 		return nil, err
 	}
 	if !acl.HaveObjectPermissions(ctx, member, `roles.set.*`) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "update member roles")
+		return nil, fmt.Errorf("%s: %w", "update member roles", acl.ErrNoPermissions)
 	}
 	return member, a.memberRepo.SetMemberRoles(ctx, member.Account, member.User, roles...)
 }

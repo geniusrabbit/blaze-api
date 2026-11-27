@@ -3,10 +3,11 @@ package usecase
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
+	"errors"
 	"github.com/demdxx/gocast/v2"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -43,7 +44,7 @@ func (a *PasswordUsecase[T]) Repo() user.PasswordRepository[T] {
 // SetPassword sets a new password for the user with access control check.
 func (a *PasswordUsecase[T]) SetPassword(ctx context.Context, userObj T, password string) error {
 	if !acl.HaveObjectPermissions(ctx, userObj, `password.set.*`) {
-		return errors.Wrap(acl.ErrNoPermissions, `set password`)
+		return fmt.Errorf("%s: %w", `set password`, acl.ErrNoPermissions)
 	}
 	return a.passRepo.SetPassword(ctx, userObj, password)
 }
@@ -79,7 +80,7 @@ func (a *PasswordUsecase[T]) ResetPassword(ctx context.Context, userID uint64) (
 	}
 
 	if !acl.HaveObjectPermissions(ctx, userObj, `password.reset.*`) {
-		return nil, zero, errors.Wrap(acl.ErrNoPermissions, `reset password`)
+		return nil, zero, fmt.Errorf("%s: %w", `reset password`, acl.ErrNoPermissions)
 	}
 
 	reset, err := a.passRepo.CreateResetPassword(ctx, userObj.GetID())

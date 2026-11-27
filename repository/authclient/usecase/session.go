@@ -2,8 +2,7 @@ package usecase
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/repository/authclient"
@@ -28,7 +27,7 @@ func (u *SessionUsecase) Get(ctx context.Context, id uint64, opts ...authclient.
 		return nil, err
 	}
 	if !acl.HaveAccessView(ctx, sess) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "view auth session")
+		return nil, fmt.Errorf("%s: %w", "view auth session", acl.ErrNoPermissions)
 	}
 	return sess, nil
 }
@@ -36,12 +35,12 @@ func (u *SessionUsecase) Get(ctx context.Context, id uint64, opts ...authclient.
 // FetchList of sessions by filter
 func (u *SessionUsecase) FetchList(ctx context.Context, opts ...authclient.QOption) ([]*models.AuthSession, error) {
 	if !acl.HaveAccessList(ctx, &models.AuthSession{}) {
-		return nil, errors.Wrap(acl.ErrNoPermissions, "list auth session")
+		return nil, fmt.Errorf("%s: %w", "list auth session", acl.ErrNoPermissions)
 	}
 	list, err := u.repo.FetchList(ctx, opts...)
 	for _, sess := range list {
 		if !acl.HaveAccessList(ctx, sess) {
-			return nil, errors.Wrap(acl.ErrNoPermissions, "list auth session")
+			return nil, fmt.Errorf("%s: %w", "list auth session", acl.ErrNoPermissions)
 		}
 	}
 	return list, err
@@ -50,7 +49,7 @@ func (u *SessionUsecase) FetchList(ctx context.Context, opts ...authclient.QOpti
 // Count of sessions by filter
 func (u *SessionUsecase) Count(ctx context.Context, opts ...authclient.QOption) (int64, error) {
 	if !acl.HaveAccessCount(ctx, &models.AuthSession{}) {
-		return 0, errors.Wrap(acl.ErrNoPermissions, "count auth session")
+		return 0, fmt.Errorf("%s: %w", "count auth session", acl.ErrNoPermissions)
 	}
 	return u.repo.Count(ctx, opts...)
 }
@@ -62,7 +61,7 @@ func (u *SessionUsecase) Delete(ctx context.Context, id uint64, opts ...authclie
 		return err
 	}
 	if !acl.HaveAccessDelete(ctx, sess) {
-		return errors.Wrap(acl.ErrNoPermissions, "delete auth session")
+		return fmt.Errorf("%s: %w", "delete auth session", acl.ErrNoPermissions)
 	}
 	return u.repo.Delete(historylog.WithPK(ctx, id), id, opts...)
 }
