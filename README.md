@@ -39,6 +39,9 @@ go get github.com/geniusrabbit/blaze-api
 ```bash
 cd example/api
 
+# Local settings: copy the template and fill in the secrets (.env is git-ignored)
+cp .env.example .env
+
 # Start Postgres + run migrations + start the API
 make run-api
 
@@ -70,7 +73,20 @@ OAUTH2_REFRESH_TOKEN_LIFESPAN=720h
 SESSION_COOKIE_NAME=sessid
 SESSION_LIFETIME=1h
 
-# Dev mode (skip auth with a static token)
+# HTTP server limits (zero read/write timeouts keep websocket subscriptions alive)
+SERVER_HTTP_READ_HEADER_TIMEOUT=10s
+SERVER_HTTP_IDLE_TIMEOUT=120s
+SERVER_HTTP_SHUTDOWN_TIMEOUT=30s
+SERVER_HTTP_MAX_BODY_SIZE=10485760
+SERVER_HTTP_CORS_ORIGINS=https://app.example.com,https://*.example.com
+
+# GraphQL query limits; introspection is off unless enabled
+GRAPHQL_MAX_COMPLEXITY=1000
+GRAPHQL_MAX_DEPTH=12
+GRAPHQL_MAX_ALIASES=30
+GRAPHQL_INTROSPECTION=false
+
+# Dev mode (skip auth with a static token). Off by default; never in production.
 DEBUG=true
 LOG_LEVEL=debug
 SESSION_DEV_TOKEN=develop
@@ -83,7 +99,7 @@ FACEBOOK_CLIENT_SECRET=...
 FACEBOOK_REDIRECT_URL=http://localhost:8581/auth/facebook/callback
 ```
 
-A full annotated example lives in [example/api/.env](example/api/.env) and [example/api/deploy/develop/.api.env](example/api/deploy/develop/.api.env).
+A full annotated example lives in [example/api/.env.example](example/api/.env.example) and [example/api/deploy/develop/.api.env](example/api/deploy/develop/.api.env).
 
 ### Wiring it together (`main.go`)
 

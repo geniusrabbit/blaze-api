@@ -27,6 +27,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
 	"github.com/geniusrabbit/blaze-api/pkg/context/version"
 	"github.com/geniusrabbit/blaze-api/pkg/database"
+	"github.com/geniusrabbit/blaze-api/pkg/middleware"
 	"github.com/geniusrabbit/blaze-api/pkg/migratedb"
 	"github.com/geniusrabbit/blaze-api/pkg/permissions"
 	"github.com/geniusrabbit/blaze-api/pkg/profiler"
@@ -40,6 +41,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/repository/socialauth/delivery/rest"
 	socautherepo "github.com/geniusrabbit/blaze-api/repository/socialauth/repository"
 	socautheuse "github.com/geniusrabbit/blaze-api/repository/socialauth/usecase"
+	"github.com/geniusrabbit/blaze-api/server/graphql/limits"
 )
 
 var (
@@ -53,6 +55,7 @@ func init() {
 	fatalError(goconfig.Load(conf), "load config:")
 
 	if conf.IsDebug() {
+		// Secrets are masked by ConfigType.String
 		fmt.Println(conf)
 	}
 
@@ -134,7 +137,26 @@ func main() {
 		appinit.EnsureSuperuser(ctx, conf.Superuser.Email, conf.Superuser.Password, deps),
 		"init superuser")
 
+	httpConf := conf.Server.HTTP
 	httpServer := server.HTTPServer{
+		Config: server.Config{
+			ReadTimeout:       httpConf.ReadTimeout,
+			WriteTimeout:      httpConf.WriteTimeout,
+			ReadHeaderTimeout: httpConf.ReadHeaderTimeout,
+			IdleTimeout:       httpConf.IdleTimeout,
+			ShutdownTimeout:   httpConf.ShutdownTimeout,
+			MaxBodySize:       httpConf.MaxBodySize,
+			CORS: middleware.CORSConfig{
+				AllowedOrigins:   conf.CORSOrigins(),
+				AllowCredentials: true,
+			},
+			GraphQLLimits: limits.Config{
+				MaxComplexity: conf.Server.GraphQL.MaxComplexity,
+				MaxDepth:      conf.Server.GraphQL.MaxDepth,
+				MaxAliases:    conf.Server.GraphQL.MaxAliases,
+				Introspection: conf.Server.GraphQL.Introspection,
+			},
+		},
 		Logger:         loggerObj,
 		JWTProvider:    jwtProvider,
 		SessionManager: appinit.SessionManager(conf.Session.CookieName, conf.Session.Lifetime),

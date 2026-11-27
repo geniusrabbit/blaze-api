@@ -21,10 +21,11 @@ import (
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/repository/option"
 	"github.com/geniusrabbit/blaze-api/server/graphql/directives"
+	"github.com/geniusrabbit/blaze-api/server/graphql/limits"
 )
 
 // GraphQL mux handler
-func GraphQL(provider *jwt.Provider, options option.Usecase, opts ...Option) http.Handler {
+func GraphQL(provider *jwt.Provider, options option.Usecase, queryLimits limits.Config, maxUploadSize int64, opts ...Option) http.Handler {
 	cfg := Apply(opts, new(OptionsConfig))
 	srv := handler.New(
 		generated.NewExecutableSchema(generated.Config{
@@ -56,13 +57,13 @@ func GraphQL(provider *jwt.Provider, options option.Usecase, opts ...Option) htt
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
-	srv.AddTransport(transport.MultipartForm{})
+	srv.AddTransport(transport.MultipartForm{MaxUploadSize: maxUploadSize, MaxMemory: min(maxUploadSize, 32<<20)})
 	srv.AddTransport(transport.UrlEncodedForm{})
 	srv.AddTransport(transport.GRAPHQL{})
 
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
-	srv.Use(extension.Introspection{})
+	limits.Apply(srv, queryLimits)
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})

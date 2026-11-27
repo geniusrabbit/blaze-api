@@ -65,7 +65,8 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 		TokenLifetime: conf.OAuth2.AccessTokenLifespan,
 		Secret:        conf.OAuth2.Secret,
 		MiddlewareOpts: &jwtmiddleware.Options{
-			Debug: conf.IsDebug(),
+			// Debug logs every extracted token, so it stays off
+			Debug: false,
 			Extractor: jwtmiddleware.FromFirst(
 				jwtmiddleware.FromAuthHeader,
 				jwtmiddleware.FromParameter("access_token"),
