@@ -6,8 +6,8 @@ type SocialAccountSession {
   socialAccountID: ID64!
 
   tokenType: String!
-  accessToken: String!
-  refreshToken: String!
+  accessToken: String! @deprecated(reason: "Provider tokens are not exposed; always empty")
+  refreshToken: String! @deprecated(reason: "Provider tokens are not exposed; always empty")
   scope: [String!]
 
   createdAt: Time!

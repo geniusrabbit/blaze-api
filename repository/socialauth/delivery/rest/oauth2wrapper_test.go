@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
@@ -58,6 +60,9 @@ func (*fakeSocialAuth) Get(context.Context, uint64) (*socialAccountModels.Accoun
 func (f *fakeSocialAuth) List(_ context.Context, filter *socialauth.Filter) ([]*socialAccountModels.AccountSocial, error) {
 	var res []*socialAccountModels.AccountSocial
 	for _, acc := range f.accounts {
+		if acc.DeletedAt.Valid && !filter.RetrieveDeleted {
+			continue
+		}
 		if len(filter.SocialID) == 1 && acc.SocialID == filter.SocialID[0] {
 			res = append(res, acc)
 		}
@@ -398,5 +403,25 @@ func (env *testEnv) withLinkingFn() func(ctx context.Context, userID, accountID 
 	return func(ctx context.Context, userID, accountID uint64) (context.Context, error) {
 		env.linkedWith = append(env.linkedWith, userID, accountID)
 		return session.WithUserAccountDevelop(ctx), nil
+	}
+}
+
+func TestCallbackIgnoresDisconnectedSocialAccount(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	// The user 99 disconnected this Facebook account earlier
+	env.social.accounts = []*socialAccountModels.AccountSocial{{
+		ID: 7, SocialID: "fb-1", UserID: 99,
+		DeletedAt: gorm.DeletedAt{Valid: true, Time: time.Now()},
+	}}
+	state, cookie := env.login(t, anonymousCtx(), "", nil)
+	rec := env.callback(anonymousCtx(), state, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	// Before the fix the deleted record was revived and logged in as user 99
+	if len(env.social.registered) != 1 || env.social.registered[0] == 99 {
+		t.Fatalf("registered owners = %v, want a new owner, not the former user", env.social.registered)
 	}
 }

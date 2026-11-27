@@ -391,7 +391,9 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 	list, err := wr.socialAuthUsecase.List(ctx, &socialauth.Filter{
 		SocialID:        []string{userData.ID},
 		Provider:        []string{wr.Provider()},
-		RetrieveDeleted: true,
+		// A disconnected (soft-deleted) social account must not log in as
+		// its former user; it is registered again like a new one.
+		RetrieveDeleted: false,
 	})
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && !errors.Is(err, sql.ErrNoRows) {
 		wr.Error(w, r, err)
