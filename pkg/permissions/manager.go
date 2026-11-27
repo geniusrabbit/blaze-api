@@ -57,7 +57,9 @@ func NewTestManager(ctx context.Context) *Manager {
 // RoleByID returns role by ID and reload data if necessary
 func (mng *Manager) RoleByID(ctx context.Context, id uint64) (rbac.Role, error) {
 	roles := mng.RolesByFilter(ctx, func(ctx context.Context, r rbac.Role) bool {
-		return r.Ext().(*ExtData).ID == id
+		// Roles registered in code have no ExtData
+		data, ok := r.Ext().(*ExtData)
+		return ok && data.ID == id
 	})
 	if len(roles) == 1 {
 		return roles[0], nil

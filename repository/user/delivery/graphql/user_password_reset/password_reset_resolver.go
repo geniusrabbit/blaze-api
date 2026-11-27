@@ -54,7 +54,10 @@ func (r *PasswordResetQueryResolver[T]) ResetUserPassword(ctx context.Context, e
 		Message:          &[]string{"If the email is registered, a password reset link has been sent"}[0],
 	}
 
-	userObj, err := r.email.GetByEmail(ctx, email)
+	// The lookup itself isn't access checked: the caller (usually anonymous)
+	// can't view users, the user isn't returned, and ResetPassword checks the
+	// `password.reset.*` permission on it.
+	userObj, err := r.email.GetByEmail(acl.WithNoPermCheck(ctx), email)
 	if errors.Is(err, acl.ErrNoPermissions) {
 		ctxlogger.Get(ctx).Info("Reset password: user is not accessible")
 		return sentResponse, nil
@@ -108,7 +111,8 @@ func (r *PasswordResetQueryResolver[T]) UpdateUserPassword(ctx context.Context, 
 
 // UpdateResetedUserPassword completes password reset with token.
 func (r *PasswordResetQueryResolver[T]) UpdateResetedUserPassword(ctx context.Context, token, email, password string) (*gqlmodels.StatusResponse, error) {
-	userObj, err := r.email.GetByEmail(ctx, email)
+	// Not access checked: the reset token is the authorization
+	userObj, err := r.email.GetByEmail(acl.WithNoPermCheck(ctx), email)
 	if errors.Is(err, acl.ErrNoPermissions) {
 		// Same answer as for an unknown email or a wrong token
 		return nil, userusecase.ErrInvalidPasswordResetCode
