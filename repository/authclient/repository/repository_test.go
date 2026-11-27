@@ -1,6 +1,7 @@
 package repository
 
 import (
+	baseRepo "github.com/geniusrabbit/blaze-api/repository"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func (s *testSuite) SetupSuite() {
 
 func (s *testSuite) TestGet() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs("1").
+		WithArgs("1", 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "account_id", "user_id", "title", "secret", "created_at"}).
 				AddRow("1", 1, 1, "title1", "secret", time.Now()),
@@ -36,9 +37,18 @@ func (s *testSuite) TestGet() {
 	s.Equal("1", role.ID)
 }
 
+func (s *testSuite) TestGetNotFound() {
+	// Before the fix Find returned an empty client, which passed ACL as ownerless
+	s.Mock.ExpectQuery("SELECT *").
+		WithArgs("missing", 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	_, err := s.authclientRepo.Get(s.Ctx, "missing")
+	s.ErrorIs(err, baseRepo.ErrNotFound)
+}
+
 func (s *testSuite) TestGetHyphenatedID() {
 	s.Mock.ExpectQuery(`SELECT .* FROM "auth_client" WHERE id = \$1`).
-		WithArgs("mcp-client").
+		WithArgs("mcp-client", 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "account_id", "user_id", "title", "secret", "created_at"}).
 				AddRow("mcp-client", 1, 1, "mcp", "secret", time.Now()),

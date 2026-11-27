@@ -51,7 +51,8 @@ func (stub stubTokens) GetByToken(_ context.Context, token string) (*directacces
 	if tokenObject, ok := stub.tokens[token]; ok {
 		return tokenObject, nil
 	}
-	return &directaccesstoken.DirectAccessToken{}, nil
+	// The repository reports unknown and expired tokens as not found
+	return nil, gorm.ErrRecordNotFound
 }
 
 type stubUsers struct{}

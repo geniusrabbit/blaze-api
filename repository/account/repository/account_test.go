@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	baseRepo "github.com/geniusrabbit/blaze-api/repository"
 	"testing"
 	"time"
 
@@ -9,8 +10,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/pkg/database"
+	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	accountrepo "github.com/geniusrabbit/blaze-api/repository/account/repository"
 	"github.com/geniusrabbit/blaze-api/repository/testsuite"
@@ -49,7 +50,7 @@ func (s *testSuite) SetupTest() {
 
 func (s *testSuite) TestGet() {
 	s.Mock.ExpectQuery("SELECT *").
-		WithArgs(1).
+		WithArgs(1, 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "status", "title", "description", "created_at"}).
 				AddRow(1, 1, "title1", "description1", time.Now()),
@@ -77,6 +78,15 @@ func (s *testSuite) TestLoadPermissions() {
 	err := s.accountRepo.LoadPermissions(s.Ctx, accountObj, userObj)
 	s.NoError(err)
 	s.NotNil(accountObj.Permissions)
+}
+
+func (s *testSuite) TestGetNotFound() {
+	// Before the fix Find returned an empty account (ID 0) and no error
+	s.Mock.ExpectQuery("SELECT *").
+		WithArgs(404, 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	_, err := s.accountRepo.Get(s.Ctx, 404)
+	s.ErrorIs(err, baseRepo.ErrNotFound)
 }
 
 func (s *testSuite) TestFetchList() {

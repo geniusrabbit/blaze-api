@@ -67,6 +67,10 @@ func (au *DirectTokenAuthorizer[TUser, TAccount]) Authorize(w http.ResponseWrite
 	}
 
 	tokenObject, err := au.tokens.GetByToken(ctx, token)
+	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
+		// Unknown or expired key: not this authorizer's credential
+		return "", zeroUser, zeroAccount, nil
+	}
 	if err != nil {
 		return "", zeroUser, zeroAccount, fmt.Errorf("%w: direct access token lookup: %w", auth.ErrAuthorizationUnavailable, err)
 	}

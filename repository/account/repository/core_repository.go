@@ -31,7 +31,7 @@ func (r *coreAccountRepository[T]) EmptyObject() T {
 func (r *coreAccountRepository[T]) Get(ctx context.Context, id uint64) (T, error) {
 	var zero T
 	object := r.newModel()
-	if err := r.Slave(ctx).Find(object, id).Error; err != nil {
+	if err := r.Slave(ctx).First(object, id).Error; err != nil {
 		return zero, err
 	}
 	return object, nil

@@ -2,6 +2,7 @@ package generated
 
 import (
 	"context"
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
 )
@@ -14,7 +15,7 @@ type UsecaseApprover[T Model[TID], TID comparable] struct {
 // Approve approves an entity by ID with ACL permission check
 func (u *UsecaseApprover[T, TID]) Approve(ctx context.Context, id TID, opts ...Option) error {
 	// Fetch existing entity to check permissions
-	existingObj, err := u.Repo.Get(ctx, id)
+	existingObj, err := u.Repo.Get(database.WithPrimaryRead(ctx), id)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func (u *UsecaseApprover[T, TID]) Approve(ctx context.Context, id TID, opts ...O
 // Reject rejects an entity by ID with ACL permission check
 func (u *UsecaseApprover[T, TID]) Reject(ctx context.Context, id TID, opts ...Option) error {
 	// Fetch existing entity to check permissions
-	existingObj, err := u.Repo.Get(ctx, id)
+	existingObj, err := u.Repo.Get(database.WithPrimaryRead(ctx), id)
 	if err != nil {
 		return err
 	}

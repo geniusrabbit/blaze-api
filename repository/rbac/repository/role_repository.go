@@ -23,7 +23,7 @@ func New() *Repository {
 // GetByName returns RBAC role model by name
 func (r *Repository) GetByName(ctx context.Context, name string) (*rbac.Role, error) {
 	object := new(rbac.Role)
-	if err := r.Slave(ctx).Find(object, `name=?`, name).Error; err != nil {
+	if err := r.Slave(ctx).First(object, `name=?`, name).Error; err != nil {
 		return nil, err
 	}
 	return object, nil
