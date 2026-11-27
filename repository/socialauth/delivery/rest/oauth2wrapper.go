@@ -389,8 +389,8 @@ func (wr *Oauth2Wrapper) Success(w http.ResponseWriter, r *http.Request, token *
 
 	// Check if user already exists (awoid permission check)
 	list, err := wr.socialAuthUsecase.List(ctx, &socialauth.Filter{
-		SocialID:        []string{userData.ID},
-		Provider:        []string{wr.Provider()},
+		SocialID: []string{userData.ID},
+		Provider: []string{wr.Provider()},
 		// A disconnected (soft-deleted) social account must not log in as
 		// its former user; it is registered again like a new one.
 		RetrieveDeleted: false,
