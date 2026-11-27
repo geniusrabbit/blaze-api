@@ -28,7 +28,7 @@ func (s *storageSuite) SetupSuite() {
 func (s *storageSuite) TestGetClientHyphenatedID() {
 	expiresAt := time.Now().Add(time.Hour)
 	s.Mock.ExpectQuery(`SELECT .* FROM "auth_client" WHERE id = \$1`).
-		WithArgs("mcp-client").
+		WithArgs("mcp-client", 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "account_id", "user_id", "title", "secret", "expires_at"}).
 				AddRow("mcp-client", 1, 1, "mcp", "secret", expiresAt),
@@ -58,7 +58,7 @@ func (s *storageSuite) TestCreatePKCERequestSessionUpdatesExistingSession() {
 
 	// PKCE session updates the same row (same code signature)
 	s.Mock.ExpectQuery(`SELECT \* FROM "auth_session"`).
-		WithArgs(codeSig).
+		WithArgs(codeSig, 1).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id", "request_id", "access_token", "form", "client_id", "username", "subject", "active", "access_token_expires_at", "refresh_token_expires_at", "created_at", "updated_at"}).
 				AddRow(rowID, requestID, codeSig, "existing=value", "mcp-client", "user", "subject", true, time.Now(), time.Now(), time.Now(), time.Now()),
@@ -120,9 +120,9 @@ func (s *storageSuite) TestAuthorizationCodeToAccessTokenFlow() {
 	// This is the critical part that was failing in production with duplicate key error
 	reqToken := testOAuthRequest(requestID) // Same request_id!
 	reqToken.Form = map[string][]string{
-		"client_id":     {"mcp-client"},
-		"grant_type":    {"authorization_code"},
-		"code":          {authCodeSig},
+		"client_id":  {"mcp-client"},
+		"grant_type": {"authorization_code"},
+		"code":       {authCodeSig},
 	}
 	reqToken.GetSession().SetExpiresAt(fosite.AccessToken, time.Now().Add(time.Hour))
 	reqToken.GetSession().SetExpiresAt(fosite.RefreshToken, time.Now().Add(24*time.Hour))
