@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"errors"
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 	"strings"
 
 	"github.com/demdxx/sendmsg"
@@ -97,7 +98,8 @@ func (r *QueryResolverBase[TDomain, TGQLUser, TGQLUserCreateInput, TGQLUserUpdat
 	if err := session.DenyDirectTokenSession(ctx); err != nil {
 		return zero, err
 	}
-	userObj, err := r.core.Get(ctx, id)
+	// Read from the master: the whole object is written back
+	userObj, err := r.core.Get(database.WithPrimaryRead(ctx), id)
 	if err != nil {
 		return zero, err
 	}

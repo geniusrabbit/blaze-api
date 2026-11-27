@@ -2,6 +2,7 @@ package generated
 
 import (
 	"context"
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
@@ -104,7 +105,7 @@ func (u *Usecase[T, TID]) Create(ctx context.Context, obj *T, opts ...Option) (i
 // Fetches the existing entity first to verify update permissions.
 func (u *Usecase[T, TID]) Update(ctx context.Context, id TID, obj *T, opts ...Option) error {
 	// Fetch existing entity to check permissions
-	existingObj, err := u.Repo.Get(ctx, id)
+	existingObj, err := u.Repo.Get(database.WithPrimaryRead(ctx), id)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (u *Usecase[T, TID]) Update(ctx context.Context, id TID, obj *T, opts ...Op
 // Fetches the existing entity first to verify delete permissions.
 func (u *Usecase[T, TID]) Delete(ctx context.Context, id TID, opts ...Option) error {
 	// Fetch existing entity to check permissions
-	existingObj, err := u.Repo.Get(ctx, id)
+	existingObj, err := u.Repo.Get(database.WithPrimaryRead(ctx), id)
 	if err != nil {
 		return err
 	}

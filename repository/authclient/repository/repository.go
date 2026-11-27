@@ -26,7 +26,7 @@ func NewAuthclientRepository() *Repository {
 // keeping the original no-error-on-not-found behavior.
 func (r *Repository) Get(ctx context.Context, id string) (*authclient.AuthClient, error) {
 	object := new(authclient.AuthClient)
-	if err := r.Slave(ctx).Find(object, "id = ?", id).Error; err != nil {
+	if err := r.Slave(ctx).First(object, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return object, nil

@@ -3,6 +3,7 @@ package usecase
 
 import (
 	"context"
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 
 	"github.com/demdxx/gocast/v2"
 
@@ -81,7 +82,7 @@ func (a *AuthclientUsecase) Create(ctx context.Context, authclientObj *models.Au
 // Access is checked on the stored object and on the new values; changing the
 // owner requires `auth_client.update.all|system`.
 func (a *AuthclientUsecase) Update(ctx context.Context, id string, authclientObj *models.AuthClient, opts ...authclient.QOption) error {
-	current, err := a.authclientRepo.Get(ctx, id)
+	current, err := a.authclientRepo.Get(database.WithPrimaryRead(ctx), id)
 	if err != nil {
 		return err
 	}

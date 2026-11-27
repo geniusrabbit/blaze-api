@@ -2,10 +2,12 @@ package wrapper
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/pkg/auth"
 	"github.com/geniusrabbit/blaze-api/pkg/context/ctxlogger"
@@ -78,6 +80,10 @@ func httpWrapper[TUser user.Model, TAccount account.Model](
 		}
 
 		tokenObj, err := actokens.GetByToken(ctx, token)
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
+			unauthorized(w)
+			return
+		}
 		if err != nil {
 			ctxlogger.Get(ctx).Error("invalid token load", zap.Error(err))
 			unavailable(w)

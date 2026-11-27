@@ -89,7 +89,7 @@ func (s *testSuite) TestCreate() {
 }
 
 func (s *testSuite) TestUpdate() {
-	s.authclientRepo.EXPECT().Get(s.ctx, "101").Return(&models.AuthClient{ID: "101", Title: "test"}, nil)
+	s.authclientRepo.EXPECT().Get(gomock.Any(), "101").Return(&models.AuthClient{ID: "101", Title: "test"}, nil)
 	s.authclientRepo.EXPECT().
 		Update(gomock.AssignableToTypeOf(s.ctx),
 			"101", gomock.AssignableToTypeOf(&models.AuthClient{}), historylog.Message("update authclient")).
@@ -218,7 +218,7 @@ func TestUpdateRejectsOwnerChange(t *testing.T) {
 
 	repo := mocks.NewMockRepository(gomock.NewController(t))
 	ctx := ownerCtx("update.*")
-	repo.EXPECT().Get(ctx, "c1").Return(&models.AuthClient{ID: "c1", UserID: 5, AccountID: 3}, nil)
+	repo.EXPECT().Get(gomock.Any(), "c1").Return(&models.AuthClient{ID: "c1", UserID: 5, AccountID: 3}, nil)
 
 	err := NewAuthclientUsecase(repo).Update(ctx, "c1", &models.AuthClient{ID: "c1", UserID: 7, AccountID: 3})
 	if !errors.Is(err, acl.ErrNoPermissions) {

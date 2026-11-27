@@ -28,7 +28,7 @@ func (r *Repository) Get(ctx context.Context, id uint64) (*models.AccountSocial,
 	object := &models.AccountSocial{}
 	res := r.Slave(ctx).Model(object).
 		Preload(clause.Associations).
-		Where(`id=?`, id).Find(object)
+		Where(`id=?`, id).First(object)
 	if err := res.Error; err != nil {
 		return nil, err
 	}

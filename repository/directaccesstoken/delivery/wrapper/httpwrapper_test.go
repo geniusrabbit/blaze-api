@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.uber.org/mock/gomock"
+	"gorm.io/gorm"
 
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	pkgModels "github.com/geniusrabbit/blaze-api/pkg/models"
@@ -105,6 +106,9 @@ func TestHTTPWrapperRejectsBadTokens(t *testing.T) {
 	next := func(http.ResponseWriter, *http.Request) { t.Error("next handler was called") }
 
 	if rec := newWrapperEnv(t).serve(fakeTokens{token: &models.DirectAccessToken{}}, next); rec.Code != http.StatusUnauthorized {
+		t.Errorf("empty token: status = %d, want 401", rec.Code)
+	}
+	if rec := newWrapperEnv(t).serve(fakeTokens{err: gorm.ErrRecordNotFound}, next); rec.Code != http.StatusUnauthorized {
 		t.Errorf("unknown token: status = %d, want 401", rec.Code)
 	}
 	if rec := newWrapperEnv(t).serve(fakeTokens{err: errors.New("db down")}, next); rec.Code != http.StatusServiceUnavailable {

@@ -24,7 +24,7 @@ func NewDirectAccessTokenRepository() *Repository {
 func (r *Repository) Get(ctx context.Context, id uint64) (*models.DirectAccessToken, error) {
 	object := new(models.DirectAccessToken)
 	err := r.Slave(ctx).Model(object).
-		Find(object, "id=? AND expires_at>NOW()", id).Error
+		First(object, "id=? AND expires_at>?", id, time.Now()).Error
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (r *Repository) Get(ctx context.Context, id uint64) (*models.DirectAccessTo
 func (r *Repository) GetByToken(ctx context.Context, token string) (*models.DirectAccessToken, error) {
 	object := new(models.DirectAccessToken)
 	err := r.Slave(ctx).Model(object).
-		Find(object, "token=? AND expires_at>NOW()", token).Error
+		First(object, "token=? AND expires_at>?", token, time.Now()).Error
 	if err != nil {
 		return nil, err
 	}

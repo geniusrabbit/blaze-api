@@ -117,7 +117,7 @@ func (s *testSuite) TestDelete() {
 
 func (s *testSuite) TestDeleteNotFound() {
 	s.roleRepo.EXPECT().
-		Get(s.ctx, gomock.AssignableToTypeOf(uint64(101))).
+		Get(gomock.Any(), gomock.AssignableToTypeOf(uint64(101))).
 		Return(nil, sql.ErrNoRows)
 	err := s.roleUsecase.Delete(s.ctx, 9999)
 	s.EqualError(err, sql.ErrNoRows.Error())
