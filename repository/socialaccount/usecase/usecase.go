@@ -68,7 +68,28 @@ func (u *Usecase) Disconnect(ctx context.Context, id uint64) (*models.AccountSoc
 	return obj, u.repo.Disconnect(ctx, id)
 }
 
-// FetchSessionList of social accounts
+// FetchSessionList of social accounts.
+// Every requested social account must be visible to the session; the
+// sessions hold provider tokens.
 func (u *Usecase) FetchSessionList(ctx context.Context, socialAccountID []uint64) ([]*models.AccountSocialSession, error) {
+	if len(socialAccountID) == 0 {
+		return nil, nil
+	}
+	accounts, err := u.repo.FetchList(ctx, &socialaccount.Filter{ID: socialAccountID})
+	if err != nil {
+		return nil, err
+	}
+	visible := make(map[uint64]bool, len(accounts))
+	for _, acc := range accounts {
+		if !acl.HaveAccessView(ctx, acc) {
+			return nil, acl.ErrNoPermissions.WithMessage("view social account sessions")
+		}
+		visible[acc.ID] = true
+	}
+	for _, id := range socialAccountID {
+		if !visible[id] {
+			return nil, acl.ErrNoPermissions.WithMessage("view social account sessions")
+		}
+	}
 	return u.repo.FetchSessionList(ctx, socialAccountID)
 }

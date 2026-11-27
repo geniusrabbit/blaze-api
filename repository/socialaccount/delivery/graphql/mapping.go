@@ -40,6 +40,9 @@ func FromSocialAccountModelList(list []*models.AccountSocial) []*gqlmodels.Socia
 }
 
 // FromSocialAccountSessionModel converts a domain AccountSocialSession model to a GraphQL model.
+// The provider access and refresh tokens are never exposed: anyone allowed
+// to view the social account could otherwise act as the user at the
+// provider. The fields stay in the schema (deprecated) and are empty.
 func FromSocialAccountSessionModel(sess *models.AccountSocialSession) *gqlmodels.SocialAccountSession {
 	if sess == nil {
 		return nil
@@ -47,8 +50,6 @@ func FromSocialAccountSessionModel(sess *models.AccountSocialSession) *gqlmodels
 	return &gqlmodels.SocialAccountSession{
 		Name:            sess.Name,
 		SocialAccountID: sess.AccountSocialID,
-		AccessToken:     sess.AccessToken,
-		RefreshToken:    sess.RefreshToken,
 		Scope:           sess.Scopes,
 		ExpiresAt:       gocast.IfThen(sess.ExpiresAt.Valid, &sess.ExpiresAt.Time, nil),
 		CreatedAt:       sess.CreatedAt,
