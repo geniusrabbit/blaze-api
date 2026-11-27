@@ -92,6 +92,9 @@ func (a *PasswordUsecase[T]) ResetPassword(ctx context.Context, userID uint64) (
 
 // UpdatePassword updates the password for the user using a reset token with access control check.
 func (a *PasswordUsecase[T]) UpdatePassword(ctx context.Context, userID uint64, token, password string) error {
+	if len(password) < 8 {
+		return ErrPasswordTooShort
+	}
 	userObj, err := a.core.Get(ctx, userID)
 	if err != nil {
 		if err == sql.ErrNoRows || err == gorm.ErrRecordNotFound {
@@ -113,10 +116,10 @@ func (a *PasswordUsecase[T]) UpdatePassword(ctx context.Context, userID uint64, 
 	}
 
 	if reset.ExpiresAt.Before(time.Now()) {
+		// Never log the token: it is a credential
 		ctxlogger.Get(ctx).Info("Reset password token expired",
 			zap.Uint64("user_id", reset.UserID),
-			zap.Time("expires_at", reset.ExpiresAt),
-			zap.String("token", token))
+			zap.Time("expires_at", reset.ExpiresAt))
 		return ErrInvalidPasswordResetCode
 	}
 

@@ -1,31 +1,31 @@
 package repository
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"errors"
+	"math/big"
 
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/geniusrabbit/blaze-api/repository/user/password"
 )
 
-func hashAndSalt(pwd []byte) string {
-	hash, err := password.PasswordHash(pwd)
-	if err != nil {
-		zap.L().Error("GenerateFromPassword", zap.Error(err))
-	}
-	return hash
+func hashAndSalt(pwd []byte) (string, error) {
+	return password.PasswordHash(pwd)
 }
 
 func comparePasswords(hashedPwd string, plainPwd []byte) bool {
 	err := password.ComparePasswords(hashedPwd, plainPwd)
-	if err != nil {
+	if err != nil && !errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		// A wrong password is not an error worth logging; a broken hash is
 		zap.L().Error("CompareHashAndPassword", zap.Error(err))
-		return false
 	}
-	return true
+	return err == nil
 }
 
-// RandomPassword returns a random password of the given length.
+// RandomPassword returns a cryptographically random password of the given
+// length (at least 2) with at least one digit and one special character.
 func RandomPassword(length int) string {
 	const (
 		digits   = "0123456789"
@@ -34,12 +34,16 @@ func RandomPassword(length int) string {
 			"abcdefghijklmnopqrstuvwxyz" +
 			digits + specials
 	)
-	buf := make([]byte, length)
-	buf[0] = digits[rand.Intn(len(digits))]
-	buf[1] = specials[rand.Intn(len(specials))]
-	for i := 2; i < length; i++ {
-		buf[i] = all[rand.Intn(len(all))]
+	length = max(length, 2)
+	buf := []byte(password.RandomString(1, digits) + password.RandomString(1, specials) +
+		password.RandomString(length-2, all))
+	// Fisher-Yates shuffle with crypto/rand
+	for i := len(buf) - 1; i > 0; i-- {
+		j, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			panic(err)
+		}
+		buf[i], buf[j.Int64()] = buf[j.Int64()], buf[i]
 	}
-	rand.Shuffle(len(buf), func(i, j int) { buf[i], buf[j] = buf[j], buf[i] })
 	return string(buf)
 }
