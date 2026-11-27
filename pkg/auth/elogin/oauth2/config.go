@@ -36,6 +36,7 @@ func (c *Config) Provider() string {
 // LoginURL generates the OAuth2 login URL with the provided parameters.
 func (c *Config) LoginURL(params []elogin.URLParam) string {
 	state := utils.NewState(utils.Param{Key: "sc", Value: c.StateCode})
+	managedState := ""
 
 	// OAuth2 auth type options:
 	// - rerequest: for declined/revoked permissions
@@ -49,10 +50,18 @@ func (c *Config) LoginURL(params []elogin.URLParam) string {
 		if param.Key == "scope" {
 			opts = append(opts, oauth2.SetAuthURLParam("scope", param.Value))
 		}
+		if param.Key == elogin.ParamState {
+			managedState = param.Value
+			continue
+		}
 		state = state.Extend(param.Key, param.Value)
 	}
 
-	return c.OAuth2.AuthCodeURL(state.Encode(), opts...)
+	// The state is generated and verified by the caller
+	if managedState != "" {
+		return c.OAuth2.AuthCodeURL(managedState, opts...)
+	}
+	return c.OAuth2.AuthCodeURL(state.Encode(), opts...) //nolint:staticcheck // legacy state for standalone use
 }
 
 // OAuth2Config returns the underlying OAuth2 configuration.
@@ -63,11 +72,11 @@ func (c *Config) OAuth2Config() *oauth2.Config {
 // UserData exchanges the authorization code for a token and extracts user data.
 func (c *Config) UserData(ctx context.Context, values url.Values, params []elogin.URLParam) (*elogin.Token, *elogin.UserData, error) {
 	code := values.Get("code")
-	state := utils.DecodeState(values.Get("state"))
+	state := utils.DecodeState(values.Get("state")) //nolint:staticcheck // legacy state for standalone use
 	scopes := c.OAuth2.Scopes
 
-	// Validate state code if configured
-	if c.StateCode != "" && c.StateCode != state.Get("sc") {
+	// Validate state code if configured and the state isn't verified by the caller
+	if c.StateCode != "" && !hasParam(params, elogin.ParamState) && c.StateCode != state.Get("sc") {
 		return nil, nil, elogin.ErrInvalidState
 	}
 
@@ -109,4 +118,13 @@ func (c *Config) UserData(ctx context.Context, values url.Values, params []elogi
 	}
 
 	return token, data, nil
+}
+
+func hasParam(params []elogin.URLParam, key string) bool {
+	for _, param := range params {
+		if param.Key == key {
+			return true
+		}
+	}
+	return false
 }
