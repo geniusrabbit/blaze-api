@@ -48,7 +48,11 @@ func (r *passwordRepository[T]) GetByPassword(ctx context.Context, userID uint64
 // If the password is empty, the user will be created with an empty password hash.
 func (r *passwordRepository[T]) CreateWithPassword(ctx context.Context, userObj T, pwd string) (uint64, error) {
 	if pwd != "" {
-		userObj.SetPasswordHash(hashAndSalt([]byte(pwd)))
+		hash, err := hashAndSalt([]byte(pwd))
+		if err != nil {
+			return 0, err
+		}
+		userObj.SetPasswordHash(hash)
 	} else {
 		userObj.SetPasswordHash("")
 	}
@@ -63,7 +67,12 @@ func (r *passwordRepository[T]) CreateWithPassword(ctx context.Context, userObj 
 
 // SetPassword sets a new password for the user and updates the user in the database.
 func (r *passwordRepository[T]) SetPassword(ctx context.Context, userObj T, pwd string) error {
-	userObj.SetPasswordHash(hashAndSalt([]byte(pwd)))
+	// A failed hash used to be stored as "", locking the account silently
+	hash, err := hashAndSalt([]byte(pwd))
+	if err != nil {
+		return err
+	}
+	userObj.SetPasswordHash(hash)
 	return r.core.Update(ctx, userObj)
 }
 
