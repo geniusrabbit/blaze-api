@@ -56,6 +56,8 @@ type HTTPServer struct {
 	AuthLoader     *accAuth.Loader[*domain.User, *domain.Account]
 	Logger         *zap.Logger
 	GraphqlOptions graphql.Options
+	// ReadinessChecks back the /readiness probe (e.g. the database ping)
+	ReadinessChecks []profiler.Check
 }
 
 // Run starts a HTTP server and blocks while running if successful.
@@ -68,6 +70,9 @@ func (s *HTTPServer) Run(ctx context.Context, address string) (err error) {
 	mux.With(basicauth.NewFromEnv("Graph", "GRAPHQL_USERS_")).
 		Handle("/playground", playground.Handler("Query console", "/graphql"))
 	mux.Handle("/healthcheck", http.HandlerFunc(profiler.HealthCheckHandler))
+	if len(s.ReadinessChecks) > 0 {
+		mux.Handle("/readiness", profiler.ReadinessHandler(2*time.Second, s.ReadinessChecks...))
+	}
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/graphql", graphql.GraphQL(s.JWTProvider,
 		usecase.NewUsecase(repository.NewOptionRepository(nil)),

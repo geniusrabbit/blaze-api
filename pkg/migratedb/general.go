@@ -63,12 +63,8 @@ func Migrate(ctx context.Context, connet string, dataSources []MigrateSource) er
 				return err
 			}
 
-			// Reset dirty state via the driver API (Postgres UPDATE / ClickHouse append INSERT).
-			// Do not run dialect-specific SQL here — CH TinyLog version tables reject UPDATE.
-			if v, dirty, verr := driver.Version(); verr == nil && dirty {
-				if err := driver.SetVersion(v-1, false); err != nil {
-					return fmt.Errorf("reset dirty migration version %d: %w", v, err)
-				}
+			if err := resolveDirty(driver, source, migrateTable); err != nil {
+				return err
 			}
 
 			// Init migration instance
