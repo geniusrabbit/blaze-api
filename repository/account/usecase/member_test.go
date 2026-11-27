@@ -8,8 +8,12 @@ import (
 	"github.com/demdxx/rbac"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	"github.com/geniusrabbit/blaze-api/pkg/context/database"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/mocks"
@@ -32,6 +36,10 @@ type testMemberSuite struct {
 func (s *testMemberSuite) SetupSuite() {
 	ctrl := gomock.NewController(s.T())
 	s.ctx = session.WithUserAccountDevelop(context.TODO())
+	// InviteMember runs in a transaction, which needs a database in the context
+	db, err := gorm.Open(sqlite.Open("file:member_usecase?mode=memory&cache=shared"), &gorm.Config{Logger: logger.Discard})
+	s.Require().NoError(err)
+	s.ctx = database.WithDatabase(s.ctx, db, nil)
 	s.userRepo = usermocks.NewMockRepository[*testutil.User](ctrl)
 	s.accountRepo = mocks.NewMockSessionRepository[*testutil.User, *testAccount](ctrl)
 	s.memberRepo = mocks.NewMockMemberRepository[*testutil.User, *testAccount](ctrl)
@@ -129,8 +137,9 @@ func (s *testMemberSuite) TestInviteMemberNotFoundAfterLink() {
 
 	s.accountRepo.EXPECT().Get(s.ctx, uint64(10)).Return(acc, nil)
 	s.userRepo.EXPECT().Get(s.ctx, uint64(101)).Return(usr, nil)
-	s.memberRepo.EXPECT().LinkMember(s.ctx, acc, false, usr).Return(nil)
-	s.memberRepo.EXPECT().SetMemberRoles(s.ctx, acc, usr).Return(nil)
+	// Link and roles run inside the transaction context
+	s.memberRepo.EXPECT().LinkMember(gomock.Any(), acc, false, usr).Return(nil)
+	s.memberRepo.EXPECT().SetMemberRoles(gomock.Any(), acc, usr).Return(nil)
 	s.memberRepo.EXPECT().Member(s.ctx, uint64(101), uint64(10)).Return(nil, nil)
 
 	got, err := s.memberUsecase.InviteMember(s.ctx, 10, 101)

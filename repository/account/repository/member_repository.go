@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/demdxx/xtypes"
-	"github.com/guregu/null"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -122,19 +121,34 @@ func (r *memberRepository[TUser, TAccount]) IsAdmin(ctx context.Context, userID,
 	return err == nil && isAdmin
 }
 
+// LinkMember adds users to the account. An active member keeps its status
+// and admin flag (linking can make a member an admin, never demote it); a
+// removed (soft-deleted) member is restored with the new values.
 func (r *memberRepository[TUser, TAccount]) LinkMember(ctx context.Context, accountObj TAccount, isAdmin bool, members ...TUser) error {
-	return r.Master(ctx).Transaction(func(tx *gorm.DB) error {
-		query := tx.Model(&models.MemberBase{}).Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "account_id"}, {Name: "user_id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"approve_status", "is_admin", "deleted_at"}),
-		})
+	return r.TransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
 		for _, userObj := range members {
-			err := query.Create(&models.MemberBase{
-				Approve:   pkgModels.ApprovedApproveStatus,
-				AccountID: accountObj.GetID(),
-				UserID:    userObj.GetID(),
-				IsAdmin:   isAdmin,
-			}).Error
+			var existing models.MemberBase
+			err := tx.Unscoped().Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where(`account_id=? AND user_id=?`, accountObj.GetID(), userObj.GetID()).
+				Take(&existing).Error
+			switch {
+			case errors.Is(err, gorm.ErrRecordNotFound):
+				err = tx.Create(&models.MemberBase{
+					Approve:   pkgModels.ApprovedApproveStatus,
+					AccountID: accountObj.GetID(),
+					UserID:    userObj.GetID(),
+					IsAdmin:   isAdmin,
+				}).Error
+			case err != nil:
+			case existing.DeletedAt.Valid:
+				err = tx.Unscoped().Model(&existing).Updates(map[string]any{
+					"approve_status": pkgModels.ApprovedApproveStatus,
+					"is_admin":       isAdmin,
+					"deleted_at":     nil,
+				}).Error
+			case isAdmin && !existing.IsAdmin:
+				err = tx.Model(&existing).Update("is_admin", true).Error
+			}
 			if err != nil {
 				return err
 			}
@@ -143,14 +157,49 @@ func (r *memberRepository[TUser, TAccount]) LinkMember(ctx context.Context, acco
 	})
 }
 
+// UnlinkMember removes users from the account. Removing every approved
+// admin fails with ErrAccountHaveToHaveAdmin.
 func (r *memberRepository[TUser, TAccount]) UnlinkMember(ctx context.Context, accountObj TAccount, users ...TUser) error {
 	ids := make([]uint64, 0, len(users))
 	for _, u := range users {
 		ids = append(ids, u.GetID())
 	}
-	return r.Master(ctx).
-		Where(`account_id=? AND user_id IN ?`, accountObj.GetID(), ids).
-		Delete(&models.MemberBase{}).Error
+	return r.TransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
+		if err := r.ensureOtherAdmin(tx, accountObj.GetID(), ids, true); err != nil {
+			return err
+		}
+		return tx.Where(`account_id=? AND user_id IN ?`, accountObj.GetID(), ids).
+			Delete(&models.MemberBase{}).Error
+	})
+}
+
+// ensureOtherAdmin fails when the account would be left without an approved
+// admin after the users lose admin rights. The admin rows are locked
+// (FOR UPDATE where supported) so concurrent demotions are serialized.
+// With onlyIfAdmin it passes when none of the users is an admin now.
+func (r *memberRepository[TUser, TAccount]) ensureOtherAdmin(tx *gorm.DB, accountID uint64, userIDs []uint64, onlyIfAdmin bool) error {
+	var admins []models.MemberBase
+	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where(`account_id=? AND is_admin=? AND approve_status=?`, accountID, true, pkgModels.ApprovedApproveStatus).
+		Find(&admins).Error
+	if err != nil {
+		return err
+	}
+	affected, others := false, 0
+	for _, admin := range admins {
+		if xtypes.Slice[uint64](userIDs).Has(func(id uint64) bool { return id == admin.UserID }) {
+			affected = true
+		} else {
+			others++
+		}
+	}
+	if onlyIfAdmin && !affected {
+		return nil
+	}
+	if others == 0 {
+		return ErrAccountHaveToHaveAdmin
+	}
+	return nil
 }
 
 func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, accountObj TAccount, userObj TUser, roles ...string) error {
@@ -176,25 +225,16 @@ func (r *memberRepository[TUser, TAccount]) SetMemberRoles(ctx context.Context, 
 
 	wasAdmin := member.IsAdmin
 	member.Roles = listRoles
-	member.IsAdmin = xtypes.Slice[string](roles).Has(
-		func(v string) bool { return v == "admin" || v == "account:admin" || v == "system:admin" })
-
-	if wasAdmin != member.IsAdmin && !member.IsAdmin {
-		cnt, err := r.CountMembers(ctx, &account.MemberFilter{
-			AccountID: []uint64{accountObj.GetID()},
-			NotUserID: []uint64{userObj.GetID()},
-			IsAdmin:   null.BoolFrom(true),
-			Status:    []pkgModels.ApproveStatus{pkgModels.ApprovedApproveStatus},
-		})
-		if err != nil {
-			return err
-		}
-		if cnt == 0 {
-			return ErrAccountHaveToHaveAdmin
-		}
-	}
+	member.IsAdmin = account.HasAdminRole(roles...)
 
 	return r.TransactionExec(ctx, func(ctx context.Context, tx *gorm.DB) error {
+		// Checked inside the transaction with the admin rows locked: two
+		// concurrent demotions can't both pass and leave no admin.
+		if wasAdmin && !member.IsAdmin {
+			if err := r.ensureOtherAdmin(tx, accountObj.GetID(), []uint64{userObj.GetID()}, false); err != nil {
+				return err
+			}
+		}
 		err := tx.Omit(clause.Associations).Save(&member.MemberBase).Error
 		if err != nil {
 			return err

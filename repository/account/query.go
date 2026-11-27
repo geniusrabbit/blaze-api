@@ -117,7 +117,7 @@ func (fl *MemberFilter) PrepareQuery(query *gorm.DB) *gorm.DB {
 	if len(fl.Status) > 0 {
 		query = query.Where(`approve_status IN (?)`, fl.Status)
 	}
-	if fl.IsAdmin.Bool && fl.IsAdmin.Valid {
+	if fl.IsAdmin.Valid {
 		query = query.Where(`is_admin = ?`, fl.IsAdmin.Bool)
 	}
 	return query
