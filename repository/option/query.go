@@ -31,7 +31,7 @@ func (fl *Filter) PrepareQuery(q *gorm.DB) *gorm.DB {
 		q = q.Where(`target_id IN (?)`, fl.TargetID)
 	}
 	if len(fl.TargetPairs) == 1 {
-		q = q.Where(fl.TargetPairs[0].OptionType, fl.TargetPairs[0].TargetID)
+		q = q.Where(`type=? AND target_id=?`, fl.TargetPairs[0].OptionType, fl.TargetPairs[0].TargetID)
 	} else if len(fl.TargetPairs) > 0 {
 		conds := make([]string, len(fl.TargetPairs))
 		args := make([]any, 0, len(fl.TargetPairs)*2)

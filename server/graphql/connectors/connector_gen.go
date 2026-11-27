@@ -7,6 +7,7 @@ import (
 
 	"github.com/demdxx/gocast/v2"
 	"github.com/geniusrabbit/blaze-api/pkg/acl"
+	"github.com/geniusrabbit/blaze-api/repository"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
 )
 
@@ -82,8 +83,10 @@ func (c *CollectionConnection[GQLM]) PageInfo() *gqlmodels.PageInfo {
 			Count:           0,
 		}
 		if c.page != nil && c.page.Size != nil {
+			// The same size the repository uses; a raw 0 or negative size divided by zero
+			size := repository.NormalizePageSize(*c.page.Size)
 			c.pageInfo.Page = max(1, gocast.PtrAsValue(c.page.StartPage, 1))
-			c.pageInfo.Count = c.pageInfo.Total/(*c.page.Size) + gocast.Int(c.pageInfo.Total%(*c.page.Size) > 0)
+			c.pageInfo.Count = c.pageInfo.Total/size + gocast.Int(c.pageInfo.Total%size > 0)
 			c.pageInfo.HasNextPage = c.pageInfo.Count > c.pageInfo.Page
 			c.pageInfo.HasPreviousPage = c.pageInfo.Page > 1
 		}
