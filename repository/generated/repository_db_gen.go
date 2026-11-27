@@ -5,8 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/geniusrabbit/blaze-api/repository"
 	"gorm.io/gorm"
+
+	"github.com/geniusrabbit/blaze-api/repository"
+	"github.com/geniusrabbit/blaze-api/repository/historylog"
 )
 
 type Repository[T Model[TID], TID comparable] struct {
@@ -58,20 +60,61 @@ func (r *Repository[T, TID]) Create(ctx context.Context, obj *T, opts ...Option)
 	return getModelID[TID](obj), err
 }
 
-// Update updates an existing campaign
+// Update writes the non-zero fields of obj to the object with the ID.
+// Zero values (0, "", false, nil) are skipped; use UpdateFields to set them.
+// Returns repository.ErrNotFound when the object doesn't exist.
 func (r *Repository[T, TID]) Update(ctx context.Context, id TID, obj *T, opts ...Option) error {
+	return r.update(ctx, id, obj, nil, opts...)
+}
+
+// UpdateFields writes the listed fields (column or struct field names) of obj
+// to the object with the ID, zero values included. updated_at is always set.
+// Returns repository.ErrNotFound when the object doesn't exist.
+func (r *Repository[T, TID]) UpdateFields(ctx context.Context, id TID, obj *T, fields []string, opts ...Option) error {
+	if len(fields) == 0 {
+		return errNoFields
+	}
+	return r.update(ctx, id, obj, append(fields, "updated_at"), opts...)
+}
+
+func (r *Repository[T, TID]) update(ctx context.Context, id TID, obj *T, fields []string, opts ...Option) error {
 	newObj := *obj
 	setModelID(&newObj, id)
 	setModelUpdatedAt(&newObj, time.Now())
+	ctx = historylog.WithPK(ctx, id)
 	db := Options(opts).PrepareQuery(r.Master(ctx))
-	if err := db.Updates(&newObj).Error; err != nil {
-		return err
+	if len(fields) > 0 {
+		db = db.Select(fields)
+	}
+	res := db.Updates(&newObj)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		// MySQL reports changed rows only: tell "nothing changed" from "missing"
+		var count int64
+		if err := r.Master(ctx).Model((*T)(nil)).Where(r.idField+`=?`, id).Count(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
+			return repository.ErrNotFound
+		}
 	}
 	return nil
 }
 
-// Delete deletes a campaign by ID
+// Delete deletes the object with the ID.
+// Returns repository.ErrNotFound when the object doesn't exist.
 func (r *Repository[T, TID]) Delete(ctx context.Context, id TID, opts ...Option) error {
-	obj := new(T)
-	return Options(opts).PrepareQuery(r.Master(ctx)).Delete(obj, r.idField+`=?`, id).Error
+	ctx = historylog.WithPK(ctx, id)
+	res := Options(opts).PrepareQuery(r.Master(ctx)).Delete(new(T), r.idField+`=?`, id)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return repository.ErrNotFound
+	}
+	return nil
 }
+
+var errNoFields = errors.New("generated: UpdateFields needs at least one field")
