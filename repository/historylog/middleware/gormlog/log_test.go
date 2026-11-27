@@ -91,7 +91,10 @@ func TestHistoryLogRollbackLeavesNoHistory(t *testing.T) {
 		})
 	}()
 	select {
-	case <-done:
+	case err := <-done:
+		if err == nil || err.Error() != "rollback" {
+			t.Fatalf("transaction error = %v, want the rollback", err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("transaction deadlocked: history was written through another connection")
 	}
