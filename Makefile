@@ -1,9 +1,15 @@
 APP_TAGS  ?= $(or ${APP_BUILD_TAGS},postgres jaeger migrate)
+TMP_ETC   ?= .build/tmp
 
-.DEPS:
-	@echo "Install dependencies"
-	go install github.com/NoahShen/gotunnelme
-	go install go.uber.org/mock/mockgen@latest
+# Tool versions, shared with CI (.github/workflows/tests.yml)
+GOLANGCI_LINT_VERSION ?= v2.15.0
+MOCKGEN_VERSION       ?= v0.6.0
+GOVULNCHECK_VERSION   ?= v1.1.4
+
+.PHONY: tools
+tools: ## Install pinned development tools
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION)
 
 .PHONY: all
 all: lint cover
@@ -12,9 +18,12 @@ all: lint cover
 lint: golint
 
 .PHONY: golint
-golint:
-	# golint -set_exit_status ./...
-	golangci-lint run -v ./...
+golint: ## Run linters (config: .golangci.yml)
+	golangci-lint run ./...
+
+.PHONY: vuln
+vuln: ## Check dependencies for known vulnerabilities
+	go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 .PHONY: fmt
 fmt: ## Run formatting code
@@ -67,10 +76,6 @@ build-test-api: ## Build test api server
 .PHONY: build-test-gql
 build-test-gql: ## Build test graphql server
 	@cd example/api && make build-gql
-
-.PHONY: announce-test-api
-announce-test-api: ## Run test api server with announce via tunnelme
-	@cd example/api && make -j2 announce-run-api
 
 #############################################################################
 # Atlas migrations (alternative to golang-migrate, see docs/MIGRATIONS.md)

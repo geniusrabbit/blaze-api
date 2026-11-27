@@ -9,8 +9,8 @@ import (
 
 	"github.com/geniusrabbit/blaze-api/pkg/auth/elogin"
 	"github.com/geniusrabbit/blaze-api/repository"
-	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 	socialAccountModels "github.com/geniusrabbit/blaze-api/repository/socialaccount/models"
+	"github.com/geniusrabbit/blaze-api/repository/socialauth"
 )
 
 type Repository struct {

@@ -1,3 +1,4 @@
+//go:build amp
 // +build amp
 
 package gopentracing
