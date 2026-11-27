@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	"gorm.io/gorm"
@@ -14,6 +13,7 @@ import (
 	"github.com/geniusrabbit/blaze-api/example/api/internal/domain"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/jwt"
 	"github.com/geniusrabbit/blaze-api/pkg/auth/oauth2/serverprovider"
+	"github.com/geniusrabbit/blaze-api/pkg/auth/tokenextractor"
 	"github.com/geniusrabbit/blaze-api/pkg/cache"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/dummy"
 	"github.com/geniusrabbit/blaze-api/pkg/cache/memory"
@@ -64,15 +64,15 @@ func Auth(ctx context.Context, conf *appcontext.ConfigType, masterDatabase *gorm
 	jwtProvider := &jwt.Provider{
 		TokenLifetime: conf.OAuth2.AccessTokenLifespan,
 		Secret:        conf.OAuth2.Secret,
-		MiddlewareOpts: &jwtmiddleware.Options{
-			// Debug logs every extracted token, so it stays off
-			Debug: false,
-			Extractor: jwtmiddleware.FromFirst(
-				jwtmiddleware.FromAuthHeader,
-				jwtmiddleware.FromParameter("access_token"),
-			),
-		},
+		// The query parameter is accepted only for websocket handshakes
+		Extractor: tokenextractor.HeaderOrWebsocketQuery("access_token"),
 	}
+	// Logout revocation needs a real cache (OAUTH2_CACHE_CONNECT); use Redis
+	// when the API runs on several instances.
+	if _, isDummy := sessionCache.(*dummy.Cache); !isDummy {
+		jwtProvider.Revocation = jwt.NewCacheRevocationStore(sessionCache)
+	}
+	fatalError(jwtProvider.Validate(), "JWT provider (OAUTH2_SECRET)")
 	return oauth2provider, jwtProvider
 }
 

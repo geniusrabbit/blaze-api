@@ -49,7 +49,17 @@ func NewAuthResolver[TUser user.Model, TAccount account.Model](
 }
 
 // Logout is the resolver for the logout field.
+// A JWT session token is revoked when the provider has a revocation store;
+// without one the token stays valid until it expires.
 func (r *AuthResolver[TUser, TAccount]) Logout(ctx context.Context) (bool, error) {
+	token := session.Token(ctx)
+	if token == "" || session.AuthorizerCode(ctx) != jwt.AuthorizerCode ||
+		r.provider == nil || r.provider.Revocation == nil {
+		return true, nil
+	}
+	if err := r.provider.Revoke(ctx, token); err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
