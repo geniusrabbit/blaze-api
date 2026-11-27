@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"regexp"
 	"testing"
 	"time"
 
@@ -149,11 +150,31 @@ func (s *testSuite) TestSet() {
 }
 
 func (s *testSuite) TestDelete() {
-	s.Mock.ExpectExec("UPDATE").
+	// Exactly one option: before the fix gorm turned the condition into
+	// `WHERE "option"."type" IN (...)` and soft-deleted all options of the type.
+	s.Mock.ExpectExec(regexp.QuoteMeta(`UPDATE "option" SET "deleted_at"=$1 WHERE (type=$2 AND target_id=$3 AND name=$4) AND "option"."deleted_at" IS NULL`)).
 		WithArgs(sqlmock.AnyArg(), models.UserOptionType, uint64(1), "opt.name").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	err := s.testRepo.Delete(s.Ctx, "opt.name", models.UserOptionType, 1)
 	s.NoError(err)
+	s.NoError(s.Mock.ExpectationsWereMet())
+}
+
+func (s *testSuite) TestGetOneOfTypeSinglePairFiltersTarget() {
+	// Before the fix a single pair produced `"option"."type" IN (type, target_id)`
+	// and ignored target_id, returning options of other users or accounts.
+	s.Mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "option" WHERE (type=$1 AND target_id=$2) AND name IN ($3) AND "option"."deleted_at" IS NULL`)).
+		WithArgs(models.UserOptionType, uint64(1), "opt.name").
+		WillReturnRows(
+			sqlmock.NewRows([]string{"type", "target_id", "name", "value", "created_at"}).
+				AddRow(models.UserOptionType, uint64(1), "opt.name", `{"val":1}`, time.Now()),
+		)
+	got, err := s.testRepo.GetOneOfType(s.Ctx, "opt.name", []option.TargetPair{
+		{OptionType: models.UserOptionType, TargetID: 1},
+	})
+	s.NoError(err)
+	s.Equal(uint64(1), got.TargetID)
+	s.NoError(s.Mock.ExpectationsWereMet())
 }
 
 func TestSuite(t *testing.T) {

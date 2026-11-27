@@ -122,8 +122,9 @@ func (r *Repository) Set(ctx context.Context, obj *models.Option) error {
 	}).Create(obj).Error
 }
 
-// Delete delites record by ID
+// Delete soft-deletes one option identified by type, target and name.
 func (r *Repository) Delete(ctx context.Context, name string, otype models.OptionType, targetID uint64) error {
-	return r.Master(ctx).Model((*models.Option)(nil)).
-		Delete(`type=? AND target_id=? AND name=?`, otype, targetID, name).Error
+	return r.Master(ctx).
+		Where(`type=? AND target_id=? AND name=?`, otype, targetID, name).
+		Delete(&models.Option{}).Error
 }

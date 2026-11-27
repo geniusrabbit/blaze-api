@@ -11,15 +11,17 @@ type Page struct {
 	After *string `json:"after,omitempty"`
 	// Start after some records
 	Offset *int `json:"offset,omitempty"`
-	// Page number to start at (0-based), defaults to 0 (0, 1, 2, etc.)
+	// Page number to start at (1-based), defaults to 1 (1, 2, 3, etc.)
 	StartPage *int `json:"startPage,omitempty"`
 	// Maximum number of items to return
 	Size *int `json:"size,omitempty"`
 }
 
+// Pagination converts the GraphQL page to the repository pagination.
+// Without a page the list is still capped at repository.MaxPageSize.
 func (p *Page) Pagination() *repository.Pagination {
 	if p == nil {
-		return nil
+		return &repository.Pagination{Page: 1, Size: repository.MaxPageSize}
 	}
 	return &repository.Pagination{
 		After:  gocast.PtrAsValue(p.After, ""),
