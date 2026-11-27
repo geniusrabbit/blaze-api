@@ -2,11 +2,14 @@ package usecase_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/demdxx/rbac"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/repository/account"
 	"github.com/geniusrabbit/blaze-api/repository/account/mocks"
@@ -137,4 +140,38 @@ func (s *testMemberSuite) TestInviteMemberNotFoundAfterLink() {
 
 func TestAccountMemberSuite(t *testing.T) {
 	suite.Run(t, &testMemberSuite{})
+}
+
+// denyAll is a permission checker that grants nothing.
+type denyAll struct{}
+
+func (denyAll) CheckPermissions(context.Context, any, ...string) bool              { return false }
+func (denyAll) CheckedPermissions(context.Context, any, ...string) rbac.Permission { return nil }
+func (denyAll) ChildRoles() []rbac.Role                                            { return nil }
+func (denyAll) ChildPermissions() []rbac.Permission                                { return nil }
+func (denyAll) Permissions(...string) []rbac.Permission                            { return nil }
+func (denyAll) HasPermission(...string) bool                                       { return false }
+
+func TestUnlinkAccountMemberChecksAccess(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	userRepo := usermocks.NewMockRepository[*testutil.User](ctrl)
+	accountRepo := mocks.NewMockSessionRepository[*testutil.User, *testAccount](ctrl)
+	memberRepo := mocks.NewMockMemberRepository[*testutil.User, *testAccount](ctrl)
+	uc := usecase.NewMemberUsecase(userRepo, accountRepo, memberRepo)
+
+	// The caller is a member of account 1 without delete rights on members of account 10
+	callerAcc := testAccountStub(1)
+	callerAcc.SetPermissions(denyAll{})
+	ctx := session.WithUserAccount(context.Background(), testutil.Stub(5), callerAcc)
+
+	memberRepo.EXPECT().MemberByID(ctx, uint64(2)).Return(account.MemberStub[*testutil.User, *testAccount](2, 10, 101), nil)
+	accountRepo.EXPECT().Get(ctx, uint64(10)).Return(testAccountStub(10), nil)
+	userRepo.EXPECT().Get(ctx, uint64(101)).Return(testutil.Stub(101), nil)
+	// No UnlinkMember call is expected: gomock fails the test if it happens
+
+	if err := uc.UnlinkAccountMember(ctx, 2); !errors.Is(err, acl.ErrNoPermissions) {
+		t.Fatalf("err = %v, want %v", err, acl.ErrNoPermissions)
+	}
 }

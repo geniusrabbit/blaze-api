@@ -111,6 +111,11 @@ func (a *MemberUsecase[TUser, TAccount]) UnlinkAccountMember(ctx context.Context
 	if err = a.hydrateMember(ctx, member); err != nil {
 		return err
 	}
+	// The @hasPermissions directive checks only the session's own permissions,
+	// so the target member (and its account) must be checked here.
+	if !acl.HaveAccessDelete(ctx, member) {
+		return errors.Wrap(acl.ErrNoPermissions, "delete member account")
+	}
 	return a.memberRepo.UnlinkMember(ctx, member.Account, member.User)
 }
 

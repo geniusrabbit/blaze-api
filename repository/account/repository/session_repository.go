@@ -111,8 +111,9 @@ func (r *sessionRepository[TUser, TAccount]) LoadPermissions(ctx context.Context
 		return nil
 	}
 
+	// Rejected user or account: keep only the plain roles
 	perm, err := r.PermissionManager(ctx).AsOneRole(ctx, false, func(_ context.Context, role rbac.Role) bool {
-		return !strings.HasPrefix(role.Name(), "system:") || !strings.HasPrefix(role.Name(), "account:")
+		return allowedForRejectedSession(role.Name())
 	}, roles...)
 	if err != nil {
 		return err
@@ -188,4 +189,10 @@ func getApprove(obj any) pkgModels.ApproveStatus {
 		return v.GetApprove()
 	}
 	return pkgModels.UndefinedApproveStatus
+}
+
+// allowedForRejectedSession reports whether a role stays with a rejected user
+// or account: privileged `system:` and `account:` roles are dropped.
+func allowedForRejectedSession(roleName string) bool {
+	return !strings.HasPrefix(roleName, "system:") && !strings.HasPrefix(roleName, "account:")
 }
