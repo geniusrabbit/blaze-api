@@ -4,12 +4,20 @@ import (
 	"context"
 	"errors"
 
+	"github.com/demdxx/gocast/v2"
+
+	"github.com/geniusrabbit/blaze-api/pkg/acl"
 	"github.com/geniusrabbit/blaze-api/pkg/context/session"
 	"github.com/geniusrabbit/blaze-api/pkg/requestid"
 	"github.com/geniusrabbit/blaze-api/repository/user"
 	"github.com/geniusrabbit/blaze-api/repository/user/delivery/graphql"
 	userusecase "github.com/geniusrabbit/blaze-api/repository/user/usecase"
 	gqlmodels "github.com/geniusrabbit/blaze-api/server/graphql/models"
+)
+
+var (
+	errEmptyUserInput = errors.New("empty user input")
+	errCreateUser     = errors.New("create user")
 )
 
 // QueryResolverPassword implements password-related user GraphQL mutations.
@@ -62,11 +70,21 @@ func NewQueryResolverPassword[
 	}
 }
 
-// CreateUser creates user with password via PasswordRepository.
+// CreateUser creates a user without a password.
+//
+// The new user can't log in with a password until one is set, for example
+// through the password reset flow. The object-level create permission is
+// checked here, as the password repository doesn't check access.
 func (r *QueryResolverPassword[TDomain, TGQLUser, TGQLUserInput, TGQLUserPayload, TGQLUserListFilter, TGQLUserListOrder]) CreateUser(ctx context.Context, input TGQLUserInput) (TGQLUserPayload, error) {
 	var zero TGQLUserPayload
 	userObj := r.userFromInput(input)
-	uid, err := r.password.Repo().CreateWithPassword(ctx, userObj, "GQL create user")
+	if gocast.IsNil(userObj) {
+		return zero, errEmptyUserInput
+	}
+	if !acl.HaveAccessCreate(ctx, userObj) {
+		return zero, errors.Join(acl.ErrNoPermissions, errCreateUser)
+	}
+	uid, err := r.password.Repo().CreateWithPassword(ctx, userObj, "")
 	if err != nil {
 		return zero, err
 	}
